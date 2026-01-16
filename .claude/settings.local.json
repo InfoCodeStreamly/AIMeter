@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__query-docs",
+      "Bash(xcodebuild:*)",
+      "Bash(security find-generic-password -s 'Claude Code-credentials' -a $USER -w)",
+      "Bash(security dump-keychain:*)",
+      "Bash(security find-generic-password -s \"Claude Code-credentials\" -w)",
+      "Bash(security find-generic-password -s 'Claude Code-credentials' -w)",
+      "Bash(xxd:*)",
+      "Bash(python3:*)",
+      "Bash(log stream:*)",
+      "Bash(claude status:*)",
+      "Bash(claude)"
+    ]
+  }
+}
