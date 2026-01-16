@@ -2,7 +2,7 @@
 
 ## Commit & Push — ONE COMMAND
 
-**ЗАВЖДИ** комітити та пушити в `stage` і `main` однією командою:
+**ALWAYS** commit and push to `stage` and `main` in a single command:
 
 ```bash
 git add -A && git commit -m "type: message
@@ -10,7 +10,7 @@ git add -A && git commit -m "type: message
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>" && git push origin stage && git checkout main && git merge stage --no-edit && git push origin main && git checkout stage
 ```
 
-**НІКОЛИ** не робити окремі команди для:
+**NEVER** run separate commands for:
 - git add
 - git commit
 - git push stage
@@ -18,7 +18,7 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>" && git push origin stag
 - git merge
 - git push main
 
-Все в ОДНУ команду через `&&`.
+Everything in ONE command using `&&`.
 
 ## Commit Message Format
 
@@ -29,8 +29,8 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
 Types:
-- `feat:` — нова функціональність
-- `fix:` — виправлення багу
-- `refactor:` — рефакторинг
-- `docs:` — документація
-- `chore:` — технічні зміни
+- `feat:` — new feature
+- `fix:` — bug fix
+- `refactor:` — code refactoring
+- `docs:` — documentation
+- `chore:` — technical changes
