@@ -21,6 +21,10 @@ final class DependencyContainer {
         ClaudeCodeSyncService()
     }()
 
+    lazy var launchAtLoginService: LaunchAtLoginService = {
+        LaunchAtLoginService()
+    }()
+
     // MARK: - Repositories
 
     private lazy var sessionKeyRepository: any SessionKeyRepository = {

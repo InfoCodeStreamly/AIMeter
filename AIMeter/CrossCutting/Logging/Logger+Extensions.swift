@@ -28,6 +28,9 @@ extension Logger {
 
     /// General app lifecycle
     nonisolated(unsafe) static let app = Logger(subsystem: subsystem, category: "app")
+
+    /// Launch at login operations
+    nonisolated(unsafe) static let launchAtLogin = Logger(subsystem: subsystem, category: "launchAtLogin")
 }
 
 // MARK: - Convenience for Data Debugging

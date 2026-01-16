@@ -11,7 +11,9 @@
       "Bash(python3:*)",
       "Bash(log stream:*)",
       "Bash(claude status:*)",
-      "Bash(claude)"
+      "Bash(claude)",
+      "mcp__MCP_DOCKER__resolve-library-id",
+      "mcp__MCP_DOCKER__get-library-docs"
     ]
   }
 }

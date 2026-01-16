@@ -55,13 +55,16 @@ struct MenuBarView: View {
     @ViewBuilder
     private var settingsSheet: some View {
         let settingsVM = DependencyContainer.shared.makeSettingsViewModel()
-        SettingsView(viewModel: settingsVM)
-            .onAppear {
-                settingsVM.onSaveSuccess = {
-                    showingSettings = false
-                    viewModel.refresh()
-                }
+        SettingsView(
+            viewModel: settingsVM,
+            launchAtLogin: DependencyContainer.shared.launchAtLoginService
+        )
+        .onAppear {
+            settingsVM.onSaveSuccess = {
+                showingSettings = false
+                viewModel.refresh()
             }
+        }
     }
 
     // MARK: - Subviews

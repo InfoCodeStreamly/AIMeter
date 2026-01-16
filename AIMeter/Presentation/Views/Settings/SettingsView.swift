@@ -3,6 +3,7 @@ import SwiftUI
 /// Settings window view
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
+    var launchAtLogin: LaunchAtLoginService
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -38,9 +39,38 @@ struct SettingsView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: UIConstants.Spacing.xl) {
+                generalSection
                 connectionSection
             }
             .padding(UIConstants.Spacing.xl)
+        }
+    }
+
+    // MARK: - General Section
+
+    private var generalSection: some View {
+        VStack(alignment: .leading, spacing: UIConstants.Spacing.md) {
+            Label("General", systemImage: "gearshape")
+                .font(.subheadline.weight(.semibold))
+
+            Toggle(isOn: Binding(
+                get: { launchAtLogin.isEnabled },
+                set: { _ in launchAtLogin.toggle() }
+            )) {
+                HStack {
+                    Image(systemName: "power")
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Launch at Login")
+                        Text("Start AIMeter when you log in")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .toggleStyle(.switch)
+            .padding(UIConstants.Spacing.md)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
         }
     }
 
@@ -361,7 +391,10 @@ struct SettingsView: View {
 // MARK: - Preview
 
 #Preview("Checking") {
-    SettingsView(viewModel: makePreviewViewModel())
+    SettingsView(
+        viewModel: makePreviewViewModel(),
+        launchAtLogin: LaunchAtLoginService()
+    )
 }
 
 @MainActor
