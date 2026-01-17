@@ -5,7 +5,7 @@ struct UsageDisplayData: Identifiable, Equatable {
     let id: UUID
     let type: UsageType
     let percentage: Int
-    let countdown: String
+    let resetTimeText: String
     let status: UsageStatus
     let title: String
     let subtitle: String
@@ -15,7 +15,7 @@ struct UsageDisplayData: Identifiable, Equatable {
         self.id = entity.id
         self.type = entity.type
         self.percentage = Int(entity.percentage.value)
-        self.countdown = entity.resetTime.countdown
+        self.resetTimeText = entity.resetTime.localTimeString
         self.status = entity.status
         self.title = entity.type.displayName
         self.subtitle = entity.type.subtitle

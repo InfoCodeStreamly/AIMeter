@@ -38,6 +38,16 @@ struct SettingsView: View {
             Text("Settings")
                 .font(.headline)
             Spacer()
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Close")
         }
         .padding(UIConstants.Spacing.lg)
     }

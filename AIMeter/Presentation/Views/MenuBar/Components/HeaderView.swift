@@ -8,7 +8,7 @@ struct HeaderView: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
                 Text("Claude Usage")
                     .font(.headline)
                     .fontWeight(.semibold)
@@ -20,7 +20,7 @@ struct HeaderView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
+            HStack(spacing: UIConstants.Spacing.sm) {
                 Button(action: onRefresh) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 12, weight: .medium))
@@ -36,8 +36,8 @@ struct HeaderView: View {
                 .help("Settings")
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, UIConstants.Spacing.md)
+        .padding(.vertical, UIConstants.Spacing.sm)
     }
 }
 
@@ -47,5 +47,6 @@ struct HeaderView: View {
         onRefresh: {},
         onSettings: {}
     )
-    .frame(width: 280)
+    .frame(width: UIConstants.MenuBar.width)
+    .background(.ultraThinMaterial)
 }
