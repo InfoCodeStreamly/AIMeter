@@ -1,18 +1,31 @@
 import SwiftUI
 import AppKit
+import Sparkle
 
 /// Settings window view
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
+    let updater: SPUUpdater
+    @ObservedObject private var checkForUpdatesViewModel: CheckForUpdatesViewModel
     var launchAtLogin: LaunchAtLoginService
     var notificationPreferences: NotificationPreferencesService
     var appInfo: AppInfoService
-    var checkForUpdatesUseCase: CheckForUpdatesUseCase
     @Environment(\.dismiss) private var dismiss
 
-    // Update state
-    @State private var isCheckingUpdates = false
-    @State private var updateResult: UpdateCheckResult?
+    init(
+        viewModel: SettingsViewModel,
+        updater: SPUUpdater,
+        launchAtLogin: LaunchAtLoginService,
+        notificationPreferences: NotificationPreferencesService,
+        appInfo: AppInfoService
+    ) {
+        self.viewModel = viewModel
+        self.updater = updater
+        self.checkForUpdatesViewModel = CheckForUpdatesViewModel(updater: updater)
+        self.launchAtLogin = launchAtLogin
+        self.notificationPreferences = notificationPreferences
+        self.appInfo = appInfo
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -203,74 +216,16 @@ struct SettingsView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
-                // Check for updates
-                Button {
-                    Task { await checkForUpdates() }
-                } label: {
-                    HStack {
-                        if isCheckingUpdates {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        } else {
-                            Image(systemName: updateButtonIcon)
-                        }
-                        Text(updateButtonText)
-                    }
-                    .frame(maxWidth: .infinity)
+                // Check for updates (Sparkle)
+                Button("Check for Updates…") {
+                    updater.checkForUpdates()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(isCheckingUpdates)
+                .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
             }
             .padding(UIConstants.Spacing.md)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
-        }
-    }
-
-    // MARK: - Update Helpers
-
-    private var updateButtonText: String {
-        if isCheckingUpdates {
-            return "Checking..."
-        }
-        guard let result = updateResult else {
-            return "Check for Updates"
-        }
-        switch result {
-        case .upToDate:
-            return "Up to Date"
-        case .updateAvailable(let version, _):
-            return "Update Available: v\(version)"
-        case .error:
-            return "Check for Updates"
-        }
-    }
-
-    private var updateButtonIcon: String {
-        guard let result = updateResult else {
-            return "arrow.triangle.2.circlepath"
-        }
-        switch result {
-        case .upToDate:
-            return "checkmark.circle"
-        case .updateAvailable:
-            return "arrow.down.circle"
-        case .error:
-            return "arrow.triangle.2.circlepath"
-        }
-    }
-
-    private func checkForUpdates() async {
-        isCheckingUpdates = true
-        updateResult = nil
-
-        updateResult = await checkForUpdatesUseCase.execute()
-
-        isCheckingUpdates = false
-
-        // If update available, offer to open release page
-        if case .updateAvailable(_, let url) = updateResult {
-            NSWorkspace.shared.open(url)
         }
     }
 
@@ -524,24 +479,6 @@ struct SettingsView: View {
 }
 
 // MARK: - Preview
-
-#Preview("Checking") {
-    SettingsView(
-        viewModel: makePreviewViewModel(),
-        launchAtLogin: LaunchAtLoginService(),
-        notificationPreferences: NotificationPreferencesService(),
-        appInfo: AppInfoService(),
-        checkForUpdatesUseCase: makePreviewCheckForUpdatesUseCase()
-    )
-}
-
-@MainActor
-private func makePreviewCheckForUpdatesUseCase() -> CheckForUpdatesUseCase {
-    CheckForUpdatesUseCase(
-        appInfoService: AppInfoService(),
-        gitHubUpdateService: GitHubUpdateService()
-    )
-}
 
 @MainActor
 private func makePreviewViewModel() -> SettingsViewModel {

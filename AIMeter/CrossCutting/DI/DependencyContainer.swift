@@ -37,9 +37,6 @@ final class DependencyContainer {
         AppInfoService()
     }()
 
-    private lazy var gitHubUpdateService: GitHubUpdateService = {
-        GitHubUpdateService()
-    }()
 
     private lazy var tokenRefreshService: TokenRefreshService = {
         TokenRefreshService()
@@ -98,12 +95,6 @@ final class DependencyContainer {
         )
     }
 
-    func makeCheckForUpdatesUseCase() -> CheckForUpdatesUseCase {
-        CheckForUpdatesUseCase(
-            appInfoService: appInfoService,
-            gitHubUpdateService: gitHubUpdateService
-        )
-    }
 
     func makeRefreshTokenUseCase() -> RefreshTokenUseCase {
         RefreshTokenUseCase(
