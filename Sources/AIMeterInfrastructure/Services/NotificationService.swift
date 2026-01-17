@@ -17,8 +17,7 @@ public actor NotificationService: NotificationServiceProtocol {
     }
 
     public func isPermissionGranted() async -> Bool {
-        let settings = await center.notificationSettings()
-        return settings.authorizationStatus == .authorized
+        await center.notificationSettings().authorizationStatus == .authorized
     }
 
     public func send(title: String, body: String, identifier: String) async {
