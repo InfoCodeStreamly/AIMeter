@@ -24,39 +24,39 @@ extension Logger {
 
     // MARK: - Subsystem
 
-    private nonisolated(unsafe) static let subsystem = Bundle.main.bundleIdentifier ?? "com.codestreamly.AIMeter"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.codestreamly.AIMeter"
 
     // MARK: - Categories
 
     /// Claude Code sync operations (keychain reading, credential parsing)
-    nonisolated(unsafe) static let sync = Logger(subsystem: subsystem, category: "sync")
+    static let sync = Logger(subsystem: subsystem, category: "sync")
 
     /// API calls to Claude
-    nonisolated(unsafe) static let api = Logger(subsystem: subsystem, category: "api")
+    static let api = Logger(subsystem: subsystem, category: "api")
 
     /// Keychain operations
-    nonisolated(unsafe) static let keychain = Logger(subsystem: subsystem, category: "keychain")
+    static let keychain = Logger(subsystem: subsystem, category: "keychain")
 
     /// UI/ViewModel events
-    nonisolated(unsafe) static let ui = Logger(subsystem: subsystem, category: "ui")
+    static let ui = Logger(subsystem: subsystem, category: "ui")
 
     /// General app lifecycle
-    nonisolated(unsafe) static let app = Logger(subsystem: subsystem, category: "app")
+    static let app = Logger(subsystem: subsystem, category: "app")
 
     /// Launch at login operations
-    nonisolated(unsafe) static let launchAtLogin = Logger(subsystem: subsystem, category: "launchAtLogin")
+    static let launchAtLogin = Logger(subsystem: subsystem, category: "launchAtLogin")
 
     /// Notifications operations
-    nonisolated(unsafe) static let notifications = Logger(subsystem: subsystem, category: "notifications")
+    static let notifications = Logger(subsystem: subsystem, category: "notifications")
 
     /// Update check operations
-    nonisolated(unsafe) static let updates = Logger(subsystem: subsystem, category: "updates")
+    static let updates = Logger(subsystem: subsystem, category: "updates")
 
     /// OAuth token operations
-    nonisolated(unsafe) static let oauth = Logger(subsystem: subsystem, category: "oauth")
+    static let oauth = Logger(subsystem: subsystem, category: "oauth")
 
     /// Settings screen operations
-    nonisolated(unsafe) static let settings = Logger(subsystem: subsystem, category: "settings")
+    static let settings = Logger(subsystem: subsystem, category: "settings")
 }
 
 // MARK: - Convenience for Data Debugging
@@ -123,26 +123,6 @@ struct LogOperation {
         let duration = ContinuousClock.now - startTime
         let ms = duration.components.seconds * 1000 + duration.components.attoseconds / 1_000_000_000_000_000
         logger.error("✗ \(self.name) failed in \(ms)ms: \(error.localizedDescription)")
-    }
-}
-
-// MARK: - Token State Logging
-
-extension Logger {
-    /// Logs OAuth token state
-    func tokenState(_ credentials: OAuthCredentials) {
-        #if DEBUG
-        let remaining = Int(credentials.timeUntilExpiry)
-        let status: String
-        if credentials.isExpired {
-            status = "EXPIRED"
-        } else if credentials.shouldRefresh {
-            status = "EXPIRING SOON (\(remaining)s remaining)"
-        } else {
-            status = "VALID (\(remaining)s remaining)"
-        }
-        self.info("Token status: \(status)")
-        #endif
     }
 }
 

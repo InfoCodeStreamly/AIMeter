@@ -1,4 +1,6 @@
 import Foundation
+import AIMeterDomain
+import AIMeterInfrastructure
 
 /// Application-wide error type
 enum AppError: LocalizedError, Sendable {
