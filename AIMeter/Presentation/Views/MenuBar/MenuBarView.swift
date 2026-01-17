@@ -1,0 +1,189 @@
+import SwiftUI
+
+/// Main menu bar popover view
+struct MenuBarView: View {
+    @Bindable var viewModel: UsageViewModel
+    @State private var showingSettings = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HeaderView(
+                lastUpdated: viewModel.lastUpdatedText,
+                onRefresh: { viewModel.refresh() },
+                onSettings: { showingSettings = true }
+            )
+
+            Divider()
+                .padding(.horizontal, 12)
+
+            // Content
+            Group {
+                switch viewModel.state {
+                case .loading:
+                    loadingView
+
+                case .loaded:
+                    usageListView
+
+                case .error(let message):
+                    errorView(message: message)
+
+                case .needsSetup:
+                    setupView
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            Divider()
+                .padding(.horizontal, 12)
+
+            // Footer
+            FooterView(onQuit: { NSApplication.shared.terminate(nil) })
+        }
+        .frame(width: 280)
+        .background(.ultraThinMaterial)
+        .onAppear { viewModel.onAppear() }
+        .onDisappear { viewModel.onDisappear() }
+        .sheet(isPresented: $showingSettings) {
+            SettingsSheetView(
+                onDismiss: {
+                    showingSettings = false
+                    viewModel.refresh()
+                }
+            )
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var loadingView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .scaleEffect(0.8)
+            Text("Loading...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(height: 120)
+    }
+
+    private var usageListView: some View {
+        VStack(spacing: 8) {
+            // Primary usage (session)
+            if let primary = viewModel.primaryUsage {
+                UsageCardView(data: primary, isPrimary: true)
+            }
+
+            // Secondary usages (weekly)
+            ForEach(viewModel.secondaryUsages) { usage in
+                UsageCardView(data: usage, isPrimary: false)
+            }
+        }
+        .padding(12)
+    }
+
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.title2)
+                .foregroundStyle(.orange)
+
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Retry") {
+                viewModel.refresh()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding()
+        .frame(height: 120)
+    }
+
+    private var setupView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "key")
+                .font(.title2)
+                .foregroundStyle(.blue)
+
+            Text("Session key required")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button("Open Settings") {
+                showingSettings = true
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        .padding()
+        .frame(height: 120)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    MenuBarView(
+        viewModel: UsageViewModel(
+            fetchUsageUseCase: FetchUsageUseCase(
+                usageRepository: PreviewUsageRepository(),
+                sessionKeyRepository: PreviewSessionKeyRepository()
+            ),
+            getSessionKeyUseCase: GetSessionKeyUseCase(
+                sessionKeyRepository: PreviewSessionKeyRepository()
+            ),
+            checkNotificationUseCase: CheckNotificationUseCase(
+                notificationService: NotificationService(),
+                preferencesService: NotificationPreferencesService()
+            )
+        )
+    )
+}
+
+// MARK: - Settings Sheet Wrapper
+
+/// Wrapper to properly own the SettingsViewModel
+struct SettingsSheetView: View {
+    @State private var settingsVM = DependencyContainer.shared.makeSettingsViewModel()
+    var onDismiss: () -> Void
+
+    var body: some View {
+        SettingsView(
+            viewModel: settingsVM,
+            launchAtLogin: DependencyContainer.shared.launchAtLoginService,
+            notificationPreferences: DependencyContainer.shared.notificationPreferencesService,
+            appInfo: DependencyContainer.shared.appInfoService,
+            checkForUpdatesUseCase: DependencyContainer.shared.makeCheckForUpdatesUseCase()
+        )
+        .onAppear {
+            settingsVM.onSaveSuccess = onDismiss
+        }
+    }
+}
+
+// MARK: - Preview Helpers
+
+private actor PreviewUsageRepository: UsageRepository {
+    func fetchUsage() async throws -> [UsageEntity] {
+        UsageEntity.allDefaults()
+    }
+
+    func getCachedUsage() async -> [UsageEntity] {
+        UsageEntity.allDefaults()
+    }
+
+    func cacheUsage(_ entities: [UsageEntity]) async {}
+}
+
+private actor PreviewSessionKeyRepository: SessionKeyRepository {
+    func save(_ key: SessionKey) async throws {}
+    func get() async -> SessionKey? { try? SessionKey.create("preview-session-key-12345") }
+    func delete() async {}
+    func exists() async -> Bool { true }
+    func validateToken(_ token: String) async throws {}
+}
