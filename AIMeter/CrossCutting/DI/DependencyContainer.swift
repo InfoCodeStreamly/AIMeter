@@ -1,4 +1,8 @@
 import Foundation
+import AIMeterDomain
+import AIMeterApplication
+import AIMeterInfrastructure
+import AIMeterPresentation
 
 /// Dependency injection container
 @MainActor

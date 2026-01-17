@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		891043482F1BDAAA00E2B0D9 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 891043472F1BDAAA00E2B0D9 /* Sparkle */; };
+		89SPM0012F1CAAAA00E2B0D9 /* AIMeterDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 89SPM0022F1CAAAA00E2B0D9 /* AIMeterDomain */; };
+		89SPM0032F1CAAAA00E2B0D9 /* AIMeterApplication in Frameworks */ = {isa = PBXBuildFile; productRef = 89SPM0042F1CAAAA00E2B0D9 /* AIMeterApplication */; };
+		89SPM0052F1CAAAA00E2B0D9 /* AIMeterInfrastructure in Frameworks */ = {isa = PBXBuildFile; productRef = 89SPM0062F1CAAAA00E2B0D9 /* AIMeterInfrastructure */; };
+		89SPM0072F1CAAAA00E2B0D9 /* AIMeterPresentation in Frameworks */ = {isa = PBXBuildFile; productRef = 89SPM0082F1CAAAA00E2B0D9 /* AIMeterPresentation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +68,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				891043482F1BDAAA00E2B0D9 /* Sparkle in Frameworks */,
+				89SPM0012F1CAAAA00E2B0D9 /* AIMeterDomain in Frameworks */,
+				89SPM0032F1CAAAA00E2B0D9 /* AIMeterApplication in Frameworks */,
+				89SPM0052F1CAAAA00E2B0D9 /* AIMeterInfrastructure in Frameworks */,
+				89SPM0072F1CAAAA00E2B0D9 /* AIMeterPresentation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -164,11 +172,16 @@
 				en,
 				Base,
 				uk,
+				pl,
+				de,
+				es,
+				fr,
 			);
 			mainGroup = 89E20C6F2F1ACAD5000A6C9A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				89SPM0092F1CAAAA00E2B0D9 /* XCLocalSwiftPackageReference "." */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 89E20C792F1ACAD5000A6C9A /* Products */;
@@ -547,6 +560,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		89SPM0092F1CAAAA00E2B0D9 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -563,6 +583,22 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		89SPM0022F1CAAAA00E2B0D9 /* AIMeterDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AIMeterDomain;
+		};
+		89SPM0042F1CAAAA00E2B0D9 /* AIMeterApplication */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AIMeterApplication;
+		};
+		89SPM0062F1CAAAA00E2B0D9 /* AIMeterInfrastructure */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AIMeterInfrastructure;
+		};
+		89SPM0082F1CAAAA00E2B0D9 /* AIMeterPresentation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AIMeterPresentation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

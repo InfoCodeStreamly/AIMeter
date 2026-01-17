@@ -1,5 +1,9 @@
 import SwiftUI
 import Sparkle
+import AIMeterDomain
+import AIMeterApplication
+import AIMeterInfrastructure
+import AIMeterPresentation
 
 @main
 struct AIMeterApp: App {
