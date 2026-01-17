@@ -1,5 +1,6 @@
 import SwiftUI
 import Sparkle
+import AppKit
 
 /// Settings window content wrapper
 struct SettingsWindowView: View {
@@ -14,5 +15,23 @@ struct SettingsWindowView: View {
             notificationPreferences: DependencyContainer.shared.notificationPreferencesService,
             appInfo: DependencyContainer.shared.appInfoService
         )
+        .background(WindowAccessor())
     }
+}
+
+// MARK: - Window Level Helper
+
+/// Makes the window float above other windows
+private struct WindowAccessor: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            if let window = view.window {
+                window.level = .floating
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

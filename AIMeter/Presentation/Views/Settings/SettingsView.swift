@@ -94,6 +94,7 @@ struct SettingsView: View {
             .foregroundStyle(selectedTab == tab ? .blue : .secondary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, UIConstants.Spacing.sm)
+            .contentShape(Rectangle())
             .background(
                 selectedTab == tab
                     ? RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)

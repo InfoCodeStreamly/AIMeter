@@ -96,6 +96,11 @@ final class SettingsViewModel {
             try? await Task.sleep(for: .seconds(1.5))
             onSaveSuccess?()
 
+            // Transition to hasKey state so disconnect button appears
+            if let key = await getSessionKeyUseCase.execute() {
+                state = .hasKey(masked: key.masked)
+            }
+
         } catch let error as ClaudeCodeSyncError {
             state = .error(message: error.localizedDescription)
         } catch let error as DomainError {
