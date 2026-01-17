@@ -18,18 +18,18 @@ struct HoverButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: UIConstants.Spacing.xs) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption)
 
                 if let title = title {
                     Text(title)
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.caption)
                 }
             }
             .foregroundStyle(isDestructive ? .red : .primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, UIConstants.Spacing.sm)
+            .padding(.vertical, UIConstants.Spacing.xs)
             .background(
                 RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
                     .fill(

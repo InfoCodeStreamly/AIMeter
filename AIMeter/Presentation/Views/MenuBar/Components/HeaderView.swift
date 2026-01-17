@@ -11,20 +11,20 @@ struct HeaderView: View {
     @State private var isSettingsHovered = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: UIConstants.Spacing.md) {
             // App info
-            HStack(spacing: 8) {
+            HStack(spacing: UIConstants.Spacing.sm) {
                 Image(systemName: "chart.bar.fill")
-                    .font(.system(size: 20))
+                    .font(.title3)
                     .foregroundStyle(.blue)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("AIMeter")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.headline)
                         .foregroundStyle(.primary)
 
                     Text("Updated \(lastUpdated)")
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -32,7 +32,7 @@ struct HeaderView: View {
             Spacer()
 
             // Action buttons
-            HStack(spacing: 4) {
+            HStack(spacing: UIConstants.Spacing.xs) {
                 // Refresh button
                 Button(action: onRefresh) {
                     ZStack {
@@ -42,14 +42,14 @@ struct HeaderView: View {
                                 .scaleEffect(0.7)
                         } else {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(.caption)
                         }
                     }
                     .foregroundStyle(.secondary)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 28, height: 28)
                     .background(
                         RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                            .fill(isRefreshHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.1))
+                            .fill(isRefreshHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
                     )
                 }
                 .buttonStyle(.plain)
@@ -64,12 +64,12 @@ struct HeaderView: View {
                 // Settings button
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .frame(width: 24, height: 24)
+                        .frame(width: 28, height: 28)
                         .background(
                             RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                                .fill(isSettingsHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.1))
+                                .fill(isSettingsHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
                         )
                 }
                 .buttonStyle(.plain)
@@ -81,7 +81,7 @@ struct HeaderView: View {
                 .help("Settings")
             }
         }
-        .padding(.horizontal, UIConstants.Spacing.md)
+        .padding(.horizontal, UIConstants.SettingsCard.padding)
         .padding(.vertical, UIConstants.Spacing.md)
     }
 }

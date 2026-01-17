@@ -8,11 +8,14 @@ struct AIMeterApp: App {
     /// Sparkle updater controller (ініціалізується один раз)
     private let updaterController: SPUStandardUpdaterController
 
+    /// Delegate for gentle update reminders (menu bar apps)
+    private let gentleUpdateDelegate = GentleUpdateDelegate()
+
     init() {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
-            userDriverDelegate: nil
+            userDriverDelegate: gentleUpdateDelegate
         )
     }
 

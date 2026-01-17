@@ -6,29 +6,29 @@ struct UsageCardView: View {
     let isPrimary: Bool
 
     var body: some View {
-        VStack(spacing: isPrimary ? 12 : 8) {
+        VStack(spacing: UIConstants.Spacing.md) {
             // Header row
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(data.title)
-                        .font(.system(size: isPrimary ? 13 : 11, weight: .semibold))
+                        .font(isPrimary ? .headline : .subheadline)
                         .foregroundStyle(.primary)
 
                     Text(data.subtitle)
-                        .font(.system(size: isPrimary ? 10 : 9, weight: .medium))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
                 // Status + Percentage
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(systemName: data.icon)
-                        .font(.system(size: isPrimary ? 12 : 10, weight: .medium))
+                        .font(.caption)
                         .foregroundStyle(data.color)
 
                     Text(data.percentageText)
-                        .font(.system(size: isPrimary ? 16 : 14, weight: .bold, design: .monospaced))
+                        .font(.system(isPrimary ? .title3 : .body, design: .monospaced, weight: .bold))
                         .foregroundStyle(data.color)
                 }
             }
@@ -59,15 +59,21 @@ struct UsageCardView: View {
             HStack {
                 Spacer()
                 Text("Resets \(data.resetTimeText)")
-                    .font(.system(size: isPrimary ? 9 : 8, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
             }
         }
-        .padding(isPrimary ? 16 : 12)
+        .padding(UIConstants.SettingsCard.padding)
         .background(
             RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
+                .strokeBorder(
+                    Color.gray.opacity(UIConstants.SettingsCard.borderOpacity),
+                    lineWidth: UIConstants.SettingsCard.borderWidth
+                )
         )
     }
 }
