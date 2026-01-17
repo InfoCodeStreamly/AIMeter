@@ -27,12 +27,24 @@ final class UsageViewModel {
         self.refreshTokenUseCase = refreshTokenUseCase
     }
 
-    /// Initial load
+    /// Start background refresh (called once at app launch)
+    func startBackgroundRefresh() async {
+        // Only start once
+        guard refreshTask == nil else { return }
+
+        await checkSetupAndLoad()
+        startAutoRefresh()
+    }
+
+    /// Initial load (when popup appears)
     func onAppear() {
         Task {
             await checkSetupAndLoad()
         }
-        startAutoRefresh()
+        // Auto refresh is already running from startBackgroundRefresh
+        if refreshTask == nil {
+            startAutoRefresh()
+        }
     }
 
     /// Manual refresh
@@ -44,7 +56,7 @@ final class UsageViewModel {
 
     /// Cleanup on disappear
     func onDisappear() {
-        stopAutoRefresh()
+        // Don't stop auto refresh - keep updating in background
     }
 
     // MARK: - Private

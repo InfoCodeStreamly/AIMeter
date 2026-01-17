@@ -3,16 +3,28 @@ import AppKit
 import Sparkle
 
 /// Settings tab identifiers
-enum SettingsTab: String, CaseIterable {
-    case general = "General"
-    case connection = "Connection"
-    case updates = "Update"
-    case about = "About"
+enum SettingsTab: CaseIterable {
+    case general
+    case connection
+    case language
+    case updates
+    case about
+
+    var title: String {
+        switch self {
+        case .general: return String(localized: "General")
+        case .connection: return String(localized: "Connection")
+        case .language: return String(localized: "Language")
+        case .updates: return String(localized: "Update")
+        case .about: return String(localized: "About")
+        }
+    }
 
     var icon: String {
         switch self {
         case .general: return "gearshape"
         case .connection: return "link"
+        case .language: return "globe"
         case .updates: return "arrow.triangle.2.circlepath"
         case .about: return "info.circle"
         }
@@ -88,7 +100,7 @@ struct SettingsView: View {
                     .font(.system(size: 20))
                     .frame(height: 24)
 
-                Text(tab.rawValue)
+                Text(tab.title)
                     .font(.caption)
             }
             .foregroundStyle(selectedTab == tab ? .blue : .secondary)
@@ -118,6 +130,9 @@ struct SettingsView: View {
 
         case .connection:
             ConnectionSettingsTab(viewModel: viewModel)
+
+        case .language:
+            LanguageSettingsTab()
 
         case .updates:
             UpdatesSettingsTab(

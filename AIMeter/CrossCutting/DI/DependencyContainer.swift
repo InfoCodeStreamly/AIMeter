@@ -37,6 +37,10 @@ final class DependencyContainer {
         AppInfoService()
     }()
 
+    lazy var languageService: LanguageService = {
+        LanguageService()
+    }()
+
 
     private lazy var tokenRefreshService: TokenRefreshService = {
         TokenRefreshService()
