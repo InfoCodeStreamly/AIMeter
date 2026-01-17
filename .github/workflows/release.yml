@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for version script
 
       - name: Select Xcode
         run: |
@@ -79,10 +81,7 @@ jobs:
 
       - name: Build Release
         run: |
-          # Extract version from git tag (v1.3.4 -> 1.3.4)
-          VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"
-          echo "Building version: $VERSION"
+          echo "Building release (version from git tag via build script)..."
 
           xcodebuild build \
             -project AIMeter.xcodeproj \
@@ -91,9 +90,7 @@ jobs:
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            MARKETING_VERSION="$VERSION" \
-            CURRENT_PROJECT_VERSION="$VERSION"
+            CODE_SIGNING_ALLOWED=NO
 
           echo "Build completed successfully"
 
@@ -282,11 +279,14 @@ jobs:
           # Sign with EdDSA private key
           echo "Signing DMG with Sparkle EdDSA..."
           echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key.txt
-          SIGNATURE=$(/tmp/sparkle/bin/sign_update "$DMG_PATH" -f /tmp/sparkle_key.txt)
+          FULL_OUTPUT=$(/tmp/sparkle/bin/sign_update "$DMG_PATH" -f /tmp/sparkle_key.txt)
           rm /tmp/sparkle_key.txt
 
+          # Extract just the signature value (sign_update outputs: sparkle:edSignature="XXX" length="YYY")
+          SIGNATURE=$(echo "$FULL_OUTPUT" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')
+
           echo "SPARKLE_SIGNATURE=$SIGNATURE" >> $GITHUB_ENV
-          echo "Sparkle EdDSA signature generated successfully"
+          echo "Sparkle EdDSA signature: $SIGNATURE"
 
       - name: Generate appcast.xml
         run: |
