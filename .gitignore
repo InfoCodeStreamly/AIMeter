@@ -1,0 +1,29 @@
+# Claude Code configuration (personal settings)
+.claude/
+CLAUDE.md
+
+# Private docs
+Docs/
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+
+# Release artifacts
+release/
+*.dmg
+*.zip
+*.sha256
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
