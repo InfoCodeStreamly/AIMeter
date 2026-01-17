@@ -140,7 +140,8 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: username,
             kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
+            kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
         ]
 
         var result: AnyObject?
