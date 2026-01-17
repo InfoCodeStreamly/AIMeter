@@ -25,7 +25,7 @@ struct OAuthCredentials: Codable, Sendable, Equatable {
     }
 
     /// Create SessionKey from access token
-    func toSessionKey() throws -> SessionKey {
+    nonisolated func toSessionKey() throws -> SessionKey {
         try SessionKey.create(accessToken)
     }
 

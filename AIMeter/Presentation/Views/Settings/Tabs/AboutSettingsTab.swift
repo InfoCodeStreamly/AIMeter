@@ -6,71 +6,81 @@ struct AboutSettingsTab: View {
     var appInfo: AppInfoService
 
     var body: some View {
-        VStack(spacing: UIConstants.Spacing.xl) {
+        VStack(spacing: UIConstants.Spacing.lg) {
             Spacer()
 
-            // App icon and info
-            VStack(spacing: UIConstants.Spacing.md) {
-                Image(nsImage: NSApp.applicationIconImage)
-                    .resizable()
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
+            // App info card
+            SettingsCard {
+                    VStack(spacing: UIConstants.Spacing.md) {
+                        Image(nsImage: NSApp.applicationIconImage)
+                            .resizable()
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
 
-                VStack(spacing: UIConstants.Spacing.xs) {
-                    Text(appInfo.appName)
-                        .font(.title2.weight(.semibold))
+                        VStack(spacing: UIConstants.Spacing.xs) {
+                            Text(appInfo.appName)
+                                .font(.title2.weight(.semibold))
 
-                    Text("Version \(appInfo.fullVersion)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+                            Text("Version \(appInfo.fullVersion)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
 
-                Text("Made by \(appInfo.author)")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-
-            Spacer()
-
-            // Links
-            VStack(spacing: UIConstants.Spacing.sm) {
-                Button {
-                    openGitHub()
-                } label: {
-                    HStack {
-                        Image(systemName: "chevron.left.forwardslash.chevron.right")
-                        Text("View Source on GitHub")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
+                        Text("Made by \(appInfo.author)")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, UIConstants.Spacing.md)
                 }
-                .buttonStyle(.bordered)
 
-                Button {
-                    openIssues()
-                } label: {
-                    HStack {
-                        Image(systemName: "ladybug")
-                        Text("Report a Bug")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                // Links card
+                SettingsCard(title: "Links") {
+                    VStack(spacing: UIConstants.Spacing.sm) {
+                        linkButton(
+                            icon: "chevron.left.forwardslash.chevron.right",
+                            title: "View Source on GitHub",
+                            action: openGitHub
+                        )
+
+                        linkButton(
+                            icon: "ladybug",
+                            title: "Report a Bug",
+                            action: openIssues
+                        )
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.bordered)
-            }
-            .controlSize(.regular)
 
             Spacer()
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(UIConstants.Spacing.xl)
     }
+
+    // MARK: - Helper Views
+
+    private func linkButton(icon: String, title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: UIConstants.Spacing.sm) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                    .frame(width: 20)
+
+                Text(title)
+                    .font(.body)
+
+                Spacer()
+
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, UIConstants.Spacing.xs)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+    }
+
+    // MARK: - Actions
 
     private func openGitHub() {
         if let url = URL(string: APIConstants.GitHub.repoURL) {

@@ -4,7 +4,7 @@ import SwiftUI
 enum UIConstants {
     /// Menu bar popover dimensions
     enum MenuBar {
-        static let width: CGFloat = 280
+        static let width: CGFloat = 300
         static let minHeight: CGFloat = 200
         static let maxHeight: CGFloat = 400
     }
@@ -32,12 +32,18 @@ enum UIConstants {
         static let slow: Double = 0.5
     }
 
-    /// Progress circle sizes
+    /// Progress circle sizes (legacy)
     enum ProgressCircle {
         static let primarySize: CGFloat = 48
         static let secondarySize: CGFloat = 36
         static let primaryLineWidth: CGFloat = 6
         static let secondaryLineWidth: CGFloat = 4
+    }
+
+    /// Progress bar dimensions
+    enum ProgressBar {
+        static let height: CGFloat = 8
+        static let cornerRadius: CGFloat = 4
     }
 
     /// Usage thresholds (percentage)
@@ -49,7 +55,15 @@ enum UIConstants {
 
     /// Settings window dimensions
     enum Settings {
-        static let windowWidth: CGFloat = 420
-        static let windowHeight: CGFloat = 450
+        static let windowWidth: CGFloat = 450
+        static let windowHeight: CGFloat = 520
+    }
+
+    /// Settings card dimensions
+    enum SettingsCard {
+        static let padding: CGFloat = 16
+        static let spacing: CGFloat = 16
+        static let borderWidth: CGFloat = 0.5
+        static let borderOpacity: Double = 0.2
     }
 }

@@ -1,93 +1,113 @@
 import SwiftUI
 
-/// Card view for individual usage metric
+/// Card view for individual usage metric with gradient progress bar
 struct UsageCardView: View {
     let data: UsageDisplayData
     let isPrimary: Bool
 
     var body: some View {
-        HStack(spacing: UIConstants.Spacing.md) {
-            // Progress circle
-            ZStack {
-                Circle()
-                    .stroke(
-                        Color.gray.opacity(0.2),
-                        lineWidth: isPrimary ? UIConstants.ProgressCircle.primaryLineWidth : UIConstants.ProgressCircle.secondaryLineWidth
-                    )
+        VStack(spacing: isPrimary ? 12 : 8) {
+            // Header row
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(data.title)
+                        .font(.system(size: isPrimary ? 13 : 11, weight: .semibold))
+                        .foregroundStyle(.primary)
 
-                Circle()
-                    .trim(from: 0, to: CGFloat(data.percentage) / 100)
-                    .stroke(
-                        data.color,
-                        style: StrokeStyle(
-                            lineWidth: isPrimary ? UIConstants.ProgressCircle.primaryLineWidth : UIConstants.ProgressCircle.secondaryLineWidth,
-                            lineCap: .round
+                    Text(data.subtitle)
+                        .font(.system(size: isPrimary ? 10 : 9, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Status + Percentage
+                HStack(spacing: 4) {
+                    Image(systemName: data.icon)
+                        .font(.system(size: isPrimary ? 12 : 10, weight: .medium))
+                        .foregroundStyle(data.color)
+
+                    Text(data.percentageText)
+                        .font(.system(size: isPrimary ? 16 : 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(data.color)
+                }
+            }
+
+            // Gradient progress bar
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    // Background
+                    RoundedRectangle(cornerRadius: UIConstants.ProgressBar.cornerRadius)
+                        .fill(Color.secondary.opacity(0.15))
+
+                    // Fill with gradient
+                    RoundedRectangle(cornerRadius: UIConstants.ProgressBar.cornerRadius)
+                        .fill(
+                            LinearGradient(
+                                colors: [data.color, data.color.opacity(0.7)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: UIConstants.Animation.slow), value: data.percentage)
-
-                Text(data.percentageText)
-                    .font(isPrimary ? .system(size: 14, weight: .bold) : .system(size: 11, weight: .semibold))
-                    .foregroundStyle(data.color)
+                        .frame(width: geometry.size.width * min(CGFloat(data.percentage) / 100, 1.0))
+                        .animation(.easeInOut(duration: UIConstants.Animation.slow), value: data.percentage)
+                }
             }
-            .frame(
-                width: isPrimary ? UIConstants.ProgressCircle.primarySize : UIConstants.ProgressCircle.secondarySize,
-                height: isPrimary ? UIConstants.ProgressCircle.primarySize : UIConstants.ProgressCircle.secondarySize
-            )
-
-            // Labels
-            VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
-                Text(data.title)
-                    .font(isPrimary ? .subheadline.weight(.semibold) : .caption.weight(.medium))
-                    .foregroundStyle(.primary)
-
-                Text(data.subtitle)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
+            .frame(height: UIConstants.ProgressBar.height)
 
             // Reset time
-            VStack(alignment: .trailing, spacing: UIConstants.Spacing.xs) {
-                Image(systemName: data.icon)
-                    .font(.system(size: 10))
-                    .foregroundStyle(data.color)
-
-                Text(data.resetTimeText)
-                    .font(.caption2)
+            HStack {
+                Spacer()
+                Text("Resets \(data.resetTimeText)")
+                    .font(.system(size: isPrimary ? 9 : 8, weight: .medium))
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, UIConstants.Spacing.md)
-        .padding(.vertical, isPrimary ? UIConstants.Spacing.md : UIConstants.Spacing.sm)
+        .padding(isPrimary ? 16 : 12)
+        .background(
+            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
+                .fill(Color(nsColor: .controlBackgroundColor).opacity(0.4))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
+        )
     }
 }
 
 #Preview {
-    VStack(spacing: UIConstants.Spacing.sm) {
+    VStack(spacing: UIConstants.Spacing.md) {
         UsageCardView(
             data: UsageDisplayData(
                 from: UsageEntity(
                     type: .session,
-                    percentage: .clamped(65),
+                    percentage: .clamped(28),
                     resetTime: .defaultSession
                 )
             ),
             isPrimary: true
         )
 
-        UsageCardView(
-            data: UsageDisplayData(
-                from: UsageEntity(
-                    type: .opus,
-                    percentage: .clamped(23),
-                    resetTime: .defaultWeekly
-                )
-            ),
-            isPrimary: false
-        )
+        HStack(spacing: UIConstants.Spacing.md) {
+            UsageCardView(
+                data: UsageDisplayData(
+                    from: UsageEntity(
+                        type: .weekly,
+                        percentage: .clamped(55),
+                        resetTime: .defaultWeekly
+                    )
+                ),
+                isPrimary: false
+            )
+
+            UsageCardView(
+                data: UsageDisplayData(
+                    from: UsageEntity(
+                        type: .sonnet,
+                        percentage: .clamped(2),
+                        resetTime: .defaultWeekly
+                    )
+                ),
+                isPrimary: false
+            )
+        }
     }
     .padding()
     .frame(width: UIConstants.MenuBar.width)

@@ -6,13 +6,25 @@ struct MenuBarView: View {
     @Bindable var viewModel: UsageViewModel
     let updater: SPUUpdater
     @Environment(\.openWindow) private var openWindow
+    @State private var isRefreshing = false
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HeaderView(
                 lastUpdated: viewModel.lastUpdatedText,
-                onRefresh: { viewModel.refresh() },
+                isRefreshing: isRefreshing,
+                onRefresh: {
+                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                        isRefreshing = true
+                    }
+                    viewModel.refresh()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                            isRefreshing = false
+                        }
+                    }
+                },
                 onSettings: { openWindow(id: "settings") }
             )
 

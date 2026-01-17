@@ -8,45 +8,50 @@ struct UpdatesSettingsTab: View {
     var appInfo: AppInfoService
 
     var body: some View {
-        VStack(spacing: UIConstants.Spacing.lg) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: UIConstants.Spacing.lg) {
+                Spacer()
+                    .frame(height: UIConstants.Spacing.xl)
 
-            // Current version info
-            VStack(spacing: UIConstants.Spacing.sm) {
-                Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                    .font(.system(size: 48))
-                    .foregroundStyle(.blue)
+                // Current version card
+                SettingsCard {
+                    VStack(spacing: UIConstants.Spacing.md) {
+                        Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(.blue)
 
-                Text("AIMeter is up to date")
-                    .font(.headline)
+                        Text("AIMeter is up to date")
+                            .font(.headline)
 
-                Text("Version \(appInfo.fullVersion)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            // Check for updates button
-            VStack(spacing: UIConstants.Spacing.md) {
-                Button {
-                    updater.checkForUpdates()
-                } label: {
-                    Text("Check for Updates…")
-                        .frame(width: 200)
+                        Text("Version \(appInfo.fullVersion)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, UIConstants.Spacing.md)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(!checkForUpdatesViewModel.canCheckForUpdates)
+
+                // Check for updates button
+                SettingsButton(
+                    checkForUpdatesViewModel.canCheckForUpdates
+                        ? "Check for Updates…"
+                        : "Checking…",
+                    icon: checkForUpdatesViewModel.canCheckForUpdates
+                        ? "arrow.clockwise"
+                        : nil,
+                    style: .primary,
+                    isLoading: !checkForUpdatesViewModel.canCheckForUpdates
+                ) {
+                    updater.checkForUpdates()
+                }
 
                 Text("Updates are checked automatically")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
-            }
 
-            Spacer()
+                Spacer()
+            }
+            .padding(UIConstants.Spacing.xl)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(UIConstants.Spacing.xl)
     }
 }
