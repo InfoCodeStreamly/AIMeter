@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		891043482F1BDAAA00E2B0D9 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 891043472F1BDAAA00E2B0D9 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		89103E8F2F1BA8E900E2B0D9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -46,6 +50,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				891043482F1BDAAA00E2B0D9 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,6 +118,7 @@
 			);
 			name = AIMeter;
 			packageProductDependencies = (
+				891043472F1BDAAA00E2B0D9 /* Sparkle */,
 			);
 			productName = AIMeter;
 			productReference = 89E20C782F1ACAD5000A6C9A /* AIMeter.app */;
@@ -146,6 +152,9 @@
 			);
 			mainGroup = 89E20C6F2F1ACAD5000A6C9A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 89E20C792F1ACAD5000A6C9A /* Products */;
 			projectDirPath = "";
@@ -498,6 +507,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.8.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		891043472F1BDAAA00E2B0D9 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 891043462F1BDAAA00E2B0D9 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 89E20C702F1ACAD5000A6C9A /* Project object */;
 }

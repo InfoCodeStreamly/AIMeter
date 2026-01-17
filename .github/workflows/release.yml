@@ -205,6 +205,65 @@ jobs:
 
           echo "DMG created and notarized successfully"
 
+      - name: Sign Update with Sparkle EdDSA
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          DMG_PATH="release/AIMeter-${VERSION}.dmg"
+
+          # Download Sparkle tools
+          echo "Downloading Sparkle tools..."
+          curl -L -o /tmp/sparkle.tar.xz https://github.com/sparkle-project/Sparkle/releases/download/2.8.1/Sparkle-2.8.1.tar.xz
+          mkdir -p /tmp/sparkle
+          tar -xf /tmp/sparkle.tar.xz -C /tmp/sparkle
+
+          # Sign with EdDSA private key
+          echo "Signing DMG with Sparkle EdDSA..."
+          echo "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key.txt
+          SIGNATURE=$(/tmp/sparkle/bin/sign_update "$DMG_PATH" -f /tmp/sparkle_key.txt)
+          rm /tmp/sparkle_key.txt
+
+          echo "SPARKLE_SIGNATURE=$SIGNATURE" >> $GITHUB_ENV
+          echo "Sparkle EdDSA signature generated successfully"
+
+      - name: Generate appcast.xml
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          DMG_PATH="release/AIMeter-${VERSION}.dmg"
+          FILE_SIZE=$(stat -f%z "$DMG_PATH")
+          PUB_DATE=$(date -R)
+
+          cat > release/appcast.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+            <channel>
+              <title>AIMeter Updates</title>
+              <link>https://github.com/InfoCodeStreamly/AIMeter/releases</link>
+              <description>Most recent updates to AIMeter</description>
+              <language>en</language>
+              <item>
+                <title>Version ${VERSION}</title>
+                <pubDate>${PUB_DATE}</pubDate>
+                <sparkle:version>${VERSION}</sparkle:version>
+                <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/InfoCodeStreamly/AIMeter/releases/download/v${VERSION}/AIMeter-${VERSION}.dmg"
+                  length="${FILE_SIZE}"
+                  type="application/octet-stream"
+                  sparkle:edSignature="${SPARKLE_SIGNATURE}"
+                />
+              </item>
+            </channel>
+          </rss>
+          EOF
+
+          echo "Generated appcast.xml:"
+          cat release/appcast.xml
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -214,6 +273,7 @@ jobs:
           files: |
             release/AIMeter-*.dmg
             release/AIMeter-*.dmg.sha256
+            release/appcast.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -227,5 +287,7 @@ jobs:
           echo "  - Signed with Developer ID Application"
           echo "  - Notarized by Apple"
           echo "  - DMG with drag-to-Applications"
+          echo "  - Sparkle EdDSA signed for auto-updates"
+          echo "  - appcast.xml generated"
           echo "  - Published to GitHub Releases"
           echo ""
