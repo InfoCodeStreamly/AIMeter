@@ -15,7 +15,7 @@ struct MenuBarView: View {
             )
 
             Divider()
-                .padding(.horizontal, 12)
+                .padding(.horizontal, UIConstants.Spacing.md)
 
             // Content
             Group {
@@ -36,12 +36,12 @@ struct MenuBarView: View {
             .frame(maxWidth: .infinity)
 
             Divider()
-                .padding(.horizontal, 12)
+                .padding(.horizontal, UIConstants.Spacing.md)
 
             // Footer
             FooterView(onQuit: { NSApplication.shared.terminate(nil) })
         }
-        .frame(width: 280)
+        .frame(width: UIConstants.MenuBar.width)
         .background(.ultraThinMaterial)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
@@ -58,7 +58,7 @@ struct MenuBarView: View {
     // MARK: - Subviews
 
     private var loadingView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: UIConstants.Spacing.md) {
             ProgressView()
                 .scaleEffect(0.8)
             Text("Loading...")
@@ -69,7 +69,7 @@ struct MenuBarView: View {
     }
 
     private var usageListView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: UIConstants.Spacing.sm) {
             // Primary usage (session)
             if let primary = viewModel.primaryUsage {
                 UsageCardView(data: primary, isPrimary: true)
@@ -80,11 +80,11 @@ struct MenuBarView: View {
                 UsageCardView(data: usage, isPrimary: false)
             }
         }
-        .padding(12)
+        .padding(UIConstants.Spacing.md)
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: UIConstants.Spacing.md) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.title2)
                 .foregroundStyle(.orange)
@@ -105,7 +105,7 @@ struct MenuBarView: View {
     }
 
     private var setupView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: UIConstants.Spacing.md) {
             Image(systemName: "key")
                 .font(.title2)
                 .foregroundStyle(.blue)

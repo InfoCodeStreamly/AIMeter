@@ -6,13 +6,13 @@ struct UsageCardView: View {
     let isPrimary: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: UIConstants.Spacing.md) {
             // Progress circle
             ZStack {
                 Circle()
                     .stroke(
                         Color.gray.opacity(0.2),
-                        lineWidth: isPrimary ? 6 : 4
+                        lineWidth: isPrimary ? UIConstants.ProgressCircle.primaryLineWidth : UIConstants.ProgressCircle.secondaryLineWidth
                     )
 
                 Circle()
@@ -20,21 +20,24 @@ struct UsageCardView: View {
                     .stroke(
                         data.color,
                         style: StrokeStyle(
-                            lineWidth: isPrimary ? 6 : 4,
+                            lineWidth: isPrimary ? UIConstants.ProgressCircle.primaryLineWidth : UIConstants.ProgressCircle.secondaryLineWidth,
                             lineCap: .round
                         )
                     )
                     .rotationEffect(.degrees(-90))
-                    .animation(.easeInOut(duration: 0.5), value: data.percentage)
+                    .animation(.easeInOut(duration: UIConstants.Animation.slow), value: data.percentage)
 
                 Text(data.percentageText)
                     .font(isPrimary ? .system(size: 14, weight: .bold) : .system(size: 11, weight: .semibold))
                     .foregroundStyle(data.color)
             }
-            .frame(width: isPrimary ? 48 : 36, height: isPrimary ? 48 : 36)
+            .frame(
+                width: isPrimary ? UIConstants.ProgressCircle.primarySize : UIConstants.ProgressCircle.secondarySize,
+                height: isPrimary ? UIConstants.ProgressCircle.primarySize : UIConstants.ProgressCircle.secondarySize
+            )
 
             // Labels
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
                 Text(data.title)
                     .font(isPrimary ? .subheadline.weight(.semibold) : .caption.weight(.medium))
                     .foregroundStyle(.primary)
@@ -47,28 +50,23 @@ struct UsageCardView: View {
             Spacer()
 
             // Reset time
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: UIConstants.Spacing.xs) {
                 Image(systemName: data.icon)
                     .font(.system(size: 10))
                     .foregroundStyle(data.color)
 
-                Text(data.countdown)
+                Text(data.resetTimeText)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, isPrimary ? 12 : 8)
-        .background {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.05), radius: 2, y: 1)
-        }
+        .padding(.horizontal, UIConstants.Spacing.md)
+        .padding(.vertical, isPrimary ? UIConstants.Spacing.md : UIConstants.Spacing.sm)
     }
 }
 
 #Preview {
-    VStack(spacing: 8) {
+    VStack(spacing: UIConstants.Spacing.sm) {
         UsageCardView(
             data: UsageDisplayData(
                 from: UsageEntity(
@@ -92,5 +90,6 @@ struct UsageCardView: View {
         )
     }
     .padding()
-    .frame(width: 280)
+    .frame(width: UIConstants.MenuBar.width)
+    .background(.ultraThinMaterial)
 }

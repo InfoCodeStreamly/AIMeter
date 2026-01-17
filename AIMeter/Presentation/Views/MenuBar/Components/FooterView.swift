@@ -19,12 +19,13 @@ struct FooterView: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.horizontal, UIConstants.Spacing.md)
+        .padding(.vertical, UIConstants.Spacing.sm)
     }
 }
 
 #Preview {
     FooterView(onQuit: {})
-        .frame(width: 280)
+        .frame(width: UIConstants.MenuBar.width)
+        .background(.ultraThinMaterial)
 }

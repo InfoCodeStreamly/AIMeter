@@ -145,4 +145,26 @@ extension UsageViewModel {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+
+    // MARK: - Menu Bar Display (VS-13)
+
+    /// Weekly usage (all models)
+    var weeklyUsage: UsageDisplayData? {
+        state.data.first { $0.type == .weekly }
+    }
+
+    /// Menu bar text "70/30" format (session/weekly)
+    var menuBarText: String {
+        guard let session = primaryUsage,
+              let weekly = weeklyUsage else { return "--/--" }
+        return "\(session.percentage)/\(weekly.percentage)"
+    }
+
+    /// Menu bar status based on max(session, weekly)
+    var menuBarStatus: UsageStatus {
+        guard let session = primaryUsage,
+              let weekly = weeklyUsage else { return .safe }
+        let maxPercentage = max(session.percentage, weekly.percentage)
+        return Percentage.clamped(Double(maxPercentage)).toStatus()
+    }
 }

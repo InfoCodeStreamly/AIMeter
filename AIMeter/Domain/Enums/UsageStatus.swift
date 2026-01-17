@@ -2,11 +2,11 @@ import SwiftUI
 
 /// Usage status for color coding
 enum UsageStatus: String, Sendable, Codable, CaseIterable {
-    /// 0-50% usage
+    /// 0-49% usage
     case safe
-    /// 51-80% usage
+    /// 50-79% usage
     case moderate
-    /// 81-100% usage
+    /// 80-100% usage
     case critical
 
     /// Color for UI
