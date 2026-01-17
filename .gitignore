@@ -1,6 +1,5 @@
-# Claude Code configuration (personal settings)
-.claude/
-CLAUDE.md
+# Claude Code local settings (not rules)
+.claude/settings.local.json
 
 # Private docs
 Docs/
