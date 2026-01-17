@@ -25,6 +25,16 @@
 		89E20C782F1ACAD5000A6C9A /* AIMeter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIMeter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		891052132F1BFA7F00E2B0D9 /* Exceptions for "AIMeter" folder in "AIMeter" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 89E20C772F1ACAD5000A6C9A /* AIMeter */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		89103E8C2F1BA8E900E2B0D9 /* AIMeterTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
@@ -33,6 +43,9 @@
 		};
 		89E20C7A2F1ACAD5000A6C9A /* AIMeter */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				891052132F1BFA7F00E2B0D9 /* Exceptions for "AIMeter" folder in "AIMeter" target */,
+			);
 			path = AIMeter;
 			sourceTree = "<group>";
 		};
