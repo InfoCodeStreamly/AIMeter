@@ -1,6 +1,6 @@
 import Foundation
 import AIMeterApplication
-import UserNotifications
+@preconcurrency import UserNotifications
 
 /// Service for sending system notifications (Infrastructure implementation)
 public actor NotificationService: NotificationServiceProtocol {
@@ -17,7 +17,8 @@ public actor NotificationService: NotificationServiceProtocol {
     }
 
     public func isPermissionGranted() async -> Bool {
-        await center.notificationSettings().authorizationStatus == .authorized
+        let settings = await center.notificationSettings()
+        return settings.authorizationStatus == .authorized
     }
 
     public func send(title: String, body: String, identifier: String) async {
