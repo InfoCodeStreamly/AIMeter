@@ -5,7 +5,7 @@ import Sparkle
 struct MenuBarView: View {
     @Bindable var viewModel: UsageViewModel
     let updater: SPUUpdater
-    @State private var showingSettings = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,7 +13,7 @@ struct MenuBarView: View {
             HeaderView(
                 lastUpdated: viewModel.lastUpdatedText,
                 onRefresh: { viewModel.refresh() },
-                onSettings: { showingSettings = true }
+                onSettings: { openWindow(id: "settings") }
             )
 
             Divider()
@@ -47,15 +47,6 @@ struct MenuBarView: View {
         .background(.ultraThinMaterial)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
-        .sheet(isPresented: $showingSettings) {
-            SettingsSheetView(
-                updater: updater,
-                onDismiss: {
-                    showingSettings = false
-                    viewModel.refresh()
-                }
-            )
-        }
     }
 
     // MARK: - Subviews
@@ -118,35 +109,13 @@ struct MenuBarView: View {
                 .foregroundStyle(.secondary)
 
             Button("Open Settings") {
-                showingSettings = true
+                openWindow(id: "settings")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
         }
         .padding()
         .frame(height: 120)
-    }
-}
-
-// MARK: - Settings Sheet Wrapper
-
-/// Wrapper to properly own the SettingsViewModel
-struct SettingsSheetView: View {
-    @State private var settingsVM = DependencyContainer.shared.makeSettingsViewModel()
-    let updater: SPUUpdater
-    var onDismiss: () -> Void
-
-    var body: some View {
-        SettingsView(
-            viewModel: settingsVM,
-            updater: updater,
-            launchAtLogin: DependencyContainer.shared.launchAtLoginService,
-            notificationPreferences: DependencyContainer.shared.notificationPreferencesService,
-            appInfo: DependencyContainer.shared.appInfoService
-        )
-        .onAppear {
-            settingsVM.onSaveSuccess = onDismiss
-        }
     }
 }
 

@@ -17,6 +17,7 @@ struct AIMeterApp: App {
     }
 
     var body: some Scene {
+        // Menu Bar
         MenuBarExtra {
             MenuBarView(
                 viewModel: viewModel,
@@ -26,6 +27,14 @@ struct AIMeterApp: App {
             menuBarLabel
         }
         .menuBarExtraStyle(.window)
+
+        // Settings Window
+        Window("AIMeter Settings", id: "settings") {
+            SettingsWindowView(updater: updaterController.updater)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 
     private var menuBarLabel: some View {
