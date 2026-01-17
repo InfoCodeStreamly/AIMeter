@@ -21,12 +21,12 @@ struct AboutSettingsTab: View {
                             Text(appInfo.appName)
                                 .font(.title2.weight(.semibold))
 
-                            Text("Version \(appInfo.fullVersion)")
+                            Text("Version \(appInfo.fullVersion)", tableName: "Localizable")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
 
-                        Text("Made by \(appInfo.author)")
+                        Text("Made by \(appInfo.author)", tableName: "Localizable")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
@@ -35,17 +35,17 @@ struct AboutSettingsTab: View {
                 }
 
                 // Links card
-                SettingsCard(title: "Links") {
+                SettingsCard(title: String(localized: "Links")) {
                     VStack(spacing: UIConstants.Spacing.sm) {
                         linkButton(
                             icon: "chevron.left.forwardslash.chevron.right",
-                            title: "View Source on GitHub",
+                            title: String(localized: "View Source on GitHub"),
                             action: openGitHub
                         )
 
                         linkButton(
                             icon: "ladybug",
-                            title: "Report a Bug",
+                            title: String(localized: "Report a Bug"),
                             action: openIssues
                         )
                     }

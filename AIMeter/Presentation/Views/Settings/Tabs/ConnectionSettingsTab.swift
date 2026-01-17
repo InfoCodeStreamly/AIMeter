@@ -44,7 +44,7 @@ struct ConnectionSettingsTab: View {
                 VStack(spacing: UIConstants.Spacing.md) {
                     ProgressView()
                         .scaleEffect(1.2)
-                    Text("Checking for Claude Code...")
+                    Text("Checking for Claude Code...", tableName: "Localizable")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -64,7 +64,7 @@ struct ConnectionSettingsTab: View {
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Claude Code detected!")
+                        Text("Claude Code detected!", tableName: "Localizable")
                             .font(.headline)
 
                         if let email {
@@ -80,7 +80,7 @@ struct ConnectionSettingsTab: View {
 
             // Sync button
             SettingsButton(
-                "Sync from Claude Code",
+                String(localized: "Sync from Claude Code"),
                 icon: "arrow.triangle.2.circlepath",
                 style: .primary
             ) {
@@ -99,10 +99,10 @@ struct ConnectionSettingsTab: View {
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Claude Code not found")
+                        Text("Claude Code not found", tableName: "Localizable")
                             .font(.headline)
 
-                        Text("Please login to Claude Code first")
+                        Text("Please login to Claude Code first", tableName: "Localizable")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -112,18 +112,18 @@ struct ConnectionSettingsTab: View {
             }
 
             // Instructions
-            SettingsCard(title: "How to login") {
+            SettingsCard(title: String(localized: "How to login")) {
                 VStack(alignment: .leading, spacing: UIConstants.Spacing.sm) {
-                    instructionStep(1, "Open Terminal")
-                    instructionStep(2, "Run: claude")
-                    instructionStep(3, "Login with Google/GitHub")
-                    instructionStep(4, "Click \"Check Again\"")
+                    instructionStep(1, String(localized: "Open Terminal"))
+                    instructionStep(2, String(localized: "Run: claude"))
+                    instructionStep(3, String(localized: "Login with Google/GitHub"))
+                    instructionStep(4, String(localized: "Click \"Check Again\""))
                 }
             }
 
             // Retry button
             SettingsButton(
-                "Check Again",
+                String(localized: "Check Again"),
                 icon: "arrow.clockwise",
                 style: .primary
             ) {
@@ -142,7 +142,7 @@ struct ConnectionSettingsTab: View {
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Connected")
+                        Text("Connected", tableName: "Localizable")
                             .font(.headline)
 
                         Text(masked)
@@ -157,7 +157,7 @@ struct ConnectionSettingsTab: View {
             // Actions
             VStack(spacing: UIConstants.Spacing.sm) {
                 SettingsButton(
-                    "Re-sync",
+                    String(localized: "Re-sync"),
                     icon: "arrow.triangle.2.circlepath",
                     style: .primary
                 ) {
@@ -165,7 +165,7 @@ struct ConnectionSettingsTab: View {
                 }
 
                 SettingsButton(
-                    "Disconnect",
+                    String(localized: "Disconnect"),
                     icon: "xmark.circle",
                     style: .destructive
                 ) {
@@ -182,7 +182,7 @@ struct ConnectionSettingsTab: View {
                 VStack(spacing: UIConstants.Spacing.md) {
                     ProgressView()
                         .scaleEffect(1.2)
-                    Text("Syncing...")
+                    Text("Syncing...", tableName: "Localizable")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -216,7 +216,7 @@ struct ConnectionSettingsTab: View {
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Error")
+                        Text("Error", tableName: "Localizable")
                             .font(.headline)
 
                         Text(message)
@@ -229,7 +229,7 @@ struct ConnectionSettingsTab: View {
             }
 
             SettingsButton(
-                "Try Again",
+                String(localized: "Try Again"),
                 icon: "arrow.clockwise",
                 style: .primary
             ) {

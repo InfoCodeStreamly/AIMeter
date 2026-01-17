@@ -20,10 +20,10 @@ struct UpdatesSettingsTab: View {
                             .font(.system(size: 48))
                             .foregroundStyle(.blue)
 
-                        Text("AIMeter is up to date")
+                        Text("AIMeter is up to date", tableName: "Localizable")
                             .font(.headline)
 
-                        Text("Version \(appInfo.fullVersion)")
+                        Text("Version \(appInfo.fullVersion)", tableName: "Localizable")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -34,8 +34,8 @@ struct UpdatesSettingsTab: View {
                 // Check for updates button
                 SettingsButton(
                     checkForUpdatesViewModel.canCheckForUpdates
-                        ? "Check for Updates…"
-                        : "Checking…",
+                        ? String(localized: "Check for Updates…")
+                        : String(localized: "Checking…"),
                     icon: checkForUpdatesViewModel.canCheckForUpdates
                         ? "arrow.clockwise"
                         : nil,
@@ -45,7 +45,7 @@ struct UpdatesSettingsTab: View {
                     updater.checkForUpdates()
                 }
 
-                Text("Updates are checked automatically")
+                Text("Updates are checked automatically", tableName: "Localizable")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
 

@@ -9,10 +9,10 @@ struct GeneralSettingsTab: View {
         ScrollView {
             VStack(spacing: UIConstants.Spacing.lg) {
                 // Startup
-                SettingsCard(title: "Startup") {
+                SettingsCard(title: String(localized: "Startup")) {
                     SettingsToggle(
-                        title: "Launch at Login",
-                        description: "Start AIMeter when you log in",
+                        title: String(localized: "Launch at Login"),
+                        description: String(localized: "Start AIMeter when you log in"),
                         icon: "power",
                         isOn: Binding(
                             get: { launchAtLogin.isEnabled },
@@ -22,10 +22,10 @@ struct GeneralSettingsTab: View {
                 }
 
                 // Notifications
-                SettingsCard(title: "Notifications") {
+                SettingsCard(title: String(localized: "Notifications")) {
                     SettingsToggle(
-                        title: "Usage Alerts",
-                        description: "Notify at 80% and 95% usage",
+                        title: String(localized: "Usage Alerts"),
+                        description: String(localized: "Notify at 80% and 95% usage"),
                         icon: "bell.badge",
                         isOn: Binding(
                             get: { notificationPreferences.isEnabled },

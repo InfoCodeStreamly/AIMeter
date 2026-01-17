@@ -23,7 +23,7 @@ struct HeaderView: View {
                         .font(.headline)
                         .foregroundStyle(.primary)
 
-                    Text("Updated \(lastUpdated)")
+                    Text("Updated \(lastUpdated)", tableName: "Localizable")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -59,7 +59,7 @@ struct HeaderView: View {
                         isRefreshHovered = hovering
                     }
                 }
-                .help("Refresh")
+                .help(String(localized: "Refresh"))
 
                 // Settings button
                 Button(action: onSettings) {
@@ -78,7 +78,7 @@ struct HeaderView: View {
                         isSettingsHovered = hovering
                     }
                 }
-                .help("Settings")
+                .help(String(localized: "Settings"))
             }
         }
         .padding(.horizontal, UIConstants.SettingsCard.padding)

@@ -58,7 +58,7 @@ struct UsageCardView: View {
             // Reset time
             HStack {
                 Spacer()
-                Text("Resets \(data.resetTimeText)")
+                Text("Resets \(data.resetTimeText)", tableName: "Localizable")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }

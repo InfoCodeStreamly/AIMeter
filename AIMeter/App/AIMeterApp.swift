@@ -5,6 +5,9 @@ import Sparkle
 struct AIMeterApp: App {
     @State private var viewModel = DependencyContainer.shared.makeUsageViewModel()
 
+    /// Language service for localization (SSOT)
+    private let languageService = DependencyContainer.shared.languageService
+
     /// Sparkle updater controller (ініціалізується один раз)
     private let updaterController: SPUStandardUpdaterController
 
@@ -26,6 +29,8 @@ struct AIMeterApp: App {
                 viewModel: viewModel,
                 updater: updaterController.updater
             )
+            .environment(languageService)
+            .environment(\.locale, languageService.currentLocale)
         } label: {
             menuBarLabel
         }
@@ -34,6 +39,8 @@ struct AIMeterApp: App {
         // Settings Window
         Window("AIMeter Settings", id: "settings") {
             SettingsWindowView(updater: updaterController.updater)
+                .environment(languageService)
+                .environment(\.locale, languageService.currentLocale)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -44,5 +51,8 @@ struct AIMeterApp: App {
         Text(viewModel.menuBarText)
             .font(.system(size: 11, weight: .medium, design: .rounded))
             .monospacedDigit()
+            .task {
+                await viewModel.startBackgroundRefresh()
+            }
     }
 }

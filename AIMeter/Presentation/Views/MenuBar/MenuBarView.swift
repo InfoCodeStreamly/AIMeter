@@ -67,7 +67,7 @@ struct MenuBarView: View {
         VStack(spacing: UIConstants.Spacing.md) {
             ProgressView()
                 .scaleEffect(0.8)
-            Text("Loading...")
+            Text("Loading...", tableName: "Localizable")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -100,7 +100,7 @@ struct MenuBarView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button("Retry") {
+            Button(String(localized: "Retry")) {
                 viewModel.refresh()
             }
             .buttonStyle(.bordered)
@@ -116,11 +116,11 @@ struct MenuBarView: View {
                 .font(.title2)
                 .foregroundStyle(.blue)
 
-            Text("Session key required")
+            Text("Session key required", tableName: "Localizable")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Button("Open Settings") {
+            Button(String(localized: "Open Settings")) {
                 openWindow(id: "settings")
             }
             .buttonStyle(.bordered)

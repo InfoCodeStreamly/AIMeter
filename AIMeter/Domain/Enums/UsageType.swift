@@ -14,8 +14,8 @@ enum UsageType: String, Sendable, Codable, CaseIterable {
     /// Display name for UI
     var displayName: String {
         switch self {
-        case .session: return "Session"
-        case .weekly: return "Weekly"
+        case .session: return String(localized: "Session")
+        case .weekly: return String(localized: "Weekly")
         case .opus: return "Opus"
         case .sonnet: return "Sonnet"
         }
@@ -24,10 +24,10 @@ enum UsageType: String, Sendable, Codable, CaseIterable {
     /// Subtitle for UI
     var subtitle: String {
         switch self {
-        case .session: return "5-hour window"
-        case .weekly: return "All models"
-        case .opus: return "Weekly"
-        case .sonnet: return "Weekly"
+        case .session: return String(localized: "5-hour window")
+        case .weekly: return String(localized: "All models")
+        case .opus: return String(localized: "Weekly")
+        case .sonnet: return String(localized: "Weekly")
         }
     }
 

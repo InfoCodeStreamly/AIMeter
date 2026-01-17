@@ -11,7 +11,7 @@ struct FooterView: View {
         HStack(spacing: UIConstants.Spacing.sm) {
             // App name with link
             HStack(spacing: 4) {
-                Text("AIMeter by")
+                Text("AIMeter by", tableName: "Localizable")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
 
@@ -34,7 +34,7 @@ struct FooterView: View {
             // Quit button
             HoverButton(
                 icon: "power",
-                title: "Quit",
+                title: String(localized: "Quit"),
                 isDestructive: true,
                 action: onQuit
             )
