@@ -50,6 +50,6 @@ enum UIConstants {
     /// Settings window dimensions
     enum Settings {
         static let windowWidth: CGFloat = 420
-        static let windowHeight: CGFloat = 380
+        static let windowHeight: CGFloat = 450
     }
 }

@@ -77,28 +77,6 @@
 		};
 /* End PBXGroup section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		89VERS1ON2F1CAAAA00E2B0D9 /* Set Version from Git */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Set Version from Git";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# SSOT: Git tag = version source of truth\nVERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo \"0.0.0\")\nBUILD=$(git rev-list --count HEAD)\n\necho \"Setting version: $VERSION ($BUILD)\"\n\n# Update Info.plist in build directory\nINFO_PLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ -f \"$INFO_PLIST\" ]; then\n    /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $VERSION\" \"$INFO_PLIST\"\n    /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUILD\" \"$INFO_PLIST\"\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXNativeTarget section */
 		89103E8A2F1BA8E900E2B0D9 /* AIMeterTests */ = {
 			isa = PBXNativeTarget;
@@ -205,6 +183,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		89VERS1ON2F1CAAAA00E2B0D9 /* Set Version from Git */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Set Version from Git";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# SSOT: Git tag = version source of truth\nVERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo \"0.0.0\")\nBUILD=$(git rev-list --count HEAD)\n\necho \"Setting version: $VERSION ($BUILD)\"\n\n# Update Info.plist in build directory\nINFO_PLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ -f \"$INFO_PLIST\" ]; then\n    /usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $VERSION\" \"$INFO_PLIST\"\n    /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $BUILD\" \"$INFO_PLIST\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		89103E872F1BA8E900E2B0D9 /* Sources */ = {
