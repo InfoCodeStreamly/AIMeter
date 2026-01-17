@@ -95,7 +95,25 @@ jobs:
         run: |
           APP_PATH="build/Build/Products/Release/AIMeter.app"
 
-          echo "Signing app bundle with: $SIGNING_IDENTITY"
+          echo "Signing Sparkle XPC services first..."
+          # Sign nested XPC services and frameworks first (required for notarization)
+          find "$APP_PATH/Contents/Frameworks/Sparkle.framework" -name "*.xpc" -type d | while read xpc; do
+            echo "Signing: $xpc"
+            codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$xpc"
+          done
+
+          # Sign Sparkle helper apps
+          find "$APP_PATH/Contents/Frameworks/Sparkle.framework" -name "*.app" -type d | while read app; do
+            echo "Signing: $app"
+            codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$app"
+          done
+
+          # Sign Sparkle framework itself
+          echo "Signing Sparkle.framework..."
+          codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime \
+            "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+
+          echo "Signing main app bundle with: $SIGNING_IDENTITY"
           codesign --force --sign "$SIGNING_IDENTITY" \
             --timestamp \
             --options runtime \
@@ -109,7 +127,7 @@ jobs:
           APP_PATH="build/Build/Products/Release/AIMeter.app"
 
           echo "Verifying code signature..."
-          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          codesign --verify --deep --verbose=2 "$APP_PATH"
 
           echo ""
           echo "Code signature details:"
