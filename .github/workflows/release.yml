@@ -148,26 +148,44 @@ jobs:
 
           echo "Submitting app for notarization..."
           echo "This may take 5-15 minutes..."
-          xcrun notarytool submit "notarization.zip" \
+
+          # Submit and capture output
+          SUBMIT_OUTPUT=$(xcrun notarytool submit "notarization.zip" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$TEAM_ID" \
             --wait \
-            --timeout 30m
+            --timeout 30m 2>&1) || true
 
-          echo ""
-          echo "Notarization successful! Stapling ticket to app..."
-          xcrun stapler staple "$APP_PATH"
+          echo "$SUBMIT_OUTPUT"
 
-          # Verify stapling
-          echo ""
-          echo "Verifying stapled notarization ticket..."
-          xcrun stapler validate "$APP_PATH"
+          # Extract submission ID
+          SUBMISSION_ID=$(echo "$SUBMIT_OUTPUT" | grep "id:" | head -1 | awk '{print $2}')
+          echo "Submission ID: $SUBMISSION_ID"
 
-          # Clean up
-          rm -f notarization.zip
+          # Check if notarization was successful
+          if echo "$SUBMIT_OUTPUT" | grep -q "status: Accepted"; then
+            echo ""
+            echo "Notarization successful! Stapling ticket to app..."
+            xcrun stapler staple "$APP_PATH"
 
-          echo "App notarized and stapled successfully"
+            echo ""
+            echo "Verifying stapled notarization ticket..."
+            xcrun stapler validate "$APP_PATH"
+
+            rm -f notarization.zip
+            echo "App notarized and stapled successfully"
+          else
+            echo ""
+            echo "Notarization FAILED. Fetching detailed log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_ID_PASSWORD" \
+              --team-id "$TEAM_ID"
+
+            rm -f notarization.zip
+            exit 1
+          fi
 
       - name: Install create-dmg
         run: brew install create-dmg
