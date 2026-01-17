@@ -79,7 +79,11 @@ jobs:
 
       - name: Build Release
         run: |
-          echo "Building release..."
+          # Extract version from git tag (v1.3.4 -> 1.3.4)
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Building version: $VERSION"
+
           xcodebuild build \
             -project AIMeter.xcodeproj \
             -scheme AIMeter \
@@ -87,7 +91,9 @@ jobs:
             -derivedDataPath build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            MARKETING_VERSION="$VERSION" \
+            CURRENT_PROJECT_VERSION="$VERSION"
 
           echo "Build completed successfully"
 
