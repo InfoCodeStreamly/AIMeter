@@ -1,0 +1,231 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build, Sign, Notarize and Release
+    runs-on: macos-15
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          # Use latest available Xcode on the runner
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Build Environment
+        run: |
+          xcodebuild -version
+          swift --version
+          echo "macOS: $(sw_vers -productVersion)"
+          echo "Tag: ${{ github.ref_name }}"
+
+      - name: Import Code Signing Certificate
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.DEVELOPER_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(uuidgen)
+
+          echo "Creating temporary keychain..."
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "Importing code signing certificate..."
+          echo "$CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 \
+            -k "$KEYCHAIN_PATH" \
+            -P "$CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+
+          # Allow codesign to access keychain without prompt
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Set as default keychain
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+
+          # Clean up certificate file
+          rm -f certificate.p12
+
+          # Find the imported identity
+          echo "Finding imported Developer ID certificate..."
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.+)"/\1/')
+
+          if [ -z "$IDENTITY" ]; then
+            echo "Error: Developer ID Application certificate not found"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+            exit 1
+          fi
+
+          echo "Found identity: $IDENTITY"
+          echo "SIGNING_IDENTITY=$IDENTITY" >> $GITHUB_ENV
+
+          echo "Code signing certificate imported successfully"
+
+      - name: Build Release
+        run: |
+          echo "Building release..."
+          xcodebuild build \
+            -project AIMeter.xcodeproj \
+            -scheme AIMeter \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+          echo "Build completed successfully"
+
+      - name: Sign App Bundle
+        run: |
+          APP_PATH="build/Build/Products/Release/AIMeter.app"
+
+          echo "Signing app bundle with: $SIGNING_IDENTITY"
+          codesign --force --sign "$SIGNING_IDENTITY" \
+            --timestamp \
+            --options runtime \
+            --entitlements "AIMeter/AIMeterRelease.entitlements" \
+            "$APP_PATH"
+
+          echo "App bundle signed successfully"
+
+      - name: Verify Code Signature
+        run: |
+          APP_PATH="build/Build/Products/Release/AIMeter.app"
+
+          echo "Verifying code signature..."
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+          echo ""
+          echo "Code signature details:"
+          codesign -dv --verbose=2 "$APP_PATH" 2>&1
+
+          echo "Code signature verified successfully"
+
+      - name: Notarize App
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          APP_PATH="build/Build/Products/Release/AIMeter.app"
+
+          echo "Creating ZIP for notarization..."
+          ditto -c -k --keepParent "$APP_PATH" "notarization.zip"
+
+          echo "Submitting app for notarization..."
+          echo "This may take 5-15 minutes..."
+          xcrun notarytool submit "notarization.zip" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait \
+            --timeout 30m
+
+          echo ""
+          echo "Notarization successful! Stapling ticket to app..."
+          xcrun stapler staple "$APP_PATH"
+
+          # Verify stapling
+          echo ""
+          echo "Verifying stapled notarization ticket..."
+          xcrun stapler validate "$APP_PATH"
+
+          # Clean up
+          rm -f notarization.zip
+
+          echo "App notarized and stapled successfully"
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          APP_PATH="build/Build/Products/Release/AIMeter.app"
+
+          mkdir -p release
+
+          echo "Creating DMG..."
+          create-dmg \
+            --volname "AIMeter" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "AIMeter.app" 150 190 \
+            --hide-extension "AIMeter.app" \
+            --app-drop-link 450 185 \
+            --no-internet-enable \
+            "release/AIMeter-${VERSION}.dmg" \
+            "$APP_PATH" || true
+
+          # Check if DMG was created
+          if [ ! -f "release/AIMeter-${VERSION}.dmg" ]; then
+            echo "Error: DMG creation failed"
+            exit 1
+          fi
+
+          echo "DMG created, submitting for notarization..."
+          xcrun notarytool submit "release/AIMeter-${VERSION}.dmg" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait
+
+          echo "Stapling notarization ticket to DMG..."
+          xcrun stapler staple "release/AIMeter-${VERSION}.dmg"
+
+          # Generate checksum
+          echo "Generating SHA256 checksum..."
+          shasum -a 256 "release/AIMeter-${VERSION}.dmg" > "release/AIMeter-${VERSION}.dmg.sha256"
+
+          echo ""
+          echo "SHA256 Checksum:"
+          cat "release/AIMeter-${VERSION}.dmg.sha256"
+
+          echo "DMG created and notarized successfully"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: AIMeter ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
+          files: |
+            release/AIMeter-*.dmg
+            release/AIMeter-*.dmg.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo ""
+          echo "=========================================="
+          echo "  Release ${{ github.ref_name }} published!"
+          echo "=========================================="
+          echo ""
+          echo "  - Signed with Developer ID Application"
+          echo "  - Notarized by Apple"
+          echo "  - DMG with drag-to-Applications"
+          echo "  - Published to GitHub Releases"
+          echo ""

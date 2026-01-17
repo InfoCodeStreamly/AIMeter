@@ -31,6 +31,12 @@ extension Logger {
 
     /// Launch at login operations
     nonisolated(unsafe) static let launchAtLogin = Logger(subsystem: subsystem, category: "launchAtLogin")
+
+    /// Notifications operations
+    nonisolated(unsafe) static let notifications = Logger(subsystem: subsystem, category: "notifications")
+
+    /// Update check operations
+    nonisolated(unsafe) static let updates = Logger(subsystem: subsystem, category: "updates")
 }
 
 // MARK: - Convenience for Data Debugging

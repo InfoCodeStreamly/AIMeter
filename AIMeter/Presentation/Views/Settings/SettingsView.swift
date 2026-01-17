@@ -1,10 +1,18 @@
 import SwiftUI
+import AppKit
 
 /// Settings window view
 struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
     var launchAtLogin: LaunchAtLoginService
+    var notificationPreferences: NotificationPreferencesService
+    var appInfo: AppInfoService
+    var checkForUpdatesUseCase: CheckForUpdatesUseCase
     @Environment(\.dismiss) private var dismiss
+
+    // Update state
+    @State private var isCheckingUpdates = false
+    @State private var updateResult: UpdateCheckResult?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +48,9 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: UIConstants.Spacing.xl) {
                 generalSection
+                notificationsSection
                 connectionSection
+                aboutSection
             }
             .padding(UIConstants.Spacing.xl)
         }
@@ -63,6 +73,34 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Launch at Login")
                         Text("Start AIMeter when you log in")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .toggleStyle(.switch)
+            .padding(UIConstants.Spacing.md)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
+        }
+    }
+
+    // MARK: - Notifications Section
+
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: UIConstants.Spacing.md) {
+            Label("Notifications", systemImage: "bell")
+                .font(.subheadline.weight(.semibold))
+
+            Toggle(isOn: Binding(
+                get: { notificationPreferences.isEnabled },
+                set: { notificationPreferences.isEnabled = $0 }
+            )) {
+                HStack {
+                    Image(systemName: "bell.badge")
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Usage Alerts")
+                        Text("Notify at 80% and 95% usage")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -107,6 +145,131 @@ struct SettingsView: View {
             case .manualEntry:
                 manualEntryView
             }
+        }
+    }
+
+    // MARK: - About Section
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: UIConstants.Spacing.md) {
+            Label("About", systemImage: "info.circle")
+                .font(.subheadline.weight(.semibold))
+
+            VStack(spacing: UIConstants.Spacing.md) {
+                // App info
+                HStack {
+                    Image(systemName: "app.badge")
+                        .font(.title2)
+                        .foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(appInfo.appName)
+                            .font(.headline)
+                        Text(appInfo.fullVersion)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+
+                Divider()
+
+                // Author
+                HStack {
+                    Text("Made by")
+                        .foregroundStyle(.secondary)
+                    Text(appInfo.author)
+                        .fontWeight(.medium)
+                    Spacer()
+                }
+                .font(.caption)
+
+                // GitHub link
+                Button {
+                    openGitHub()
+                } label: {
+                    HStack {
+                        Image(systemName: "link")
+                        Text("View on GitHub")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
+                // Check for updates
+                Button {
+                    Task { await checkForUpdates() }
+                } label: {
+                    HStack {
+                        if isCheckingUpdates {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        } else {
+                            Image(systemName: updateButtonIcon)
+                        }
+                        Text(updateButtonText)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(isCheckingUpdates)
+            }
+            .padding(UIConstants.Spacing.md)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium))
+        }
+    }
+
+    // MARK: - Update Helpers
+
+    private var updateButtonText: String {
+        if isCheckingUpdates {
+            return "Checking..."
+        }
+        guard let result = updateResult else {
+            return "Check for Updates"
+        }
+        switch result {
+        case .upToDate:
+            return "Up to Date"
+        case .updateAvailable(let version, _):
+            return "Update Available: v\(version)"
+        case .error:
+            return "Check for Updates"
+        }
+    }
+
+    private var updateButtonIcon: String {
+        guard let result = updateResult else {
+            return "arrow.triangle.2.circlepath"
+        }
+        switch result {
+        case .upToDate:
+            return "checkmark.circle"
+        case .updateAvailable:
+            return "arrow.down.circle"
+        case .error:
+            return "arrow.triangle.2.circlepath"
+        }
+    }
+
+    private func checkForUpdates() async {
+        isCheckingUpdates = true
+        updateResult = nil
+
+        updateResult = await checkForUpdatesUseCase.execute()
+
+        isCheckingUpdates = false
+
+        // If update available, offer to open release page
+        if case .updateAvailable(_, let url) = updateResult {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    private func openGitHub() {
+        if let url = URL(string: APIConstants.GitHub.repoURL) {
+            NSWorkspace.shared.open(url)
         }
     }
 
@@ -371,7 +534,7 @@ struct SettingsView: View {
 
     private var footer: some View {
         HStack {
-            Text("AIMeter v1.0")
+            Text(appInfo.fullVersion)
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
@@ -393,7 +556,18 @@ struct SettingsView: View {
 #Preview("Checking") {
     SettingsView(
         viewModel: makePreviewViewModel(),
-        launchAtLogin: LaunchAtLoginService()
+        launchAtLogin: LaunchAtLoginService(),
+        notificationPreferences: NotificationPreferencesService(),
+        appInfo: AppInfoService(),
+        checkForUpdatesUseCase: makePreviewCheckForUpdatesUseCase()
+    )
+}
+
+@MainActor
+private func makePreviewCheckForUpdatesUseCase() -> CheckForUpdatesUseCase {
+    CheckForUpdatesUseCase(
+        appInfoService: AppInfoService(),
+        gitHubUpdateService: GitHubUpdateService()
     )
 }
 

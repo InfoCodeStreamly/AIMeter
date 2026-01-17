@@ -30,4 +30,12 @@ enum APIConstants {
         static let applicationJSON = "application/json"
         static let appUserAgent = "AIMeter/1.0"
     }
+
+    /// GitHub API for update checks
+    enum GitHub {
+        static let apiBaseURL = "https://api.github.com"
+        static let repoOwner = "InfoCodeStreamly"
+        static let repoName = "AIMeter"
+        static let repoURL = "https://github.com/\(repoOwner)/\(repoName)"
+    }
 }

@@ -8,6 +8,12 @@ DerivedData/
 *.xcuserdatad/
 xcuserdata/
 
+# Release artifacts
+release/
+*.dmg
+*.zip
+*.sha256
+
 # macOS
 .DS_Store
 *.swp

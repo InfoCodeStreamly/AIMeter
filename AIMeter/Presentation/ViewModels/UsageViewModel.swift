@@ -9,16 +9,19 @@ final class UsageViewModel {
 
     private let fetchUsageUseCase: FetchUsageUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
+    private let checkNotificationUseCase: CheckNotificationUseCase
 
     private var refreshTask: Task<Void, Never>?
     private let refreshInterval: TimeInterval = 60 // 1 minute
 
     init(
         fetchUsageUseCase: FetchUsageUseCase,
-        getSessionKeyUseCase: GetSessionKeyUseCase
+        getSessionKeyUseCase: GetSessionKeyUseCase,
+        checkNotificationUseCase: CheckNotificationUseCase
     ) {
         self.fetchUsageUseCase = fetchUsageUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
+        self.checkNotificationUseCase = checkNotificationUseCase
     }
 
     /// Initial load
@@ -62,6 +65,9 @@ final class UsageViewModel {
             let displayData = entities.map { UsageDisplayData(from: $0) }
             state = .loaded(displayData)
             lastUpdated = Date()
+
+            // Check for threshold notifications
+            await checkNotificationUseCase.execute(usages: entities)
         } catch let error as DomainError {
             if error == .sessionKeyNotFound {
                 state = .needsSetup

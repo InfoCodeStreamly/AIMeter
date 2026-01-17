@@ -57,7 +57,10 @@ struct MenuBarView: View {
         let settingsVM = DependencyContainer.shared.makeSettingsViewModel()
         SettingsView(
             viewModel: settingsVM,
-            launchAtLogin: DependencyContainer.shared.launchAtLoginService
+            launchAtLogin: DependencyContainer.shared.launchAtLoginService,
+            notificationPreferences: DependencyContainer.shared.notificationPreferencesService,
+            appInfo: DependencyContainer.shared.appInfoService,
+            checkForUpdatesUseCase: DependencyContainer.shared.makeCheckForUpdatesUseCase()
         )
         .onAppear {
             settingsVM.onSaveSuccess = {
@@ -148,6 +151,10 @@ struct MenuBarView: View {
             ),
             getSessionKeyUseCase: GetSessionKeyUseCase(
                 sessionKeyRepository: PreviewSessionKeyRepository()
+            ),
+            checkNotificationUseCase: CheckNotificationUseCase(
+                notificationService: NotificationService(),
+                preferencesService: NotificationPreferencesService()
             )
         )
     )

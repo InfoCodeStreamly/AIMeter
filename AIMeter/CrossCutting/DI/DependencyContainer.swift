@@ -25,6 +25,22 @@ final class DependencyContainer {
         LaunchAtLoginService()
     }()
 
+    private lazy var notificationService: NotificationService = {
+        NotificationService()
+    }()
+
+    lazy var notificationPreferencesService: NotificationPreferencesService = {
+        NotificationPreferencesService()
+    }()
+
+    lazy var appInfoService: AppInfoService = {
+        AppInfoService()
+    }()
+
+    private lazy var gitHubUpdateService: GitHubUpdateService = {
+        GitHubUpdateService()
+    }()
+
     // MARK: - Repositories
 
     private lazy var sessionKeyRepository: any SessionKeyRepository = {
@@ -68,12 +84,27 @@ final class DependencyContainer {
         )
     }
 
+    func makeCheckNotificationUseCase() -> CheckNotificationUseCase {
+        CheckNotificationUseCase(
+            notificationService: notificationService,
+            preferencesService: notificationPreferencesService
+        )
+    }
+
+    func makeCheckForUpdatesUseCase() -> CheckForUpdatesUseCase {
+        CheckForUpdatesUseCase(
+            appInfoService: appInfoService,
+            gitHubUpdateService: gitHubUpdateService
+        )
+    }
+
     // MARK: - ViewModels
 
     func makeUsageViewModel() -> UsageViewModel {
         UsageViewModel(
             fetchUsageUseCase: makeFetchUsageUseCase(),
-            getSessionKeyUseCase: makeGetSessionKeyUseCase()
+            getSessionKeyUseCase: makeGetSessionKeyUseCase(),
+            checkNotificationUseCase: makeCheckNotificationUseCase()
         )
     }
 
