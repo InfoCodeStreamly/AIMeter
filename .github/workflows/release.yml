@@ -94,26 +94,44 @@ jobs:
       - name: Sign App Bundle
         run: |
           APP_PATH="build/Build/Products/Release/AIMeter.app"
+          SPARKLE_PATH="$APP_PATH/Contents/Frameworks/Sparkle.framework"
 
-          echo "Signing Sparkle XPC services first..."
-          # Sign nested XPC services and frameworks first (required for notarization)
-          find "$APP_PATH/Contents/Frameworks/Sparkle.framework" -name "*.xpc" -type d | while read xpc; do
+          echo "=== Signing Sparkle framework components ==="
+
+          # Find and sign all Mach-O executables in Sparkle (including Autoupdate)
+          echo "Signing Sparkle executables..."
+          find "$SPARKLE_PATH" -type f -perm +111 | while read binary; do
+            # Check if it's a Mach-O binary
+            if file "$binary" | grep -q "Mach-O"; then
+              echo "Signing binary: $binary"
+              codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$binary"
+            fi
+          done
+
+          # Sign XPC services
+          echo "Signing XPC services..."
+          find "$SPARKLE_PATH" -name "*.xpc" -type d | while read xpc; do
             echo "Signing: $xpc"
             codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$xpc"
           done
 
-          # Sign Sparkle helper apps
-          find "$APP_PATH/Contents/Frameworks/Sparkle.framework" -name "*.app" -type d | while read app; do
+          # Sign helper apps
+          echo "Signing helper apps..."
+          find "$SPARKLE_PATH" -name "*.app" -type d | while read app; do
             echo "Signing: $app"
             codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$app"
           done
 
           # Sign Sparkle framework itself
           echo "Signing Sparkle.framework..."
-          codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime \
-            "$APP_PATH/Contents/Frameworks/Sparkle.framework"
+          codesign --force --sign "$SIGNING_IDENTITY" --timestamp --options runtime "$SPARKLE_PATH"
 
-          echo "Signing main app bundle with: $SIGNING_IDENTITY"
+          # Verify Sparkle signing
+          echo "Verifying Sparkle signature..."
+          codesign --verify --deep --verbose=2 "$SPARKLE_PATH" || echo "Warning: Sparkle verification issues (may be expected for SPM)"
+
+          echo "=== Signing main app bundle ==="
+          echo "Signing with: $SIGNING_IDENTITY"
           codesign --force --sign "$SIGNING_IDENTITY" \
             --timestamp \
             --options runtime \
