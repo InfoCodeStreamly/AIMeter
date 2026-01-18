@@ -296,30 +296,23 @@ jobs:
           FILE_SIZE=$(stat -f%z "$DMG_PATH")
           PUB_DATE=$(date -R)
 
-          cat > release/appcast.xml << EOF
-          <?xml version="1.0" encoding="utf-8"?>
-          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
-            <channel>
-              <title>AIMeter Updates</title>
-              <link>https://github.com/InfoCodeStreamly/AIMeter/releases</link>
-              <description>Most recent updates to AIMeter</description>
-              <language>en</language>
-              <item>
-                <title>Version ${VERSION}</title>
-                <pubDate>${PUB_DATE}</pubDate>
-                <sparkle:version>${VERSION}</sparkle:version>
-                <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
-                <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-                <enclosure
-                  url="https://github.com/InfoCodeStreamly/AIMeter/releases/download/v${VERSION}/AIMeter-${VERSION}.dmg"
-                  length="${FILE_SIZE}"
-                  type="application/octet-stream"
-                  sparkle:edSignature="${SPARKLE_SIGNATURE}"
-                />
-              </item>
-            </channel>
-          </rss>
-          EOF
+          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' > release/appcast.xml
+          printf '%s\n' '<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">' >> release/appcast.xml
+          printf '%s\n' '  <channel>' >> release/appcast.xml
+          printf '%s\n' '    <title>AIMeter Updates</title>' >> release/appcast.xml
+          printf '%s\n' '    <link>https://github.com/InfoCodeStreamly/AIMeter/releases</link>' >> release/appcast.xml
+          printf '%s\n' '    <description>Most recent updates to AIMeter</description>' >> release/appcast.xml
+          printf '%s\n' '    <language>en</language>' >> release/appcast.xml
+          printf '%s\n' '    <item>' >> release/appcast.xml
+          printf '%s\n' "      <title>Version ${VERSION}</title>" >> release/appcast.xml
+          printf '%s\n' "      <pubDate>${PUB_DATE}</pubDate>" >> release/appcast.xml
+          printf '%s\n' "      <sparkle:version>${VERSION}</sparkle:version>" >> release/appcast.xml
+          printf '%s\n' "      <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>" >> release/appcast.xml
+          printf '%s\n' '      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>' >> release/appcast.xml
+          printf '%s\n' "      <enclosure url=\"https://github.com/InfoCodeStreamly/AIMeter/releases/download/v${VERSION}/AIMeter-${VERSION}.dmg\" length=\"${FILE_SIZE}\" type=\"application/octet-stream\" sparkle:edSignature=\"${SPARKLE_SIGNATURE}\" />" >> release/appcast.xml
+          printf '%s\n' '    </item>' >> release/appcast.xml
+          printf '%s\n' '  </channel>' >> release/appcast.xml
+          printf '%s\n' '</rss>' >> release/appcast.xml
 
           echo "Generated appcast.xml:"
           cat release/appcast.xml
