@@ -9,10 +9,11 @@ public final class FetchUsageHistoryUseCase: Sendable {
         self.historyRepository = historyRepository
     }
 
-    /// Fetches history for the specified number of days
+    /// Fetches daily aggregated history for the specified number of days
+    /// Returns one entry per day with max usage values
     /// - Parameter days: Number of days to fetch (default: 7)
-    /// - Returns: Array of history entries sorted by timestamp
+    /// - Returns: Array of daily history entries sorted by timestamp
     public func execute(days: Int = 7) async -> [UsageHistoryEntry] {
-        await historyRepository.getHistory(days: days)
+        await historyRepository.getDailyHistory(days: days)
     }
 }
