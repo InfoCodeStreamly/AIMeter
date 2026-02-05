@@ -94,6 +94,34 @@ jobs:
 
           echo "Build completed successfully"
 
+      - name: Set Version in App Bundle
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+
+          APP_PATH="build/Build/Products/Release/AIMeter.app"
+          INFO_PLIST="$APP_PATH/Contents/Info.plist"
+          WIDGET_PLIST="$APP_PATH/Contents/PlugIns/AIMeterWidgetExtension.appex/Contents/Info.plist"
+
+          echo "Setting version: $VERSION (build $BUILD_NUMBER)"
+
+          # Main app
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$INFO_PLIST"
+
+          # Widget extension
+          if [ -f "$WIDGET_PLIST" ]; then
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$WIDGET_PLIST"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$WIDGET_PLIST"
+            echo "Widget version set"
+          fi
+
+          # Verify
+          echo "Verification:"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$INFO_PLIST"
+
       - name: Sign App Bundle
         run: |
           APP_PATH="build/Build/Products/Release/AIMeter.app"
