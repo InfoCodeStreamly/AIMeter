@@ -42,18 +42,24 @@ public final class CheckNotificationUseCase {
         let percentage = usage.percentage.value
         let resetDate = usage.resetTime.date
 
-        for threshold in NotificationThreshold.allCases {
-            // Check if threshold is crossed
-            guard threshold.isCrossed(by: percentage) else { continue }
+        // Build dynamic thresholds from preferences
+        let thresholds: [(value: Int, type: NotificationThreshold)] = [
+            (preferencesService.warningThreshold, .warning),
+            (preferencesService.criticalThreshold, .critical)
+        ]
 
-            // Check if already sent
-            let key = threshold.notificationKey(for: usage.type, resetDate: resetDate)
+        for (thresholdValue, thresholdType) in thresholds {
+            // Check if threshold is crossed
+            guard percentage >= Double(thresholdValue) else { continue }
+
+            // Check if already sent (use actual threshold value in key)
+            let key = "\(usage.type.rawValue)_\(thresholdValue)_\(ISO8601DateFormatter().string(from: resetDate))"
             guard !preferencesService.wasSent(key: key) else { continue }
 
             // Send notification
             let request = NotificationRequest(
                 type: usage.type,
-                threshold: threshold,
+                threshold: thresholdType,
                 percentage: Int(percentage),
                 resetDate: resetDate
             )
@@ -61,7 +67,7 @@ public final class CheckNotificationUseCase {
             await notificationService.send(
                 title: request.title,
                 body: request.body,
-                identifier: request.identifier
+                identifier: key
             )
 
             // Mark as sent

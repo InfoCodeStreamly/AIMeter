@@ -6,11 +6,39 @@ import AIMeterApplication
 @MainActor
 public final class NotificationPreferencesService: NotificationPreferencesProtocol {
     private let sentNotificationsKey = "sentNotifications"
+    private let warningThresholdKey = "notificationWarningThreshold"
+    private let criticalThresholdKey = "notificationCriticalThreshold"
     private let defaults = UserDefaults.standard
 
+    // Stored properties for @Observable reactivity
+    private var _isEnabled: Bool
+    private var _warningThreshold: Int
+    private var _criticalThreshold: Int
+
     public var isEnabled: Bool {
-        get { defaults.bool(forKey: "notificationsEnabled") }
-        set { defaults.set(newValue, forKey: "notificationsEnabled") }
+        get { _isEnabled }
+        set {
+            _isEnabled = newValue
+            defaults.set(newValue, forKey: "notificationsEnabled")
+        }
+    }
+
+    /// Warning threshold (default: 80%)
+    public var warningThreshold: Int {
+        get { _warningThreshold }
+        set {
+            _warningThreshold = newValue
+            defaults.set(newValue, forKey: warningThresholdKey)
+        }
+    }
+
+    /// Critical threshold (default: 95%)
+    public var criticalThreshold: Int {
+        get { _criticalThreshold }
+        set {
+            _criticalThreshold = newValue
+            defaults.set(newValue, forKey: criticalThresholdKey)
+        }
     }
 
     private var sentNotifications: Set<String> {
@@ -29,9 +57,20 @@ public final class NotificationPreferencesService: NotificationPreferencesProtoc
     }
 
     public init() {
+        // Initialize stored properties from UserDefaults
+        let savedWarning = defaults.integer(forKey: warningThresholdKey)
+        _warningThreshold = savedWarning > 0 ? savedWarning : 80
+
+        let savedCritical = defaults.integer(forKey: criticalThresholdKey)
+        _criticalThreshold = savedCritical > 0 ? savedCritical : 95
+
         if defaults.object(forKey: "notificationsEnabled") == nil {
             defaults.set(true, forKey: "notificationsEnabled")
+            _isEnabled = true
+        } else {
+            _isEnabled = defaults.bool(forKey: "notificationsEnabled")
         }
+
         clearExpired()
     }
 

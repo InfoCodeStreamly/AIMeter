@@ -4,6 +4,7 @@ import AIMeterDomain
 import AIMeterApplication
 import AIMeterInfrastructure
 import AIMeterPresentation
+import KeyboardShortcuts
 
 @main
 struct AIMeterApp: App {
@@ -11,6 +12,9 @@ struct AIMeterApp: App {
 
     /// Language service for localization (SSOT)
     private let languageService = DependencyContainer.shared.languageService
+
+    /// Keyboard shortcut service
+    private let keyboardShortcutService = DependencyContainer.shared.keyboardShortcutService
 
     /// Sparkle updater controller (ініціалізується один раз)
     private let updaterController: SPUStandardUpdaterController
@@ -52,11 +56,25 @@ struct AIMeterApp: App {
     }
 
     private var menuBarLabel: some View {
-        Text(viewModel.menuBarText)
-            .font(.system(size: 11, weight: .medium, design: .rounded))
-            .monospacedDigit()
-            .task {
-                await viewModel.startBackgroundRefresh()
-            }
+        HStack(spacing: 4) {
+            Image(systemName: viewModel.menuBarStatus.icon)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(viewModel.menuBarStatus.color)
+            Text(viewModel.menuBarText)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .monospacedDigit()
+        }
+        .task {
+            await viewModel.startBackgroundRefresh()
+        }
+        .task {
+            setupKeyboardShortcut()
+        }
+    }
+
+    private func setupKeyboardShortcut() {
+        keyboardShortcutService.onTogglePopover { [viewModel] in
+            viewModel.copyToClipboard()
+        }
     }
 }

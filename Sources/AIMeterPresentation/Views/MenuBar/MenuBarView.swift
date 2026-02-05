@@ -33,6 +33,7 @@ public struct MenuBarView: View {
                         }
                     }
                 },
+                onCopy: { viewModel.copyToClipboard() },
                 onSettings: { openWindow(id: "settings") }
             )
 
@@ -92,6 +93,16 @@ public struct MenuBarView: View {
             // Secondary usages (weekly)
             ForEach(viewModel.secondaryUsages) { usage in
                 UsageCardView(data: usage, isPrimary: false)
+            }
+
+            // Extra usage (pay-as-you-go) if enabled
+            if let extraUsage = viewModel.extraUsage {
+                ExtraUsageCardView(data: extraUsage)
+            }
+
+            // Usage history chart
+            if !viewModel.usageHistory.isEmpty {
+                UsageChartView(history: viewModel.usageHistory)
             }
         }
         .padding(UIConstants.Spacing.md)
@@ -155,6 +166,10 @@ private actor PreviewUsageRepository: UsageRepository {
     }
 
     func cacheUsage(_ entities: [UsageEntity]) async {}
+
+    func getExtraUsage() async -> ExtraUsageEntity? {
+        nil
+    }
 }
 
 private actor PreviewSessionKeyRepository: SessionKeyRepository {

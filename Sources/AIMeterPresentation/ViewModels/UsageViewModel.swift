@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import AIMeterDomain
 import AIMeterApplication
 import AIMeterInfrastructure
@@ -9,11 +10,17 @@ import AIMeterInfrastructure
 public final class UsageViewModel {
     public private(set) var state: UsageViewState = .loading
     public private(set) var lastUpdated: Date?
+    public private(set) var extraUsage: ExtraUsageDisplayData?
+    public private(set) var usageHistory: [UsageHistoryEntry] = []
 
     private let fetchUsageUseCase: FetchUsageUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
     private let checkNotificationUseCase: CheckNotificationUseCase
     private let refreshTokenUseCase: RefreshTokenUseCase?
+    private let getExtraUsageUseCase: GetExtraUsageUseCase?
+    private let saveUsageHistoryUseCase: SaveUsageHistoryUseCase?
+    private let fetchUsageHistoryUseCase: FetchUsageHistoryUseCase?
+    private let widgetDataService: WidgetDataService?
 
     private var refreshTask: Task<Void, Never>?
     private let refreshInterval: TimeInterval = 60 // 1 minute
@@ -22,12 +29,20 @@ public final class UsageViewModel {
         fetchUsageUseCase: FetchUsageUseCase,
         getSessionKeyUseCase: GetSessionKeyUseCase,
         checkNotificationUseCase: CheckNotificationUseCase,
-        refreshTokenUseCase: RefreshTokenUseCase? = nil
+        refreshTokenUseCase: RefreshTokenUseCase? = nil,
+        getExtraUsageUseCase: GetExtraUsageUseCase? = nil,
+        saveUsageHistoryUseCase: SaveUsageHistoryUseCase? = nil,
+        fetchUsageHistoryUseCase: FetchUsageHistoryUseCase? = nil,
+        widgetDataService: WidgetDataService? = nil
     ) {
         self.fetchUsageUseCase = fetchUsageUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
         self.checkNotificationUseCase = checkNotificationUseCase
         self.refreshTokenUseCase = refreshTokenUseCase
+        self.getExtraUsageUseCase = getExtraUsageUseCase
+        self.saveUsageHistoryUseCase = saveUsageHistoryUseCase
+        self.fetchUsageHistoryUseCase = fetchUsageHistoryUseCase
+        self.widgetDataService = widgetDataService
     }
 
     /// Start background refresh (called once at app launch)
@@ -102,6 +117,22 @@ public final class UsageViewModel {
             let displayData = entities.map { UsageDisplayData(from: $0) }
             state = .loaded(displayData)
             lastUpdated = Date()
+
+            // Fetch extra usage (pay-as-you-go) data
+            if let extraUsageEntity = await getExtraUsageUseCase?.execute() {
+                extraUsage = ExtraUsageDisplayData(from: extraUsageEntity)
+            } else {
+                extraUsage = nil
+            }
+
+            // Save and fetch usage history
+            await saveUsageHistoryUseCase?.execute(usages: entities)
+            if let history = await fetchUsageHistoryUseCase?.execute(days: 7) {
+                usageHistory = history
+            }
+
+            // Update widget data
+            widgetDataService?.update(from: entities)
 
             // Check for threshold notifications
             await checkNotificationUseCase.execute(usages: entities)
@@ -181,5 +212,38 @@ extension UsageViewModel {
               let weekly = weeklyUsage else { return .safe }
         let maxPercentage = max(session.percentage, weekly.percentage)
         return Percentage.clamped(Double(maxPercentage)).toStatus()
+    }
+
+    // MARK: - Clipboard
+
+    /// Copies current usage summary to clipboard
+    public func copyToClipboard() {
+        var lines: [String] = []
+        lines.append("Claude Usage Summary")
+        lines.append("---")
+
+        if let session = primaryUsage {
+            lines.append("Session (5h): \(session.percentage)%")
+        }
+
+        for usage in secondaryUsages {
+            let name: String
+            switch usage.type {
+            case .weekly: name = "Weekly Total"
+            case .opus: name = "Opus (7d)"
+            case .sonnet: name = "Sonnet (7d)"
+            default: name = usage.type.rawValue
+            }
+            lines.append("\(name): \(usage.percentage)%")
+        }
+
+        if let extra = extraUsage {
+            lines.append("---")
+            lines.append("Pay-as-you-go: \(extra.usageSummary)")
+        }
+
+        let text = lines.joined(separator: "\n")
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 }

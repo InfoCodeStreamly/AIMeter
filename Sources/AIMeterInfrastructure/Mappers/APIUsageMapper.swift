@@ -41,6 +41,28 @@ enum APIUsageMapper {
         return entities
     }
 
+    /// Maps extra usage API data to domain entity
+    /// - Parameter data: Raw extra usage data from API
+    /// - Returns: ExtraUsageEntity if data is valid and enabled
+    nonisolated static func toExtraUsageEntity(_ data: ExtraUsageData?) -> ExtraUsageEntity? {
+        guard let data = data,
+              let isEnabled = data.isEnabled,
+              isEnabled else {
+            return nil
+        }
+
+        let monthlyLimit = data.monthlyLimit ?? 0
+        let usedCredits = data.usedCredits ?? 0
+        let utilization = Percentage.clamped(data.utilization ?? 0)
+
+        return ExtraUsageEntity(
+            isEnabled: isEnabled,
+            monthlyLimit: monthlyLimit,
+            usedCredits: usedCredits,
+            utilization: utilization
+        )
+    }
+
     // MARK: - Private
 
     private nonisolated static func mapUsage(

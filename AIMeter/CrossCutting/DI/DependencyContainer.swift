@@ -45,6 +45,13 @@ final class DependencyContainer {
         LanguageService()
     }()
 
+    lazy var keyboardShortcutService: KeyboardShortcutService = {
+        KeyboardShortcutService()
+    }()
+
+    lazy var widgetDataService: WidgetDataService = {
+        WidgetDataService()
+    }()
 
     private lazy var tokenRefreshService: TokenRefreshService = {
         TokenRefreshService()
@@ -73,6 +80,10 @@ final class DependencyContainer {
             apiClient: apiClient,
             keychainService: keychainService
         )
+    }()
+
+    private lazy var usageHistoryRepository: any UsageHistoryRepository = {
+        UsageHistoryStore()
     }()
 
     // MARK: - Use Cases
@@ -111,6 +122,18 @@ final class DependencyContainer {
         )
     }
 
+    func makeGetExtraUsageUseCase() -> GetExtraUsageUseCase {
+        GetExtraUsageUseCase(usageRepository: usageRepository)
+    }
+
+    func makeSaveUsageHistoryUseCase() -> SaveUsageHistoryUseCase {
+        SaveUsageHistoryUseCase(historyRepository: usageHistoryRepository)
+    }
+
+    func makeFetchUsageHistoryUseCase() -> FetchUsageHistoryUseCase {
+        FetchUsageHistoryUseCase(historyRepository: usageHistoryRepository)
+    }
+
     // MARK: - ViewModels
 
     func makeUsageViewModel() -> UsageViewModel {
@@ -118,7 +141,11 @@ final class DependencyContainer {
             fetchUsageUseCase: makeFetchUsageUseCase(),
             getSessionKeyUseCase: makeGetSessionKeyUseCase(),
             checkNotificationUseCase: makeCheckNotificationUseCase(),
-            refreshTokenUseCase: makeRefreshTokenUseCase()
+            refreshTokenUseCase: makeRefreshTokenUseCase(),
+            getExtraUsageUseCase: makeGetExtraUsageUseCase(),
+            saveUsageHistoryUseCase: makeSaveUsageHistoryUseCase(),
+            fetchUsageHistoryUseCase: makeFetchUsageHistoryUseCase(),
+            widgetDataService: widgetDataService
         )
     }
 

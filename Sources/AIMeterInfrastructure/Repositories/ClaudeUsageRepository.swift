@@ -6,6 +6,7 @@ public actor ClaudeUsageRepository: UsageRepository {
     private let apiClient: any ClaudeAPIClientProtocol
     private let keychainService: any KeychainServiceProtocol
     private var cachedEntities: [UsageEntity] = []
+    private var cachedExtraUsage: ExtraUsageEntity?
 
     private let sessionKeyKey = "sessionKey"
 
@@ -26,7 +27,15 @@ public actor ClaudeUsageRepository: UsageRepository {
         let entities = APIUsageMapper.toDomain(response)
         cachedEntities = entities
 
+        // Also cache extra usage if available
+        cachedExtraUsage = APIUsageMapper.toExtraUsageEntity(response.extraUsage)
+
         return entities
+    }
+
+    /// Returns cached extra usage (pay-as-you-go) data
+    public func getExtraUsage() async -> ExtraUsageEntity? {
+        cachedExtraUsage
     }
 
     public func getCachedUsage() async -> [UsageEntity] {
