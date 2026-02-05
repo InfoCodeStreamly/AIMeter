@@ -207,10 +207,12 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
         let username = NSUserName()
 
         // First, try to update existing item
+        // Use kSecUseAuthenticationUISkip to avoid password dialog
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: username
+            kSecAttrAccount as String: username,
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
         ]
 
         let attributes: [String: Any] = [
@@ -227,7 +229,8 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
             status = SecItemAdd(newItem as CFDictionary, nil)
         }
 
-        guard status == errSecSuccess else {
+        // Accept both success and interaction-not-allowed (skip dialog case)
+        guard status == errSecSuccess || status == errSecInteractionNotAllowed else {
             throw ClaudeCodeSyncError.keychainWriteFailed(status: status)
         }
 
