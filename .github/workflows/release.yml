@@ -98,6 +98,18 @@ jobs:
         run: |
           APP_PATH="build/Build/Products/Release/AIMeter.app"
           SPARKLE_PATH="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+          WIDGET_PATH="$APP_PATH/Contents/PlugIns/AIMeterWidgetExtension.appex"
+
+          echo "=== Signing Widget Extension ==="
+          if [ -d "$WIDGET_PATH" ]; then
+            echo "Signing widget extension..."
+            codesign --force --sign "$SIGNING_IDENTITY" \
+              --timestamp \
+              --options runtime \
+              --entitlements "AIMeterWidgetExtension.entitlements" \
+              "$WIDGET_PATH"
+            echo "Widget extension signed"
+          fi
 
           echo "=== Signing Sparkle framework components ==="
 
