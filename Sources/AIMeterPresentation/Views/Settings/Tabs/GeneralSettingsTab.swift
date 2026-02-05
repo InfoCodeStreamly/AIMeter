@@ -1,8 +1,9 @@
 import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import KeyboardShortcuts
 
-/// General settings tab - Launch at Login, Notifications
+/// General settings tab - Launch at Login, Notifications, Keyboard Shortcuts
 struct GeneralSettingsTab: View {
     var launchAtLogin: LaunchAtLoginService
     var notificationPreferences: NotificationPreferencesService
@@ -28,16 +29,93 @@ struct GeneralSettingsTab: View {
 
                 // Notifications
                 SettingsCard(title: "Notifications", tableName: tableName) {
-                    SettingsToggle(
-                        title: "Usage Alerts",
-                        description: "Notify at 80% and 95% usage",
-                        icon: "bell.badge",
-                        tableName: tableName,
-                        isOn: Binding(
-                            get: { notificationPreferences.isEnabled },
-                            set: { notificationPreferences.isEnabled = $0 }
+                    VStack(spacing: UIConstants.Spacing.md) {
+                        SettingsToggle(
+                            title: "Usage Alerts",
+                            description: "Notify when usage reaches thresholds",
+                            icon: "bell.badge",
+                            tableName: tableName,
+                            isOn: Binding(
+                                get: { notificationPreferences.isEnabled },
+                                set: { notificationPreferences.isEnabled = $0 }
+                            )
                         )
-                    )
+
+                        if notificationPreferences.isEnabled {
+                            Divider()
+
+                            // Warning threshold slider
+                            VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
+                                HStack {
+                                    Label {
+                                        Text("Warning Threshold", tableName: tableName, bundle: .main)
+                                    } icon: {
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .foregroundStyle(.orange)
+                                    }
+                                    Spacer()
+                                    Text("\(notificationPreferences.warningThreshold)%")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(
+                                    value: Binding(
+                                        get: { Double(notificationPreferences.warningThreshold) },
+                                        set: { notificationPreferences.warningThreshold = Int($0) }
+                                    ),
+                                    in: 50...90,
+                                    step: 5
+                                )
+                                .tint(.orange)
+                            }
+
+                            // Critical threshold slider
+                            VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
+                                HStack {
+                                    Label {
+                                        Text("Critical Threshold", tableName: tableName, bundle: .main)
+                                    } icon: {
+                                        Image(systemName: "xmark.circle")
+                                            .foregroundStyle(.red)
+                                    }
+                                    Spacer()
+                                    Text("\(notificationPreferences.criticalThreshold)%")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                Slider(
+                                    value: Binding(
+                                        get: { Double(notificationPreferences.criticalThreshold) },
+                                        set: { notificationPreferences.criticalThreshold = Int($0) }
+                                    ),
+                                    in: 70...100,
+                                    step: 5
+                                )
+                                .tint(.red)
+                            }
+                        }
+                    }
+                }
+
+                // Keyboard Shortcut
+                SettingsCard(title: "Keyboard Shortcut", tableName: tableName) {
+                    HStack {
+                        Label {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Toggle Menu", tableName: tableName, bundle: .main)
+                                Text("Open or close the usage menu", tableName: tableName, bundle: .main)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "command")
+                                .foregroundStyle(.blue)
+                        }
+
+                        Spacer()
+
+                        KeyboardShortcuts.Recorder(for: .togglePopover)
+                    }
                 }
 
                 Spacer()

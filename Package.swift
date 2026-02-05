@@ -12,6 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.0"),
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.0.0"),
     ],
     targets: [
         // Domain - NO dependencies (Foundation only)
@@ -28,14 +29,18 @@ let package = Package(
             path: "Sources/AIMeterApplication"
         ),
 
-        // Infrastructure - depends on Domain, Application
+        // Infrastructure - depends on Domain, Application, KeyboardShortcuts
         .target(
             name: "AIMeterInfrastructure",
-            dependencies: ["AIMeterDomain", "AIMeterApplication"],
+            dependencies: [
+                "AIMeterDomain",
+                "AIMeterApplication",
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+            ],
             path: "Sources/AIMeterInfrastructure"
         ),
 
-        // Presentation - depends on Domain, Application, Infrastructure, Sparkle
+        // Presentation - depends on Domain, Application, Infrastructure, Sparkle, KeyboardShortcuts
         .target(
             name: "AIMeterPresentation",
             dependencies: [
@@ -43,6 +48,7 @@ let package = Package(
                 "AIMeterApplication",
                 "AIMeterInfrastructure",
                 .product(name: "Sparkle", package: "Sparkle"),
+                .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
             path: "Sources/AIMeterPresentation"
         ),

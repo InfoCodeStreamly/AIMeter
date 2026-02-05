@@ -10,4 +10,7 @@ public protocol UsageRepository: Sendable {
 
     /// Saves usage data to cache
     func cacheUsage(_ entities: [UsageEntity]) async
+
+    /// Gets cached extra usage (pay-as-you-go) data
+    func getExtraUsage() async -> ExtraUsageEntity?
 }

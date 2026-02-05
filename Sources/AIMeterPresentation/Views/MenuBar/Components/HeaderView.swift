@@ -7,9 +7,12 @@ struct HeaderView: View {
     let lastUpdated: String
     let isRefreshing: Bool
     let onRefresh: () -> Void
+    let onCopy: () -> Void
     let onSettings: () -> Void
 
     @State private var isRefreshHovered = false
+    @State private var isCopyHovered = false
+    @State private var isCopied = false
     @State private var isSettingsHovered = false
 
     var body: some View {
@@ -63,6 +66,35 @@ struct HeaderView: View {
                 }
                 .help(Text("Refresh", tableName: "MenuBar", bundle: .main))
 
+                // Copy button
+                Button {
+                    onCopy()
+                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                        isCopied = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                            isCopied = false
+                        }
+                    }
+                } label: {
+                    Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                        .font(.caption)
+                        .foregroundStyle(isCopied ? .green : .secondary)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
+                                .fill(isCopyHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
+                        )
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                        isCopyHovered = hovering
+                    }
+                }
+                .help(Text(isCopied ? "Copied!" : "Copy to clipboard", tableName: "MenuBar", bundle: .main))
+
                 // Settings button
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
@@ -94,6 +126,7 @@ struct HeaderView: View {
             lastUpdated: "2m ago",
             isRefreshing: false,
             onRefresh: {},
+            onCopy: {},
             onSettings: {}
         )
 
@@ -101,6 +134,7 @@ struct HeaderView: View {
             lastUpdated: "just now",
             isRefreshing: true,
             onRefresh: {},
+            onCopy: {},
             onSettings: {}
         )
     }

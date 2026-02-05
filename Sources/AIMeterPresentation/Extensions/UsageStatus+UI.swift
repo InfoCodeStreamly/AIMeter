@@ -4,7 +4,7 @@ import AIMeterApplication
 import AIMeterInfrastructure
 
 /// UI-specific extensions for UsageStatus
-extension UsageStatus {
+public extension UsageStatus {
     /// Color for UI display
     var color: Color {
         switch self {
