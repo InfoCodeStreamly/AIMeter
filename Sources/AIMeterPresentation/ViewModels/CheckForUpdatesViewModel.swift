@@ -15,15 +15,20 @@ public final class CheckForUpdatesViewModel: ObservableObject {
     }
 
     public func checkForUpdates() {
-        // Close settings window so Sparkle dialog appears in front
-        NSApp.windows
-            .filter { $0.title.contains("Settings") || $0.identifier?.rawValue == "settings" }
-            .forEach { $0.close() }
+        // Lower settings window level temporarily
+        let settingsWindows = NSApp.windows.filter {
+            $0.title.contains("Settings") || $0.identifier?.rawValue == "settings"
+        }
+        settingsWindows.forEach { $0.level = .normal }
 
-        // Small delay to ensure window closes before Sparkle dialog appears
+        updater.checkForUpdates()
+
+        // Bring Sparkle windows to front after a short delay
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(100))
-            updater.checkForUpdates()
+            try? await Task.sleep(for: .milliseconds(300))
+            NSApp.windows
+                .filter { $0.title.contains("AIMeter") || $0.className.contains("Sparkle") }
+                .forEach { $0.orderFrontRegardless() }
         }
     }
 }
