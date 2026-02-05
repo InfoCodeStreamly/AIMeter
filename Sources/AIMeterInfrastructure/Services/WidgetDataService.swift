@@ -1,5 +1,6 @@
 import Foundation
 import AIMeterDomain
+import WidgetKit
 
 /// Shared data structure for widget
 public struct WidgetData: Codable, Sendable {
@@ -8,19 +9,25 @@ public struct WidgetData: Codable, Sendable {
     public let lastUpdated: Date
     public let sessionStatus: String
     public let weeklyStatus: String
+    public let sessionResetDate: Date?
+    public let weeklyResetDate: Date?
 
     public init(
         sessionPercentage: Int,
         weeklyPercentage: Int,
         lastUpdated: Date,
         sessionStatus: UsageStatus,
-        weeklyStatus: UsageStatus
+        weeklyStatus: UsageStatus,
+        sessionResetDate: Date? = nil,
+        weeklyResetDate: Date? = nil
     ) {
         self.sessionPercentage = sessionPercentage
         self.weeklyPercentage = weeklyPercentage
         self.lastUpdated = lastUpdated
         self.sessionStatus = sessionStatus.rawValue
         self.weeklyStatus = weeklyStatus.rawValue
+        self.sessionResetDate = sessionResetDate
+        self.weeklyResetDate = weeklyResetDate
     }
 
     /// Creates widget data from usage entities
@@ -35,7 +42,9 @@ public struct WidgetData: Codable, Sendable {
             weeklyPercentage: Int(weekly.percentage.value),
             lastUpdated: Date(),
             sessionStatus: session.status,
-            weeklyStatus: weekly.status
+            weeklyStatus: weekly.status,
+            sessionResetDate: session.resetTime.date,
+            weeklyResetDate: weekly.resetTime.date
         )
     }
 }
@@ -53,10 +62,13 @@ public final class WidgetDataService {
         defaults = UserDefaults(suiteName: Self.appGroupIdentifier)
     }
 
-    /// Saves widget data to shared container
+    /// Saves widget data to shared container and triggers widget refresh
     public func save(_ data: WidgetData) {
         guard let encoded = try? JSONEncoder().encode(data) else { return }
         defaults?.set(encoded, forKey: Self.dataKey)
+
+        // Trigger widget to refresh immediately
+        WidgetCenter.shared.reloadTimelines(ofKind: "AIMeterWidget")
     }
 
     /// Loads widget data from shared container
