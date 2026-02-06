@@ -16,4 +16,11 @@ public final class FetchUsageHistoryUseCase: Sendable {
     public func execute(days: Int = 7) async -> [UsageHistoryEntry] {
         await historyRepository.getDailyHistory(days: days)
     }
+
+    /// Fetches raw hourly history for the specified number of days
+    /// - Parameter days: Number of days to fetch
+    /// - Returns: Array of hourly history entries sorted by timestamp
+    public func executeHourly(days: Int = 7) async -> [UsageHistoryEntry] {
+        await historyRepository.getHistory(days: days)
+    }
 }

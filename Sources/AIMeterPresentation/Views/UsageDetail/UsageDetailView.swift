@@ -34,12 +34,12 @@ public struct UsageDetailView: View {
             }
 
             // Chart
-            if viewModel.detailHistory.count >= 2 {
+            if !viewModel.detailHistory.isEmpty {
                 Chart {
                     ForEach(viewModel.detailHistory) { entry in
                         // Session line (blue)
                         LineMark(
-                            x: .value("Day", entry.timestamp, unit: .day),
+                            x: .value("Time", entry.timestamp, unit: .hour),
                             y: .value("Session", entry.sessionPercentage),
                             series: .value("Type", "Session")
                         )
@@ -50,7 +50,7 @@ public struct UsageDetailView: View {
 
                         // Weekly line (purple)
                         LineMark(
-                            x: .value("Day", entry.timestamp, unit: .day),
+                            x: .value("Time", entry.timestamp, unit: .hour),
                             y: .value("Weekly", entry.weeklyPercentage),
                             series: .value("Type", "Weekly")
                         )
@@ -71,7 +71,7 @@ public struct UsageDetailView: View {
                 }
                 .chartYScale(domain: 0...100)
                 .chartXAxis {
-                    AxisMarks(values: .stride(by: .day)) { value in
+                    AxisMarks(values: .automatic) { value in
                         AxisGridLine()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
@@ -159,9 +159,17 @@ public struct UsageDetailView: View {
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = selectedDays <= 7 ? "E" : "d MMM"
+        let calendar = Calendar.current
+        let isToday = calendar.isDateInToday(date)
+        let isYesterday = calendar.isDateInYesterday(date)
+
+        if isToday || isYesterday {
+            formatter.dateFormat = "HH:mm"
+        } else if selectedDays <= 7 {
+            formatter.dateFormat = "E HH:mm"
+        } else {
+            formatter.dateFormat = "d MMM HH:mm"
+        }
         return formatter.string(from: date)
     }
 }
-
-

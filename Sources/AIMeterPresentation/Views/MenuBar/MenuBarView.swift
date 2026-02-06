@@ -104,6 +104,7 @@ public struct MenuBarView: View {
             if !viewModel.usageHistory.isEmpty {
                 UsageChartView(history: viewModel.usageHistory) {
                     openWindow(id: "usage-detail")
+                    NSApplication.shared.activate()
                 }
             }
         }

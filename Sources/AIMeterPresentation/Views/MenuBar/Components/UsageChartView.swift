@@ -9,7 +9,7 @@ struct UsageChartView: View {
     @State private var selectedEntry: UsageHistoryEntry?
 
     private var hasEnoughData: Bool {
-        history.count >= 2
+        !history.isEmpty
     }
 
     var body: some View {

@@ -183,20 +183,20 @@ struct APIUsageMapperTests {
 
     // MARK: - toExtraUsageEntity Tests
 
-    @Test("toExtraUsageEntity with valid enabled data")
+    @Test("toExtraUsageEntity with valid enabled data converts cents to dollars")
     func toExtraUsageEntityWithValidData() {
-        // Arrange
+        // Arrange — API returns values in cents
         let data = ExtraUsageData(
             isEnabled: true,
-            monthlyLimit: 50.0,
-            usedCredits: 12.5,
+            monthlyLimit: 5000.0,
+            usedCredits: 1250.0,
             utilization: 25.0
         )
 
         // Act
         let entity = APIUsageMapper.toExtraUsageEntity(data)
 
-        // Assert
+        // Assert — entity stores values in dollars
         #expect(entity != nil)
         #expect(entity?.isEnabled == true)
         #expect(entity?.monthlyLimit == 50.0)
@@ -218,8 +218,8 @@ struct APIUsageMapperTests {
         // Arrange
         let data = ExtraUsageData(
             isEnabled: false,
-            monthlyLimit: 50.0,
-            usedCredits: 12.5,
+            monthlyLimit: 5000.0,
+            usedCredits: 1250.0,
             utilization: 25.0
         )
 
@@ -235,8 +235,8 @@ struct APIUsageMapperTests {
         // Arrange
         let data = ExtraUsageData(
             isEnabled: nil,
-            monthlyLimit: 50.0,
-            usedCredits: 12.5,
+            monthlyLimit: 5000.0,
+            usedCredits: 1250.0,
             utilization: 25.0
         )
 
@@ -269,11 +269,11 @@ struct APIUsageMapperTests {
 
     @Test("toExtraUsageEntity clamps out of range utilization")
     func toExtraUsageEntityClampsUtilization() {
-        // Arrange
+        // Arrange — API values in cents
         let data = ExtraUsageData(
             isEnabled: true,
-            monthlyLimit: 50.0,
-            usedCredits: 60.0,
+            monthlyLimit: 5000.0,
+            usedCredits: 6000.0,
             utilization: 120.0
         )
 
@@ -283,6 +283,8 @@ struct APIUsageMapperTests {
         // Assert
         #expect(entity != nil)
         #expect(entity?.utilization.value == 100.0)
+        #expect(entity?.monthlyLimit == 50.0)
+        #expect(entity?.usedCredits == 60.0)
     }
 
     @Test("toExtraUsageEntity with zero values")
