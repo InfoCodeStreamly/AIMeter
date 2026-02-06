@@ -1,4 +1,33 @@
+import AppKit
 import SwiftUI
+
+/// WCAG AA-accessible status colors.
+///
+/// System `.green` and `.orange` fail WCAG AA 3:1 contrast on light backgrounds.
+/// These colors use darker light-mode variants while preserving system colors in dark mode.
+enum AccessibleColors {
+    /// Safe status (green) — passes WCAG AA 3:1 in both light and dark mode.
+    static let safe = Color(
+        nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? .systemGreen
+                : NSColor(red: 0.13, green: 0.54, blue: 0.13, alpha: 1.0)
+        })
+
+    /// Moderate status (orange/amber) — passes WCAG AA 3:1 in both light and dark mode.
+    static let moderate = Color(
+        nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? .systemOrange
+                : NSColor(red: 0.68, green: 0.34, blue: 0.0, alpha: 1.0)
+        })
+
+    /// Critical status (red) — system red passes WCAG AA in both modes.
+    static let critical = Color.red
+
+    /// Success/connected (green) — alias for safe.
+    static let success = safe
+}
 
 /// UI-related constants
 enum UIConstants {

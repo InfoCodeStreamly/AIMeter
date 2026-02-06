@@ -1,7 +1,7 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
+import SwiftUI
 
 /// Settings screen view model
 @Observable
@@ -130,7 +130,7 @@ extension SettingsViewModel {
     public var statusColor: Color {
         switch state {
         case .success:
-            return .green
+            return AccessibleColors.success
         case .error:
             return .red
         default:

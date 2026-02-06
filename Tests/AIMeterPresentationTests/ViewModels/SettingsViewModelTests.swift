@@ -1,9 +1,10 @@
-import Testing
 import SwiftUI
-@testable import AIMeterPresentation
+import Testing
+
 @testable import AIMeterApplication
 @testable import AIMeterDomain
 @testable import AIMeterInfrastructure
+@testable import AIMeterPresentation
 
 /// Tests for SettingsViewModel
 @Suite("SettingsViewModel Tests")
@@ -289,7 +290,7 @@ struct SettingsViewModelTests {
         try await Task.sleep(for: .milliseconds(100))
 
         if case .success = viewModel.state {
-            #expect(viewModel.statusColor == .green)
+            #expect(viewModel.statusColor == AccessibleColors.success)
         }
     }
 

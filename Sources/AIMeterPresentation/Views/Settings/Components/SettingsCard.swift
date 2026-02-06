@@ -1,6 +1,6 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import SwiftUI
 
 /// Картка для групування налаштувань
 struct SettingsCard<Content: View>: View {
@@ -50,7 +50,9 @@ struct SettingsCard<Content: View>: View {
             content
                 .padding(.horizontal, UIConstants.SettingsCard.padding)
                 .padding(.vertical, title == nil ? UIConstants.SettingsCard.padding : 0)
-                .padding(.bottom, footer == nil ? UIConstants.SettingsCard.padding : UIConstants.Spacing.md)
+                .padding(
+                    .bottom,
+                    footer == nil ? UIConstants.SettingsCard.padding : UIConstants.Spacing.md)
 
             // Footer
             if let footer {
@@ -62,17 +64,7 @@ struct SettingsCard<Content: View>: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .strokeBorder(
-                    Color.gray.opacity(UIConstants.SettingsCard.borderOpacity),
-                    lineWidth: UIConstants.SettingsCard.borderWidth
-                )
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
     }
 }
 

@@ -1,6 +1,6 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import SwiftUI
 
 /// Connection settings tab - Claude connection status, sync, and notifications
 struct ConnectionSettingsTab: View {
@@ -65,10 +65,11 @@ struct ConnectionSettingsTab: View {
                     VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
                         HStack {
                             Label {
-                                Text("Warning Threshold", tableName: generalTableName, bundle: .main)
+                                Text(
+                                    "Warning Threshold", tableName: generalTableName, bundle: .main)
                             } icon: {
                                 Image(systemName: "exclamationmark.triangle")
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(AccessibleColors.moderate)
                             }
                             Spacer()
                             Text("\(notificationPreferences.warningThreshold)%")
@@ -83,14 +84,16 @@ struct ConnectionSettingsTab: View {
                             in: 50...90,
                             step: 5
                         )
-                        .tint(.orange)
+                        .tint(AccessibleColors.moderate)
                     }
 
                     // Critical threshold slider
                     VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
                         HStack {
                             Label {
-                                Text("Critical Threshold", tableName: generalTableName, bundle: .main)
+                                Text(
+                                    "Critical Threshold", tableName: generalTableName, bundle: .main
+                                )
                             } icon: {
                                 Image(systemName: "xmark.circle")
                                     .foregroundStyle(.red)
@@ -140,7 +143,7 @@ struct ConnectionSettingsTab: View {
             SettingsCard {
                 HStack(spacing: UIConstants.Spacing.md) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(AccessibleColors.success)
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -176,16 +179,18 @@ struct ConnectionSettingsTab: View {
             SettingsCard {
                 HStack(spacing: UIConstants.Spacing.md) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(AccessibleColors.moderate)
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Claude Code not found", tableName: tableName, bundle: .main)
                             .font(.headline)
 
-                        Text("Please login to Claude Code first", tableName: tableName, bundle: .main)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Text(
+                            "Please login to Claude Code first", tableName: tableName, bundle: .main
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
 
                     Spacer()
@@ -220,7 +225,7 @@ struct ConnectionSettingsTab: View {
             SettingsCard {
                 HStack(spacing: UIConstants.Spacing.md) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(AccessibleColors.success)
                         .font(.title2)
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -280,7 +285,7 @@ struct ConnectionSettingsTab: View {
         SettingsCard {
             HStack(spacing: UIConstants.Spacing.md) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(AccessibleColors.success)
                     .font(.title2)
 
                 Text(message)

@@ -1,12 +1,13 @@
-import SwiftUI
-import Charts
 import AIMeterDomain
 import AIMeterInfrastructure
+import Charts
+import SwiftUI
 
 /// Detail window showing full usage trend chart
 public struct UsageDetailView: View {
     @Bindable var viewModel: UsageViewModel
-    @Environment(NotificationPreferencesService.self) private var notificationPreferences: NotificationPreferencesService?
+    @Environment(NotificationPreferencesService.self) private var notificationPreferences:
+        NotificationPreferencesService?
 
     public init(viewModel: UsageViewModel) {
         self.viewModel = viewModel
@@ -56,7 +57,7 @@ public struct UsageDetailView: View {
 
                     // Threshold lines (dynamic from Settings)
                     RuleMark(y: .value("Warning", warningThreshold))
-                        .foregroundStyle(.orange.opacity(0.4))
+                        .foregroundStyle(AccessibleColors.moderate.opacity(0.4))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
 
                     RuleMark(y: .value("Critical", criticalThreshold))
@@ -88,7 +89,7 @@ public struct UsageDetailView: View {
                 }
                 .chartForegroundStyleScale([
                     "Session": .blue,
-                    "Weekly": .purple
+                    "Weekly": .purple,
                 ])
                 .chartLegend(.hidden)
                 .frame(minHeight: 280)
@@ -125,7 +126,7 @@ public struct UsageDetailView: View {
                 Spacer()
                 HStack(spacing: 6) {
                     Rectangle()
-                        .fill(.orange.opacity(0.4))
+                        .fill(AccessibleColors.moderate.opacity(0.4))
                         .frame(width: 16, height: 1)
                     Text("Warning \(warningThreshold)%")
                         .font(.caption2)
@@ -143,7 +144,6 @@ public struct UsageDetailView: View {
         }
         .padding(20)
         .frame(minWidth: 480, minHeight: 380)
-        .background(.ultraThinMaterial)
         .onAppear {
             viewModel.loadDetailHistory(days: 7)
         }

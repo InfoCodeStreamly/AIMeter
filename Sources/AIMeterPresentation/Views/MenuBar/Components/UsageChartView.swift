@@ -1,6 +1,6 @@
-import SwiftUI
-import Charts
 import AIMeterDomain
+import Charts
+import SwiftUI
 
 /// Mini chart showing weekly usage trend (daily max values)
 struct UsageChartView: View {
@@ -97,15 +97,12 @@ struct UsageChartView: View {
         .padding(UIConstants.Spacing.md)
         .contentShape(Rectangle())
         .onTapGesture { onTap?() }
-        .background(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
     }
 
     private func dayAbbreviation(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "E" // Mon, Tue, etc.
+        formatter.dateFormat = "E"  // Mon, Tue, etc.
         return formatter.string(from: date)
     }
 }
@@ -114,12 +111,24 @@ struct UsageChartView: View {
 
 #Preview("With Data") {
     UsageChartView(history: [
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 6), sessionPercentage: 20, weeklyPercentage: 15),
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 5), sessionPercentage: 35, weeklyPercentage: 25),
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 4), sessionPercentage: 45, weeklyPercentage: 35),
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 3), sessionPercentage: 60, weeklyPercentage: 42),
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 2), sessionPercentage: 55, weeklyPercentage: 48),
-        UsageHistoryEntry(timestamp: Date().addingTimeInterval(-86400 * 1), sessionPercentage: 70, weeklyPercentage: 55),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 6), sessionPercentage: 20,
+            weeklyPercentage: 15),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 5), sessionPercentage: 35,
+            weeklyPercentage: 25),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 4), sessionPercentage: 45,
+            weeklyPercentage: 35),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 3), sessionPercentage: 60,
+            weeklyPercentage: 42),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 2), sessionPercentage: 55,
+            weeklyPercentage: 48),
+        UsageHistoryEntry(
+            timestamp: Date().addingTimeInterval(-86400 * 1), sessionPercentage: 70,
+            weeklyPercentage: 55),
         UsageHistoryEntry(timestamp: Date(), sessionPercentage: 65, weeklyPercentage: 62),
     ])
     .padding()

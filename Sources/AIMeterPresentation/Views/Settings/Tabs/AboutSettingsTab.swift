@@ -1,8 +1,8 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
 import AppKit
 import Sparkle
+import SwiftUI
 
 /// About settings tab - App info, updates, and links
 struct AboutSettingsTab: View {
@@ -87,7 +87,9 @@ struct AboutSettingsTab: View {
 
     // MARK: - Helper Views
 
-    private func linkButton(icon: String, title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+    private func linkButton(icon: String, title: LocalizedStringKey, action: @escaping () -> Void)
+        -> some View
+    {
         Button(action: action) {
             HStack(spacing: UIConstants.Spacing.sm) {
                 Image(systemName: icon)
@@ -105,7 +107,7 @@ struct AboutSettingsTab: View {
             }
             .padding(.vertical, UIConstants.Spacing.xs)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
         .foregroundStyle(.primary)
     }
 

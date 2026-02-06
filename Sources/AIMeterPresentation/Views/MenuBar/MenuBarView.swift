@@ -1,8 +1,8 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
 import Sparkle
+import SwiftUI
 
 /// Main menu bar popover view
 public struct MenuBarView: View {
@@ -12,7 +12,10 @@ public struct MenuBarView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var isRefreshing = false
 
-    public init(viewModel: UsageViewModel, updater: SPUUpdater, updateDelegate: UpdateAvailabilityDelegate? = nil) {
+    public init(
+        viewModel: UsageViewModel, updater: SPUUpdater,
+        updateDelegate: UpdateAvailabilityDelegate? = nil
+    ) {
         self.viewModel = viewModel
         self.updater = updater
         self.updateDelegate = updateDelegate
@@ -76,7 +79,6 @@ public struct MenuBarView: View {
             FooterView(onQuit: { NSApplication.shared.terminate(nil) })
         }
         .frame(width: UIConstants.MenuBar.width)
-        .background(.ultraThinMaterial)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
     }
@@ -126,7 +128,7 @@ public struct MenuBarView: View {
         VStack(spacing: UIConstants.Spacing.md) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.title2)
-                .foregroundStyle(.orange)
+                .foregroundStyle(AccessibleColors.moderate)
 
             Text(message)
                 .font(.caption)
@@ -138,7 +140,7 @@ public struct MenuBarView: View {
             } label: {
                 Text("Retry", tableName: "Localizable", bundle: .main)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.glass)
             .controlSize(.small)
         }
         .padding()
@@ -160,7 +162,7 @@ public struct MenuBarView: View {
             } label: {
                 Text("Open Settings", tableName: "Localizable", bundle: .main)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.glass)
             .controlSize(.small)
         }
         .padding()

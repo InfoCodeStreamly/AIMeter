@@ -1,7 +1,8 @@
-import Testing
-import SwiftUI
-@testable import AIMeterPresentation
 import AIMeterDomain
+import SwiftUI
+import Testing
+
+@testable import AIMeterPresentation
 
 /// Tests for UsageStatus UI extensions
 ///
@@ -14,12 +15,12 @@ struct UsageStatusUITests {
 
     @Test("Safe status returns green color")
     func safeStatusColor() {
-        #expect(UsageStatus.safe.color == .green)
+        #expect(UsageStatus.safe.color == AccessibleColors.safe)
     }
 
     @Test("Moderate status returns orange color")
     func moderateStatusColor() {
-        #expect(UsageStatus.moderate.color == .orange)
+        #expect(UsageStatus.moderate.color == AccessibleColors.moderate)
     }
 
     @Test("Critical status returns red color")
@@ -32,7 +33,7 @@ struct UsageStatusUITests {
         let colors = [
             UsageStatus.safe.color,
             UsageStatus.moderate.color,
-            UsageStatus.critical.color
+            UsageStatus.critical.color,
         ]
 
         // Verify each color is different by checking they're not equal

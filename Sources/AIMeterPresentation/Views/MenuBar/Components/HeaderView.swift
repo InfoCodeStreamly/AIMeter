@@ -1,8 +1,8 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import SwiftUI
 
-/// Header view for menu bar popover with refresh animation
+/// Header view for menu bar popover with Liquid Glass buttons
 struct HeaderView: View {
     let lastUpdated: String
     let isRefreshing: Bool
@@ -10,10 +10,7 @@ struct HeaderView: View {
     let onCopy: () -> Void
     let onSettings: () -> Void
 
-    @State private var isRefreshHovered = false
-    @State private var isCopyHovered = false
     @State private var isCopied = false
-    @State private var isSettingsHovered = false
 
     var body: some View {
         HStack(spacing: UIConstants.Spacing.md) {
@@ -52,18 +49,9 @@ struct HeaderView: View {
                     }
                     .foregroundStyle(.secondary)
                     .frame(width: 28, height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                            .fill(isRefreshHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
-                    )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
                 .disabled(isRefreshing)
-                .onHover { hovering in
-                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                        isRefreshHovered = hovering
-                    }
-                }
                 .help(Text("Refresh", tableName: "MenuBar", bundle: .main))
 
                 // Copy button
@@ -80,20 +68,14 @@ struct HeaderView: View {
                 } label: {
                     Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                         .font(.caption)
-                        .foregroundStyle(isCopied ? .green : .secondary)
+                        .foregroundStyle(isCopied ? AccessibleColors.success : .secondary)
                         .frame(width: 28, height: 28)
-                        .background(
-                            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                                .fill(isCopyHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
-                        )
                 }
-                .buttonStyle(.plain)
-                .onHover { hovering in
-                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                        isCopyHovered = hovering
-                    }
-                }
-                .help(Text(isCopied ? "Copied!" : "Copy to clipboard", tableName: "MenuBar", bundle: .main))
+                .buttonStyle(.glass)
+                .help(
+                    Text(
+                        isCopied ? "Copied!" : "Copy to clipboard", tableName: "MenuBar",
+                        bundle: .main))
 
                 // Settings button
                 Button(action: onSettings) {
@@ -101,17 +83,8 @@ struct HeaderView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(width: 28, height: 28)
-                        .background(
-                            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                                .fill(isSettingsHovered ? Color.accentColor.opacity(0.1) : Color.secondary.opacity(0.08))
-                        )
                 }
-                .buttonStyle(.plain)
-                .onHover { hovering in
-                    withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                        isSettingsHovered = hovering
-                    }
-                }
+                .buttonStyle(.glass)
                 .help(Text("Settings", tableName: "MenuBar", bundle: .main))
             }
         }
@@ -139,5 +112,4 @@ struct HeaderView: View {
         )
     }
     .frame(width: UIConstants.MenuBar.width)
-    .background(.ultraThinMaterial)
 }

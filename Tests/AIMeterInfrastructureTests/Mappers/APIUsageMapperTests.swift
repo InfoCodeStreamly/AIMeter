@@ -1,8 +1,9 @@
-import Testing
-@testable import AIMeterInfrastructure
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import Foundation
+import Testing
+
+@testable import AIMeterInfrastructure
 
 @Suite("APIUsageMapper")
 struct APIUsageMapperTests {
@@ -162,10 +163,12 @@ struct APIUsageMapperTests {
 
     @Test("toDomain maps resetTime correctly")
     func toDomainMapsResetTime() {
-        // Arrange
-        let expectedDate = "2026-02-06T15:30:45Z"
+        // Arrange — use a date 1 hour in the future to avoid time-sensitive failures
+        let futureDate = Date().addingTimeInterval(3600)
+        let formatter = ISO8601DateFormatter()
+        let futureDateString = formatter.string(from: futureDate)
         let response = UsageAPIResponse(
-            fiveHour: UsagePeriodData(utilization: 45.5, resetsAt: expectedDate),
+            fiveHour: UsagePeriodData(utilization: 45.5, resetsAt: futureDateString),
             sevenDay: nil,
             sevenDayOpus: nil,
             sevenDaySonnet: nil,

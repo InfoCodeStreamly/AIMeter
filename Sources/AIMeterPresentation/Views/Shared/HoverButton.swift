@@ -1,16 +1,14 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import SwiftUI
 
-/// Reusable button with hover effect and localization support
+/// Reusable button with Liquid Glass effect and localization support
 struct HoverButton: View {
     let icon: String
     let titleKey: LocalizedStringKey?
     let tableName: String?
     var isDestructive: Bool = false
     let action: () -> Void
-
-    @State private var isHovered = false
 
     init(
         icon: String,
@@ -43,23 +41,8 @@ struct HoverButton: View {
                 }
             }
             .foregroundStyle(isDestructive ? .red : .primary)
-            .padding(.horizontal, UIConstants.Spacing.sm)
-            .padding(.vertical, UIConstants.Spacing.xs)
-            .background(
-                RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                    .fill(
-                        isHovered
-                            ? (isDestructive ? Color.red.opacity(0.1) : Color.accentColor.opacity(0.1))
-                            : Color.clear
-                    )
-            )
         }
-        .buttonStyle(.plain)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                isHovered = hovering
-            }
-        }
+        .buttonStyle(.glass)
     }
 }
 

@@ -1,12 +1,10 @@
-import SwiftUI
 import AIMeterInfrastructure
+import SwiftUI
 
 /// Banner shown in menu bar popover when a new update is available
 struct UpdateBannerView: View {
     let version: String?
     let onInstall: () -> Void
-
-    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -31,22 +29,13 @@ struct UpdateBannerView: View {
             } label: {
                 Text("Install", tableName: "MenuBar", bundle: .main)
                     .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(.blue)
-                    )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
+            .tint(.blue)
         }
         .padding(.horizontal, UIConstants.SettingsCard.padding)
         .padding(.vertical, UIConstants.Spacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(.blue.opacity(0.08))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
         .padding(.horizontal, UIConstants.Spacing.md)
     }
 }
