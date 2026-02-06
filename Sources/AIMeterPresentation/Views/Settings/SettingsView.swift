@@ -157,7 +157,7 @@ public struct SettingsView: View {
 
 private struct WindowResizeAnchorModifier: ViewModifier {
     func body(content: Content) -> some View {
-        #if compiler(>=6.1)
+        #if compiler(>=6.2)
             if #available(macOS 26.0, *) {
                 content.windowResizeAnchor(.topLeading)
             } else {
