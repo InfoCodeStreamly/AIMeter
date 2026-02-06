@@ -1,13 +1,13 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
+import SwiftUI
 
-/// Кнопка для налаштувань з hover-ефектом
+/// Кнопка для налаштувань з Liquid Glass стилем
 struct SettingsButton: View {
     enum Style {
-        case primary      // синій фон, білий текст
-        case secondary    // бордер
-        case destructive  // червоний
+        case primary  // синій glass
+        case secondary  // прозорий glass
+        case destructive  // червоний glass
     }
 
     let title: LocalizedStringKey
@@ -16,8 +16,6 @@ struct SettingsButton: View {
     let isLoading: Bool
     let tableName: String?
     let action: () -> Void
-
-    @State private var isHovered = false
 
     init(
         _ title: LocalizedStringKey,
@@ -49,52 +47,18 @@ struct SettingsButton: View {
                 Text(title, tableName: tableName, bundle: .main)
                     .font(.body)
             }
-            .padding(.horizontal, UIConstants.Spacing.md)
-            .padding(.vertical, UIConstants.Spacing.sm)
             .frame(maxWidth: style == .primary ? .infinity : nil)
-            .background(backgroundColor)
-            .foregroundStyle(foregroundColor)
-            .cornerRadius(UIConstants.CornerRadius.small)
-            .overlay(
-                RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                    .strokeBorder(borderColor, lineWidth: style == .secondary ? 1 : 0)
-            )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.glass)
+        .tint(tintColor)
         .disabled(isLoading)
-        .onHover { hovering in
-            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                isHovered = hovering
-            }
-        }
     }
 
-    private var backgroundColor: Color {
+    private var tintColor: Color? {
         switch style {
-        case .primary:
-            return isHovered ? .blue.opacity(0.85) : .blue
-        case .secondary:
-            return isHovered ? Color(nsColor: .controlBackgroundColor) : .clear
-        case .destructive:
-            return isHovered ? .red.opacity(0.85) : .red
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch style {
-        case .primary, .destructive:
-            return .white
-        case .secondary:
-            return .primary
-        }
-    }
-
-    private var borderColor: Color {
-        switch style {
-        case .secondary:
-            return Color.gray.opacity(0.3)
-        default:
-            return .clear
+        case .primary: return .blue
+        case .secondary: return nil
+        case .destructive: return .red
         }
     }
 }

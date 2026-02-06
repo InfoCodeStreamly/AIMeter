@@ -1,5 +1,5 @@
-import SwiftUI
 import AIMeterDomain
+import SwiftUI
 
 /// Card view for displaying extra usage (pay-as-you-go) data
 struct ExtraUsageCardView: View {
@@ -44,7 +44,9 @@ struct ExtraUsageCardView: View {
                             )
                         )
                         .frame(width: geometry.size.width * CGFloat(data.percentage) / 100)
-                        .animation(.easeInOut(duration: UIConstants.Animation.slow), value: data.percentage)
+                        .animation(
+                            .easeInOut(duration: UIConstants.Animation.slow), value: data.percentage
+                        )
                 }
             }
             .frame(height: UIConstants.ProgressBar.height)
@@ -68,10 +70,7 @@ struct ExtraUsageCardView: View {
             }
         }
         .padding(UIConstants.Spacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
     }
 }
 

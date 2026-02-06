@@ -1,21 +1,21 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
+import SwiftUI
 
 /// UI-specific extensions for UsageStatus
-public extension UsageStatus {
+extension UsageStatus {
     /// Color for UI display
-    var color: Color {
+    public var color: Color {
         switch self {
-        case .safe: return .green
-        case .moderate: return .orange
+        case .safe: return AccessibleColors.safe
+        case .moderate: return AccessibleColors.moderate
         case .critical: return .red
         }
     }
 
     /// SF Symbol icon name
-    var icon: String {
+    public var icon: String {
         switch self {
         case .safe: return "checkmark.circle.fill"
         case .moderate: return "exclamationmark.triangle.fill"
@@ -24,7 +24,7 @@ public extension UsageStatus {
     }
 
     /// Human-readable description
-    var statusDescription: String {
+    public var statusDescription: String {
         switch self {
         case .safe: return "Good"
         case .moderate: return "Moderate"

@@ -1,9 +1,9 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
 import AppKit
 import Sparkle
+import SwiftUI
 
 /// Settings tab identifiers with localization keys
 enum SettingsTab: CaseIterable {
@@ -49,6 +49,7 @@ public struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTab: SettingsTab = .general
+    @State private var contentHeight: CGFloat = 0
 
     public init(
         viewModel: SettingsViewModel,
@@ -74,15 +75,21 @@ public struct SettingsView: View {
             Divider()
                 .padding(.top, UIConstants.Spacing.sm)
 
-            // Tab content — id forces SwiftUI to recalculate size on tab switch
+            // Tab content — measured and animated
             tabContent
-                .frame(maxWidth: .infinity)
-                .id(selectedTab)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.height
+                } action: { height in
+                    contentHeight = height
+                }
+                .frame(height: contentHeight, alignment: .top)
+                .clipped()
         }
         .frame(width: UIConstants.Settings.windowWidth)
-        .fixedSize(horizontal: false, vertical: true)
-        .animation(.easeInOut(duration: 0.15), value: selectedTab)
-        .background(.ultraThinMaterial)
+        .animation(.easeInOut(duration: 0.2), value: contentHeight)
+        .background(.regularMaterial)
+        .modifier(WindowResizeAnchorModifier())
         .task {
             await viewModel.onAppear()
         }
@@ -101,9 +108,7 @@ public struct SettingsView: View {
 
     private func tabButton(for tab: SettingsTab) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                selectedTab = tab
-            }
+            selectedTab = tab
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: tab.icon)
@@ -117,14 +122,12 @@ public struct SettingsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, UIConstants.Spacing.sm)
             .contentShape(Rectangle())
-            .background(
-                selectedTab == tab
-                    ? RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                        .fill(Color.blue.opacity(0.12))
-                    : nil
-            )
         }
         .buttonStyle(.plain)
+        .glassEffect(
+            selectedTab == tab ? .regular.interactive() : .clear.interactive(),
+            in: .rect(cornerRadius: UIConstants.CornerRadius.medium)
+        )
     }
 
     // MARK: - Tab Content
@@ -149,6 +152,18 @@ public struct SettingsView: View {
                 checkForUpdatesViewModel: checkForUpdatesViewModel,
                 appInfo: appInfo
             )
+        }
+    }
+}
+
+// MARK: - Window Resize Anchor
+
+private struct WindowResizeAnchorModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.windowResizeAnchor(.topLeading)
+        } else {
+            content
         }
     }
 }

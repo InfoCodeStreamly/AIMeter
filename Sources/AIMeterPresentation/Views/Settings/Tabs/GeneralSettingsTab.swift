@@ -1,8 +1,8 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
 import KeyboardShortcuts
+import SwiftUI
 
 /// General settings tab - Appearance, Language, Startup, Keyboard Shortcuts
 struct GeneralSettingsTab: View {
@@ -17,19 +17,49 @@ struct GeneralSettingsTab: View {
         VStack(spacing: UIConstants.Spacing.lg) {
             // Appearance
             SettingsCard(title: "Appearance", tableName: tableName) {
-                VStack(spacing: UIConstants.Spacing.sm) {
-                    ForEach(AppTheme.allCases, id: \.self) { theme in
-                        themeRow(theme)
+                @Bindable var theme = themeService
+                HStack {
+                    Label {
+                        Text("Theme", tableName: tableName, bundle: .main)
+                    } icon: {
+                        Image(systemName: "paintbrush")
+                            .foregroundStyle(.blue)
                     }
+
+                    Spacer()
+
+                    Picker("", selection: $theme.selectedTheme) {
+                        ForEach(AppTheme.allCases, id: \.self) { theme in
+                            Label(theme.displayName, systemImage: theme.icon)
+                                .tag(theme)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .fixedSize()
                 }
             }
 
             // Language
             SettingsCard(title: "Language", tableName: tableName) {
-                VStack(spacing: UIConstants.Spacing.sm) {
-                    ForEach(languageService.availableLanguages, id: \.self) { language in
-                        languageRow(language)
+                @Bindable var lang = languageService
+                HStack {
+                    Label {
+                        Text("Language", tableName: tableName, bundle: .main)
+                    } icon: {
+                        Image(systemName: "globe")
+                            .foregroundStyle(.blue)
                     }
+
+                    Spacer()
+
+                    Picker("", selection: $lang.selectedLanguage) {
+                        ForEach(languageService.availableLanguages, id: \.self) { language in
+                            Text(language.displayName)
+                                .tag(language)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .fixedSize()
                 }
             }
 
@@ -53,9 +83,11 @@ struct GeneralSettingsTab: View {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Toggle Menu", tableName: tableName, bundle: .main)
-                            Text("Open or close the usage menu", tableName: tableName, bundle: .main)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text(
+                                "Open or close the usage menu", tableName: tableName, bundle: .main
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         }
                     } icon: {
                         Image(systemName: "command")
@@ -71,89 +103,4 @@ struct GeneralSettingsTab: View {
         .padding(UIConstants.Spacing.xl)
     }
 
-    // MARK: - Theme Row
-
-    @MainActor
-    private func themeRow(_ theme: AppTheme) -> some View {
-        let isSelected = themeService.selectedTheme == theme
-
-        return Button {
-            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                themeService.selectedTheme = theme
-            }
-        } label: {
-            HStack(spacing: UIConstants.Spacing.md) {
-                Image(systemName: theme.icon)
-                    .font(.body)
-                    .foregroundStyle(isSelected ? .blue : .secondary)
-                    .frame(width: 24)
-
-                Text(theme.displayName)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.blue)
-                }
-            }
-            .padding(.vertical, UIConstants.Spacing.sm)
-            .padding(.horizontal, UIConstants.Spacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                    .fill(isSelected ? Color.blue.opacity(0.08) : Color.clear)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Language Row
-
-    @MainActor
-    private func languageRow(_ language: AppLanguage) -> some View {
-        let isSelected = languageService.selectedLanguage == language
-
-        return Button {
-            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
-                languageService.selectedLanguage = language
-            }
-        } label: {
-            HStack(spacing: UIConstants.Spacing.md) {
-                Image(systemName: language.icon)
-                    .font(.body)
-                    .foregroundStyle(isSelected ? .blue : .secondary)
-                    .frame(width: 24)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(language.displayName)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-
-                    if language == .system {
-                        Text("Currently: \(languageService.systemLanguageName)", tableName: languageTableName, bundle: .main)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.blue)
-                }
-            }
-            .padding(.vertical, UIConstants.Spacing.sm)
-            .padding(.horizontal, UIConstants.Spacing.md)
-            .background(
-                RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
-                    .fill(isSelected ? Color.blue.opacity(0.08) : Color.clear)
-            )
-        }
-        .buttonStyle(.plain)
-    }
 }

@@ -1,5 +1,5 @@
-import SwiftUI
 import AIMeterDomain
+import SwiftUI
 
 /// Card view for individual usage metric with gradient progress bar
 struct UsageCardView: View {
@@ -17,10 +17,12 @@ struct UsageCardView: View {
 
         if Calendar.current.isDateInToday(data.resetDate) {
             // Today: show time only in locale format (24h for uk, 12h for en)
-            formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "jmm", options: 0, locale: locale)
+            formatter.dateFormat = DateFormatter.dateFormat(
+                fromTemplate: "jmm", options: 0, locale: locale)
         } else {
             // Another day: show date and time in locale format
-            formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "MMMd jmm", options: 0, locale: locale)
+            formatter.dateFormat = DateFormatter.dateFormat(
+                fromTemplate: "MMMd jmm", options: 0, locale: locale)
         }
 
         let timeString = formatter.string(from: data.resetDate)
@@ -72,7 +74,9 @@ struct UsageCardView: View {
                         .foregroundStyle(data.color)
 
                     Text(data.percentageText)
-                        .font(.system(isPrimary ? .title3 : .body, design: .monospaced, weight: .bold))
+                        .font(
+                            .system(isPrimary ? .title3 : .body, design: .monospaced, weight: .bold)
+                        )
                         .foregroundStyle(data.color)
                 }
             }
@@ -93,8 +97,12 @@ struct UsageCardView: View {
                                 endPoint: .trailing
                             )
                         )
-                        .frame(width: geometry.size.width * min(CGFloat(data.percentage) / 100, 1.0))
-                        .animation(.easeInOut(duration: UIConstants.Animation.slow), value: data.percentage)
+                        .frame(
+                            width: geometry.size.width * min(CGFloat(data.percentage) / 100, 1.0)
+                        )
+                        .animation(
+                            .easeInOut(duration: UIConstants.Animation.slow), value: data.percentage
+                        )
                 }
             }
             .frame(height: UIConstants.ProgressBar.height)
@@ -108,17 +116,7 @@ struct UsageCardView: View {
             }
         }
         .padding(UIConstants.SettingsCard.padding)
-        .background(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .fill(Color(nsColor: .controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
-                .strokeBorder(
-                    Color.gray.opacity(UIConstants.SettingsCard.borderOpacity),
-                    lineWidth: UIConstants.SettingsCard.borderWidth
-                )
-        )
+        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
     }
 }
 

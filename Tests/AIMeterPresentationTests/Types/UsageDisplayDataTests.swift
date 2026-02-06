@@ -1,8 +1,9 @@
-import Testing
-import Foundation
-@testable import AIMeterPresentation
 import AIMeterDomain
+import Foundation
 import SwiftUI
+import Testing
+
+@testable import AIMeterPresentation
 
 /// Tests for UsageDisplayData presentation model
 @Suite("UsageDisplayData Tests")
@@ -105,7 +106,7 @@ struct UsageDisplayDataTests {
         let displayData = UsageDisplayData(from: entity)
 
         // Act & Assert
-        #expect(displayData.color == .green)
+        #expect(displayData.color == AccessibleColors.safe)
     }
 
     @Test("color returns orange for moderate status")
@@ -119,7 +120,7 @@ struct UsageDisplayDataTests {
         let displayData = UsageDisplayData(from: entity)
 
         // Act & Assert
-        #expect(displayData.color == .orange)
+        #expect(displayData.color == AccessibleColors.moderate)
     }
 
     @Test("color returns red for critical status")
