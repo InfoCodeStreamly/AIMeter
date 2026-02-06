@@ -73,10 +73,10 @@ public final class UsageViewModel {
         }
     }
 
-    /// Load detailed history for the trend detail window
+    /// Load detailed history for the trend detail window (hourly granularity)
     public func loadDetailHistory(days: Int) {
         Task {
-            if let history = await fetchUsageHistoryUseCase?.execute(days: days) {
+            if let history = await fetchUsageHistoryUseCase?.executeHourly(days: days) {
                 detailHistory = history
             }
         }

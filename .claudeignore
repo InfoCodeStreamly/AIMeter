@@ -1,0 +1,42 @@
+# Xcode project (pbxproj — 27KB of generated config)
+AIMeter.xcodeproj/
+
+# Binary assets — images, icons (~1.5MB total)
+Resources/AppIcon-Source.png
+AIMeter/Assets.xcassets/AppIcon.appiconset/*.png
+AIMeterWidget/Assets.xcassets/
+
+# Localization strings (JSON blobs, rarely needed)
+AIMeter/Resources/Localization/*.xcstrings
+
+# Asset catalog metadata
+**/*.xcassets/**/Contents.json
+
+# CI/CD workflow (read manually when needed)
+.github/
+
+# Build & release artifacts
+build/
+release/
+DerivedData/
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# Release config
+ExportOptions.plist
+scripts/
+
+# macOS
+.DS_Store
+
+# Entitlements (static plists)
+AIMeter/AIMeter.entitlements
+AIMeter/AIMeterRelease.entitlements
+AIMeterWidgetExtension.entitlements
+AIMeter/Info.plist
+AIMeterWidget/Info.plist

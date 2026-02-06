@@ -51,8 +51,8 @@ enum APIUsageMapper {
             return nil
         }
 
-        let monthlyLimit = data.monthlyLimit ?? 0
-        let usedCredits = data.usedCredits ?? 0
+        let monthlyLimit = (data.monthlyLimit ?? 0) / 100
+        let usedCredits = (data.usedCredits ?? 0) / 100
         let utilization = Percentage.clamped(data.utilization ?? 0)
 
         return ExtraUsageEntity(
