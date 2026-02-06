@@ -8,12 +8,14 @@ import Sparkle
 public struct MenuBarView: View {
     @Bindable var viewModel: UsageViewModel
     let updater: SPUUpdater
+    let updateDelegate: UpdateAvailabilityDelegate?
     @Environment(\.openWindow) private var openWindow
     @State private var isRefreshing = false
 
-    public init(viewModel: UsageViewModel, updater: SPUUpdater) {
+    public init(viewModel: UsageViewModel, updater: SPUUpdater, updateDelegate: UpdateAvailabilityDelegate? = nil) {
         self.viewModel = viewModel
         self.updater = updater
+        self.updateDelegate = updateDelegate
     }
 
     public var body: some View {
@@ -36,6 +38,15 @@ public struct MenuBarView: View {
                 onCopy: { viewModel.copyToClipboard() },
                 onSettings: { openWindow(id: "settings") }
             )
+
+            // Update available banner
+            if let delegate = updateDelegate, delegate.updateAvailable {
+                UpdateBannerView(
+                    version: delegate.availableVersion,
+                    onInstall: { updater.checkForUpdates() }
+                )
+                .padding(.top, UIConstants.Spacing.xs)
+            }
 
             Divider()
                 .padding(.horizontal, UIConstants.Spacing.md)

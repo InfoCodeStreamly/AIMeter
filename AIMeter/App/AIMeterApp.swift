@@ -25,10 +25,13 @@ struct AIMeterApp: App {
     /// Delegate for gentle update reminders (menu bar apps)
     private let gentleUpdateDelegate = GentleUpdateDelegate()
 
+    /// Delegate for tracking update availability (indicator in menu bar)
+    private let updateAvailabilityDelegate = UpdateAvailabilityDelegate()
+
     init() {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
-            updaterDelegate: nil,
+            updaterDelegate: updateAvailabilityDelegate,
             userDriverDelegate: gentleUpdateDelegate
         )
     }
@@ -38,7 +41,8 @@ struct AIMeterApp: App {
         MenuBarExtra {
             MenuBarView(
                 viewModel: viewModel,
-                updater: updaterController.updater
+                updater: updaterController.updater,
+                updateDelegate: updateAvailabilityDelegate
             )
             .environment(languageService)
             .environment(themeService)
@@ -80,6 +84,14 @@ struct AIMeterApp: App {
             Image(systemName: viewModel.menuBarStatus.icon)
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(viewModel.menuBarStatus.color)
+                .overlay(alignment: .topTrailing) {
+                    if updateAvailabilityDelegate.updateAvailable {
+                        Circle()
+                            .fill(.blue)
+                            .frame(width: 6, height: 6)
+                            .offset(x: 2, y: -2)
+                    }
+                }
             Text(viewModel.menuBarText)
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .monospacedDigit()
