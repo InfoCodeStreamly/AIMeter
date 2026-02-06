@@ -9,10 +9,9 @@ struct LanguageSettingsTab: View {
     private let tableName = "SettingsLanguage"
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: UIConstants.Spacing.lg) {
-                // Language selection card
-                SettingsCard(title: "App Language", tableName: tableName) {
+        VStack(spacing: UIConstants.Spacing.lg) {
+            // Language selection card
+            SettingsCard(title: "App Language", tableName: tableName) {
                     VStack(spacing: UIConstants.Spacing.sm) {
                         ForEach(languageService.availableLanguages, id: \.self) { language in
                             languageRow(language)
@@ -21,14 +20,11 @@ struct LanguageSettingsTab: View {
                 }
 
                 // Note about system language
-                Text("When set to System Default, the app follows your macOS language preferences.", tableName: tableName, bundle: .main)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-
-                Spacer()
-            }
-            .padding(UIConstants.Spacing.xl)
+            Text("When set to System Default, the app follows your macOS language preferences.", tableName: tableName, bundle: .main)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
+        .padding(UIConstants.Spacing.xl)
     }
 
     // MARK: - Language Row

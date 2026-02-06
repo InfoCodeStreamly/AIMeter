@@ -9,8 +9,7 @@ struct ConnectionSettingsTab: View {
     private let tableName = "SettingsConnection"
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: UIConstants.Spacing.lg) {
+        VStack(spacing: UIConstants.Spacing.lg) {
                 // State-based content
                 switch viewModel.state {
                 case .checking:
@@ -34,9 +33,8 @@ struct ConnectionSettingsTab: View {
                 case .error(let message):
                     errorView(message: message)
                 }
-            }
-            .padding(UIConstants.Spacing.xl)
         }
+        .padding(UIConstants.Spacing.xl)
     }
 
     // MARK: - State Views
