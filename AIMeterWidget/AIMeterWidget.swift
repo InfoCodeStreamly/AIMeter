@@ -201,8 +201,8 @@ struct MediumWidgetView: View {
                 Spacer()
 
                 // Right side - info
-                VStack(alignment: .trailing, spacing: 6) {
-                    HStack {
+                VStack(alignment: .trailing, spacing: 4) {
+                    HStack(spacing: 4) {
                         Image(systemName: "brain.head.profile")
                             .foregroundStyle(.purple)
                         Text("AIMeter")
@@ -213,7 +213,7 @@ struct MediumWidgetView: View {
 
                     // Extra usage
                     if data.extraUsageEnabled {
-                        VStack(alignment: .trailing, spacing: 2) {
+                        VStack(alignment: .trailing, spacing: 1) {
                             Text("Extra")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -224,24 +224,28 @@ struct MediumWidgetView: View {
                     }
 
                     if let resetDate = data.weeklyResetDate {
-                        VStack(alignment: .trailing, spacing: 2) {
+                        VStack(alignment: .trailing, spacing: 1) {
                             Text("Weekly resets")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Text(formatResetDate(resetDate))
-                                .font(.caption.bold())
+                                .font(.caption2.bold())
                                 .foregroundStyle(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
                     }
 
                     if let sessionReset = data.sessionResetDate {
-                        VStack(alignment: .trailing, spacing: 2) {
+                        VStack(alignment: .trailing, spacing: 1) {
                             Text("Session resets")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Text(formatResetDate(sessionReset))
-                                .font(.caption.bold())
+                                .font(.caption2.bold())
                                 .foregroundStyle(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
                     }
                 }
@@ -261,7 +265,7 @@ struct MediumWidgetView: View {
             formatter.dateFormat = "d MMM, HH:mm"
         }
         let time = formatter.string(from: date)
-        let tz = TimeZone.current.identifier
+        let tz = TimeZone.current.abbreviation() ?? TimeZone.current.identifier
         return "\(time) (\(tz))"
     }
 }
@@ -315,22 +319,22 @@ struct UsageCircleLarge: View {
     let resetDate: Date?
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             ZStack {
                 Circle()
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 6)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 7)
 
                 Circle()
                     .trim(from: 0, to: CGFloat(percentage) / 100)
-                    .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                    .stroke(color, style: StrokeStyle(lineWidth: 7, lineCap: .round))
                     .rotationEffect(.degrees(-90))
 
                 VStack(spacing: 0) {
                     Text("\(percentage)%")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
                 }
             }
-            .frame(width: 56, height: 56)
+            .frame(width: 72, height: 72)
 
             Text(label)
                 .font(.system(size: 10, weight: .medium))
@@ -338,7 +342,7 @@ struct UsageCircleLarge: View {
 
             if let resetDate = resetDate {
                 Text(formatResetTime(resetDate))
-                    .font(.system(size: 8))
+                    .font(.system(size: 9))
                     .foregroundStyle(.tertiary)
             }
         }
