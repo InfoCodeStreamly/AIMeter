@@ -186,7 +186,8 @@ struct MediumWidgetView: View {
                     label: "Session",
                     percentage: data.sessionPercentage,
                     color: statusColor(data.sessionStatus),
-                    resetText: formatReset(data.sessionResetDate)
+                    resetLabel: "resets",
+                    resetTime: formatResetLine1(data.sessionResetDate)
                 )
 
                 Spacer()
@@ -196,7 +197,8 @@ struct MediumWidgetView: View {
                     label: "Weekly",
                     percentage: data.weeklyPercentage,
                     color: statusColor(data.weeklyStatus),
-                    resetText: formatReset(data.weeklyResetDate)
+                    resetLabel: "resets",
+                    resetTime: formatResetLine1(data.weeklyResetDate)
                 )
 
                 // Extra usage (if enabled)
@@ -219,17 +221,15 @@ struct MediumWidgetView: View {
         }
     }
 
-    private func formatReset(_ date: Date?) -> String {
-        guard let date, date > Date() else { return "↻ now" }
+    private func formatResetLine1(_ date: Date?) -> String {
+        guard let date, date > Date() else { return "now" }
         let formatter = DateFormatter()
         if Calendar.current.isDateInToday(date) {
             formatter.dateFormat = "HH:mm"
-            let tz = TimeZone.current.abbreviation() ?? ""
-            return "↻ \(formatter.string(from: date)) \(tz)"
         } else {
             formatter.dateFormat = "d MMM, HH:mm"
-            return "↻ \(formatter.string(from: date))"
         }
+        return formatter.string(from: date)
     }
 }
 
@@ -279,10 +279,11 @@ struct UsageCircleMedium: View {
     let label: String
     let percentage: Int
     let color: Color
-    let resetText: String
+    let resetLabel: String
+    let resetTime: String
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 5) {
             // Circle
             ZStack {
                 Circle()
@@ -298,14 +299,14 @@ struct UsageCircleMedium: View {
             }
             .frame(width: 60, height: 60)
 
-            // Label + reset
-            VStack(spacing: 2) {
-                Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+            // Label + reset (2 rows)
+            VStack(spacing: 1) {
+                Text("\(label) \(resetLabel)")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
 
-                Text(resetText)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
+                Text(resetTime)
+                    .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
