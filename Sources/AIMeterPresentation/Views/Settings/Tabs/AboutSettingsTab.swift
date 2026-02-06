@@ -107,7 +107,7 @@ struct AboutSettingsTab: View {
             }
             .padding(.vertical, UIConstants.Spacing.xs)
         }
-        .buttonStyle(.glass)
+        .glassButton()
         .foregroundStyle(.primary)
     }
 

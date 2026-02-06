@@ -64,7 +64,7 @@ struct SettingsCard<Content: View>: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
+        .glassCard()
     }
 }
 

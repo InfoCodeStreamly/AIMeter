@@ -70,7 +70,7 @@ struct ExtraUsageCardView: View {
             }
         }
         .padding(UIConstants.Spacing.md)
-        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
+        .glassCard()
     }
 }
 

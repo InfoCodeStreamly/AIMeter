@@ -42,7 +42,7 @@ struct HoverButton: View {
             }
             .foregroundStyle(isDestructive ? .red : .primary)
         }
-        .buttonStyle(.glass)
+        .glassButton()
     }
 }
 
