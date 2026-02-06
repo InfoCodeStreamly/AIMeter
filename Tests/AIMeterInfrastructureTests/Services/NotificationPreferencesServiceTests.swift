@@ -136,11 +136,7 @@ struct NotificationPreferencesServiceTests {
         // Arrange
         cleanupTestData()
         let service1 = NotificationPreferencesService()
-        // Key must have valid ISO8601 date suffix to survive clearExpired() in init
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        let dateStr = formatter.string(from: Date())
-        let testKey = "\(Self.testKeyPrefix)persist_test_\(dateStr)"
+        let testKey = "\(Self.testKeyPrefix)persist_test_key"
 
         // Act
         service1.markSent(key: testKey)

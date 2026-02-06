@@ -92,9 +92,9 @@ public final class NotificationPreferencesService: NotificationPreferencesProtoc
 
         let validKeys = current.filter { key in
             let components = key.split(separator: "_")
-            guard components.count >= 3 else { return false }
+            guard components.count >= 3 else { return true }
             let dateString = String(components.last ?? "")
-            guard let date = formatter.date(from: dateString) else { return false }
+            guard let date = formatter.date(from: dateString) else { return true }
             return date > sevenDaysAgo
         }
 
