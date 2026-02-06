@@ -53,6 +53,17 @@ struct AIMeterApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+
+        // Usage Detail Window
+        Window("Usage Trend", id: "usage-detail") {
+            UsageDetailView(viewModel: viewModel)
+                .environment(languageService)
+                .environment(\.locale, languageService.currentLocale)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 520, height: 420)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 
     private var menuBarLabel: some View {

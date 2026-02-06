@@ -5,6 +5,7 @@ import AIMeterDomain
 /// Mini chart showing weekly usage trend (daily max values)
 struct UsageChartView: View {
     let history: [UsageHistoryEntry]
+    var onTap: (() -> Void)? = nil
     @State private var selectedEntry: UsageHistoryEntry?
 
     private var hasEnoughData: Bool {
@@ -94,6 +95,8 @@ struct UsageChartView: View {
             }
         }
         .padding(UIConstants.Spacing.md)
+        .contentShape(Rectangle())
+        .onTapGesture { onTap?() }
         .background(
             RoundedRectangle(cornerRadius: UIConstants.CornerRadius.medium)
                 .fill(Color(nsColor: .controlBackgroundColor))
