@@ -25,12 +25,14 @@ public struct UsageDetailView: View {
 
                 Spacer()
 
-                Picker("Range", selection: $selectedDays) {
+                Picker(selection: $selectedDays) {
                     Text("7 days").tag(7)
                     Text("30 days").tag(30)
+                } label: {
+                    EmptyView()
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 160)
+                .frame(width: 180)
             }
 
             // Chart
