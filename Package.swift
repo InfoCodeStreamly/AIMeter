@@ -61,17 +61,17 @@ let package = Package(
         ),
         .testTarget(
             name: "AIMeterApplicationTests",
-            dependencies: ["AIMeterApplication"],
+            dependencies: ["AIMeterApplication", "AIMeterDomain"],
             path: "Tests/AIMeterApplicationTests"
         ),
         .testTarget(
             name: "AIMeterInfrastructureTests",
-            dependencies: ["AIMeterInfrastructure"],
+            dependencies: ["AIMeterInfrastructure", "AIMeterDomain"],
             path: "Tests/AIMeterInfrastructureTests"
         ),
         .testTarget(
             name: "AIMeterPresentationTests",
-            dependencies: ["AIMeterPresentation"],
+            dependencies: ["AIMeterPresentation", "AIMeterDomain"],
             path: "Tests/AIMeterPresentationTests"
         ),
     ]

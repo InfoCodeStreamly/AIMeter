@@ -13,12 +13,20 @@ public struct AppVersion: Sendable, Comparable, Equatable {
     /// - Parameter string: Version string to parse
     /// - Returns: AppVersion if parsing succeeds, nil otherwise
     public static func parse(_ string: String) -> AppVersion? {
-        // Remove 'v' prefix if present
-        let cleaned = string.hasPrefix("v") ? String(string.dropFirst()) : string
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Remove 'v' or 'V' prefix if present
+        let cleaned: String
+        if trimmed.hasPrefix("v") || trimmed.hasPrefix("V") {
+            cleaned = String(trimmed.dropFirst())
+        } else {
+            cleaned = trimmed
+        }
 
         let components = cleaned.split(separator: ".").compactMap { Int($0) }
 
         guard components.count >= 2 else { return nil }
+        guard components.allSatisfy({ $0 >= 0 }) else { return nil }
 
         return AppVersion(
             major: components[0],

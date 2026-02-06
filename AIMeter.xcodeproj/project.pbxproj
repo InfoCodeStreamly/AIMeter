@@ -18,14 +18,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		89103E8F2F1BA8E900E2B0D9 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 89E20C702F1ACAD5000A6C9A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 89E20C772F1ACAD5000A6C9A;
-			remoteInfo = AIMeter;
-		};
-		89CA7DFD2F35421B003A170C /* PBXContainerItemProxy */ = {
+89CA7DFD2F35421B003A170C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 89E20C702F1ACAD5000A6C9A /* Project object */;
 			proxyType = 1;
@@ -49,8 +42,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		89103E8B2F1BA8E900E2B0D9 /* AIMeterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIMeterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		89CA7DEF2F354219003A170C /* AIMeterWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AIMeterWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+89CA7DEF2F354219003A170C /* AIMeterWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AIMeterWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89CA7DF12F354219003A170C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		89CA7DF32F35421A003A170C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		89CA7E052F354326003A170C /* AIMeterWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AIMeterWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -75,12 +67,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		89103E8C2F1BA8E900E2B0D9 /* AIMeterTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AIMeterTests;
-			sourceTree = "<group>";
-		};
-		89CA7DF52F35421A003A170C /* AIMeterWidget */ = {
+	89CA7DF52F35421A003A170C /* AIMeterWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				89CA7E042F35421B003A170C /* Exceptions for "AIMeterWidget" folder in "AIMeterWidgetExtension" target */,
@@ -99,14 +86,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		89103E882F1BA8E900E2B0D9 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		89CA7DEC2F354219003A170C /* Frameworks */ = {
+89CA7DEC2F354219003A170C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -144,8 +124,7 @@
 			children = (
 				89CA7E052F354326003A170C /* AIMeterWidgetExtension.entitlements */,
 				89E20C7A2F1ACAD5000A6C9A /* AIMeter */,
-				89103E8C2F1BA8E900E2B0D9 /* AIMeterTests */,
-				89CA7DF52F35421A003A170C /* AIMeterWidget */,
+89CA7DF52F35421A003A170C /* AIMeterWidget */,
 				89CA7DF02F354219003A170C /* Frameworks */,
 				89E20C792F1ACAD5000A6C9A /* Products */,
 			);
@@ -155,8 +134,7 @@
 			isa = PBXGroup;
 			children = (
 				89E20C782F1ACAD5000A6C9A /* AIMeter.app */,
-				89103E8B2F1BA8E900E2B0D9 /* AIMeterTests.xctest */,
-				89CA7DEF2F354219003A170C /* AIMeterWidgetExtension.appex */,
+89CA7DEF2F354219003A170C /* AIMeterWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -164,30 +142,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		89103E8A2F1BA8E900E2B0D9 /* AIMeterTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 89103E912F1BA8E900E2B0D9 /* Build configuration list for PBXNativeTarget "AIMeterTests" */;
-			buildPhases = (
-				89103E872F1BA8E900E2B0D9 /* Sources */,
-				89103E882F1BA8E900E2B0D9 /* Frameworks */,
-				89103E892F1BA8E900E2B0D9 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				89103E902F1BA8E900E2B0D9 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				89103E8C2F1BA8E900E2B0D9 /* AIMeterTests */,
-			);
-			name = AIMeterTests;
-			packageProductDependencies = (
-			);
-			productName = AIMeterTests;
-			productReference = 89103E8B2F1BA8E900E2B0D9 /* AIMeterTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		89CA7DEE2F354219003A170C /* AIMeterWidgetExtension */ = {
+89CA7DEE2F354219003A170C /* AIMeterWidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 89CA7E032F35421B003A170C /* Build configuration list for PBXNativeTarget "AIMeterWidgetExtension" */;
 			buildPhases = (
@@ -245,11 +200,7 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
-					89103E8A2F1BA8E900E2B0D9 = {
-						CreatedOnToolsVersion = 26.2;
-						TestTargetID = 89E20C772F1ACAD5000A6C9A;
-					};
-					89CA7DEE2F354219003A170C = {
+	89CA7DEE2F354219003A170C = {
 						CreatedOnToolsVersion = 26.2;
 					};
 					89E20C772F1ACAD5000A6C9A = {
@@ -281,20 +232,12 @@
 			projectRoot = "";
 			targets = (
 				89E20C772F1ACAD5000A6C9A /* AIMeter */,
-				89103E8A2F1BA8E900E2B0D9 /* AIMeterTests */,
-				89CA7DEE2F354219003A170C /* AIMeterWidgetExtension */,
+89CA7DEE2F354219003A170C /* AIMeterWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		89103E892F1BA8E900E2B0D9 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		89CA7DED2F354219003A170C /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -334,13 +277,6 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		89103E872F1BA8E900E2B0D9 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		89CA7DEB2F354219003A170C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -358,11 +294,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		89103E902F1BA8E900E2B0D9 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 89E20C772F1ACAD5000A6C9A /* AIMeter */;
-			targetProxy = 89103E8F2F1BA8E900E2B0D9 /* PBXContainerItemProxy */;
-		};
 		89CA7DFE2F35421B003A170C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 89CA7DEE2F354219003A170C /* AIMeterWidgetExtension */;
@@ -371,59 +302,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		89103E922F1BA8E900E2B0D9 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = U9X652K3RD;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.codestreamly.AIMeterTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIMeter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIMeter";
-				XROS_DEPLOYMENT_TARGET = 26.2;
-			};
-			name = Debug;
-		};
-		89103E932F1BA8E900E2B0D9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = U9X652K3RD;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.codestreamly.AIMeterTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = auto;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AIMeter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AIMeter";
-				VALIDATE_PRODUCT = YES;
-				XROS_DEPLOYMENT_TARGET = 26.2;
-			};
-			name = Release;
-		};
 		89CA7E012F35421B003A170C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -719,15 +597,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		89103E912F1BA8E900E2B0D9 /* Build configuration list for PBXNativeTarget "AIMeterTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				89103E922F1BA8E900E2B0D9 /* Debug */,
-				89103E932F1BA8E900E2B0D9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		89CA7E032F35421B003A170C /* Build configuration list for PBXNativeTarget "AIMeterWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
