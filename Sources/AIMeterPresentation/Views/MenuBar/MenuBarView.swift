@@ -140,7 +140,7 @@ public struct MenuBarView: View {
             } label: {
                 Text("Retry", tableName: "Localizable", bundle: .main)
             }
-            .buttonStyle(.glass)
+            .glassButton()
             .controlSize(.small)
         }
         .padding()
@@ -162,7 +162,7 @@ public struct MenuBarView: View {
             } label: {
                 Text("Open Settings", tableName: "Localizable", bundle: .main)
             }
-            .buttonStyle(.glass)
+            .glassButton()
             .controlSize(.small)
         }
         .padding()

@@ -97,7 +97,7 @@ struct UsageChartView: View {
         .padding(UIConstants.Spacing.md)
         .contentShape(Rectangle())
         .onTapGesture { onTap?() }
-        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
+        .glassCard()
     }
 
     private func dayAbbreviation(_ date: Date) -> String {

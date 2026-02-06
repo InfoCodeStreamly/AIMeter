@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "AIMeter",
-    platforms: [.macOS("26.0")],
+    platforms: [.macOS(.v15)],
     products: [
         .library(name: "AIMeterDomain", targets: ["AIMeterDomain"]),
         .library(name: "AIMeterApplication", targets: ["AIMeterApplication"]),

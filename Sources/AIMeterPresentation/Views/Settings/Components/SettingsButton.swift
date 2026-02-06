@@ -49,7 +49,7 @@ struct SettingsButton: View {
             }
             .frame(maxWidth: style == .primary ? .infinity : nil)
         }
-        .buttonStyle(.glass)
+        .glassButton()
         .tint(tintColor)
         .disabled(isLoading)
     }

@@ -124,10 +124,7 @@ public struct SettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .glassEffect(
-            selectedTab == tab ? .regular.interactive() : .clear.interactive(),
-            in: .rect(cornerRadius: UIConstants.CornerRadius.medium)
-        )
+        .glassTab(isSelected: selectedTab == tab)
     }
 
     // MARK: - Tab Content

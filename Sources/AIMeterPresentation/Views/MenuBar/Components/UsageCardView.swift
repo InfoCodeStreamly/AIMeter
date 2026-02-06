@@ -116,7 +116,7 @@ struct UsageCardView: View {
             }
         }
         .padding(UIConstants.SettingsCard.padding)
-        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
+        .glassCard()
     }
 }
 

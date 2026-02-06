@@ -50,7 +50,7 @@ struct HeaderView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.glass)
+                .glassButton()
                 .disabled(isRefreshing)
                 .help(Text("Refresh", tableName: "MenuBar", bundle: .main))
 
@@ -71,7 +71,7 @@ struct HeaderView: View {
                         .foregroundStyle(isCopied ? AccessibleColors.success : .secondary)
                         .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.glass)
+                .glassButton()
                 .help(
                     Text(
                         isCopied ? "Copied!" : "Copy to clipboard", tableName: "MenuBar",
@@ -84,7 +84,7 @@ struct HeaderView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.glass)
+                .glassButton()
                 .help(Text("Settings", tableName: "MenuBar", bundle: .main))
             }
         }

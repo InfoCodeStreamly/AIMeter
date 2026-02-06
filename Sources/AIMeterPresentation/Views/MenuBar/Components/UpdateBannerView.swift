@@ -30,12 +30,12 @@ struct UpdateBannerView: View {
                 Text("Install", tableName: "MenuBar", bundle: .main)
                     .font(.caption.bold())
             }
-            .buttonStyle(.glass)
+            .glassButton()
             .tint(.blue)
         }
         .padding(.horizontal, UIConstants.SettingsCard.padding)
         .padding(.vertical, UIConstants.Spacing.sm)
-        .glassEffect(.regular, in: .rect(cornerRadius: UIConstants.CornerRadius.medium))
+        .glassCard()
         .padding(.horizontal, UIConstants.Spacing.md)
     }
 }
