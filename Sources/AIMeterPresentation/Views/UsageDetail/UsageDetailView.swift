@@ -88,6 +88,7 @@ public struct UsageDetailView: View {
                     "Session": .blue,
                     "Weekly": .purple
                 ])
+                .chartLegend(.hidden)
                 .frame(minHeight: 280)
             } else {
                 VStack(spacing: 8) {
