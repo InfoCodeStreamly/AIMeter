@@ -12,12 +12,8 @@ struct UpdatesSettingsTab: View {
     private let tableName = "SettingsUpdates"
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: UIConstants.Spacing.lg) {
-                Spacer()
-                    .frame(height: UIConstants.Spacing.xl)
-
-                // Current version card
+        VStack(spacing: UIConstants.Spacing.lg) {
+            // Current version card
                 SettingsCard {
                     VStack(spacing: UIConstants.Spacing.md) {
                         Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
@@ -56,13 +52,10 @@ struct UpdatesSettingsTab: View {
                     }
                 }
 
-                Text("Updates are checked automatically", tableName: tableName, bundle: .main)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-
-                Spacer()
-            }
-            .padding(UIConstants.Spacing.xl)
+            Text("Updates are checked automatically", tableName: tableName, bundle: .main)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
         }
+        .padding(UIConstants.Spacing.xl)
     }
 }

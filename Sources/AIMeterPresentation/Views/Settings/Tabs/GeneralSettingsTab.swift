@@ -13,10 +13,9 @@ struct GeneralSettingsTab: View {
     private let tableName = "SettingsGeneral"
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: UIConstants.Spacing.lg) {
-                // Appearance
-                SettingsCard(title: "Appearance", tableName: tableName) {
+        VStack(spacing: UIConstants.Spacing.lg) {
+            // Appearance
+            SettingsCard(title: "Appearance", tableName: tableName) {
                     VStack(spacing: UIConstants.Spacing.sm) {
                         ForEach(AppTheme.allCases, id: \.self) { theme in
                             themeRow(theme)
@@ -129,10 +128,8 @@ struct GeneralSettingsTab: View {
                     }
                 }
 
-                Spacer()
-            }
-            .padding(UIConstants.Spacing.xl)
         }
+        .padding(UIConstants.Spacing.xl)
     }
 
     // MARK: - Theme Row

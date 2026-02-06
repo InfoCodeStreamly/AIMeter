@@ -11,8 +11,6 @@ struct AboutSettingsTab: View {
 
     var body: some View {
         VStack(spacing: UIConstants.Spacing.lg) {
-            Spacer()
-
             // App info card
             SettingsCard {
                     VStack(spacing: UIConstants.Spacing.md) {
@@ -54,8 +52,6 @@ struct AboutSettingsTab: View {
                         )
                     }
                 }
-
-            Spacer()
         }
         .padding(UIConstants.Spacing.xl)
     }

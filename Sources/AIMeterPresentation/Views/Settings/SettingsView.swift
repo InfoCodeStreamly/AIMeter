@@ -84,9 +84,10 @@ public struct SettingsView: View {
 
             // Tab content
             tabContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity)
         }
-        .frame(width: UIConstants.Settings.windowWidth, height: UIConstants.Settings.windowHeight)
+        .frame(width: UIConstants.Settings.windowWidth)
+        .fixedSize(horizontal: false, vertical: true)
         .background(.ultraThinMaterial)
         .task {
             await viewModel.onAppear()
