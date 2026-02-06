@@ -180,51 +180,37 @@ struct MediumWidgetView: View {
 
     var body: some View {
         if let data = entry.data {
-            VStack(spacing: 0) {
-                // Top row: logo + extra usage
-                HStack {
-                    HStack(spacing: 4) {
-                        Image(systemName: "brain.head.profile")
-                            .foregroundStyle(.purple)
-                        Text("AIMeter")
-                            .font(.subheadline.bold())
-                    }
-
-                    Spacer()
-
-                    if data.extraUsageEnabled {
-                        HStack(spacing: 4) {
-                            Image(systemName: "creditcard.fill")
-                                .font(.system(size: 9))
-                                .foregroundStyle(.blue)
-                            Text("\(data.extraUsageSpent)/\(data.extraUsageLimit)")
-                                .font(.system(size: 10, weight: .medium).monospacedDigit())
-                                .foregroundStyle(.blue)
-                        }
-                    }
-                }
+            HStack(spacing: 0) {
+                // Session
+                UsageCircleMedium(
+                    label: "Session",
+                    percentage: data.sessionPercentage,
+                    color: statusColor(data.sessionStatus),
+                    resetText: formatReset(data.sessionResetDate)
+                )
 
                 Spacer()
 
-                // Bottom: circles with reset info
-                HStack(spacing: 0) {
-                    // Session circle
-                    UsageCircleMedium(
-                        label: "Session",
-                        percentage: data.sessionPercentage,
-                        color: statusColor(data.sessionStatus),
-                        resetText: formatReset("Session", data.sessionResetDate)
-                    )
+                // Weekly
+                UsageCircleMedium(
+                    label: "Weekly",
+                    percentage: data.weeklyPercentage,
+                    color: statusColor(data.weeklyStatus),
+                    resetText: formatReset(data.weeklyResetDate)
+                )
 
+                // Extra usage (if enabled)
+                if data.extraUsageEnabled && data.extraUsagePercentage > 0 {
                     Spacer()
 
-                    // Weekly circle
-                    UsageCircleMedium(
-                        label: "Weekly",
-                        percentage: data.weeklyPercentage,
-                        color: statusColor(data.weeklyStatus),
-                        resetText: formatReset("Weekly", data.weeklyResetDate)
-                    )
+                    VStack(spacing: 2) {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.blue)
+                        Text(data.extraUsageSpent)
+                            .font(.system(size: 10, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.blue)
+                    }
                 }
             }
             .padding()
@@ -233,7 +219,7 @@ struct MediumWidgetView: View {
         }
     }
 
-    private func formatReset(_ type: String, _ date: Date?) -> String {
+    private func formatReset(_ date: Date?) -> String {
         guard let date, date > Date() else { return "↻ now" }
         let formatter = DateFormatter()
         if Calendar.current.isDateInToday(date) {
@@ -296,33 +282,32 @@ struct UsageCircleMedium: View {
     let resetText: String
 
     var body: some View {
-        HStack(spacing: 10) {
+        VStack(spacing: 6) {
             // Circle
             ZStack {
                 Circle()
-                    .stroke(Color.secondary.opacity(0.2), lineWidth: 7)
+                    .stroke(Color.secondary.opacity(0.2), lineWidth: 6)
 
                 Circle()
                     .trim(from: 0, to: CGFloat(percentage) / 100)
-                    .stroke(color, style: StrokeStyle(lineWidth: 7, lineCap: .round))
+                    .stroke(color, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
 
                 Text("\(percentage)%")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 60, height: 60)
 
             // Label + reset
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(spacing: 2) {
                 Text(label)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(.system(size: 11, weight: .semibold))
 
                 Text(resetText)
-                    .font(.system(size: 10))
+                    .font(.system(size: 9))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.7)
             }
         }
     }
