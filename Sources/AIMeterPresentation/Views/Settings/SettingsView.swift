@@ -9,8 +9,6 @@ import Sparkle
 enum SettingsTab: CaseIterable {
     case general
     case connection
-    case language
-    case updates
     case about
 
     /// Localization key for the tab title
@@ -18,8 +16,6 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "General"
         case .connection: return "Connection"
-        case .language: return "Language"
-        case .updates: return "Update"
         case .about: return "About"
         }
     }
@@ -29,8 +25,6 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "SettingsGeneral"
         case .connection: return "SettingsConnection"
-        case .language: return "SettingsLanguage"
-        case .updates: return "SettingsUpdates"
         case .about: return "SettingsAbout"
         }
     }
@@ -39,8 +33,6 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .connection: return "link"
-        case .language: return "globe"
-        case .updates: return "arrow.triangle.2.circlepath"
         case .about: return "info.circle"
         }
     }
@@ -82,12 +74,14 @@ public struct SettingsView: View {
             Divider()
                 .padding(.top, UIConstants.Spacing.sm)
 
-            // Tab content
+            // Tab content — id forces SwiftUI to recalculate size on tab switch
             tabContent
                 .frame(maxWidth: .infinity)
+                .id(selectedTab)
         }
         .frame(width: UIConstants.Settings.windowWidth)
         .fixedSize(horizontal: false, vertical: true)
+        .animation(.easeInOut(duration: 0.15), value: selectedTab)
         .background(.ultraThinMaterial)
         .task {
             await viewModel.onAppear()
@@ -140,25 +134,21 @@ public struct SettingsView: View {
         switch selectedTab {
         case .general:
             GeneralSettingsTab(
-                launchAtLogin: launchAtLogin,
-                notificationPreferences: notificationPreferences
+                launchAtLogin: launchAtLogin
             )
 
         case .connection:
-            ConnectionSettingsTab(viewModel: viewModel)
+            ConnectionSettingsTab(
+                viewModel: viewModel,
+                notificationPreferences: notificationPreferences
+            )
 
-        case .language:
-            LanguageSettingsTab()
-
-        case .updates:
-            UpdatesSettingsTab(
+        case .about:
+            AboutSettingsTab(
                 updater: updater,
                 checkForUpdatesViewModel: checkForUpdatesViewModel,
                 appInfo: appInfo
             )
-
-        case .about:
-            AboutSettingsTab(appInfo: appInfo)
         }
     }
 }

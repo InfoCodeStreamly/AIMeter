@@ -70,6 +70,7 @@ struct AIMeterApp: App {
             UsageDetailView(viewModel: viewModel)
                 .environment(languageService)
                 .environment(themeService)
+                .environment(DependencyContainer.shared.notificationPreferencesService)
                 .environment(\.locale, languageService.currentLocale)
                 .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
