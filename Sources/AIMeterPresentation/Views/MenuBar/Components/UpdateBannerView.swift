@@ -30,9 +30,16 @@ struct UpdateBannerView: View {
                 onInstall()
             } label: {
                 Text("Install", tableName: "MenuBar", bundle: .main)
+                    .font(.caption.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(.blue)
+                    )
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, UIConstants.SettingsCard.padding)
         .padding(.vertical, UIConstants.Spacing.sm)
