@@ -1,10 +1,12 @@
 import SwiftUI
 import Charts
 import AIMeterDomain
+import AIMeterInfrastructure
 
 /// Detail window showing full usage trend chart
 public struct UsageDetailView: View {
     @Bindable var viewModel: UsageViewModel
+    @Environment(NotificationPreferencesService.self) private var notificationPreferences: NotificationPreferencesService?
 
     public init(viewModel: UsageViewModel) {
         self.viewModel = viewModel
@@ -52,12 +54,12 @@ public struct UsageDetailView: View {
                         .symbolSize(24)
                     }
 
-                    // Threshold lines
-                    RuleMark(y: .value("Warning", 80))
+                    // Threshold lines (dynamic from Settings)
+                    RuleMark(y: .value("Warning", warningThreshold))
                         .foregroundStyle(.orange.opacity(0.4))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
 
-                    RuleMark(y: .value("Critical", 95))
+                    RuleMark(y: .value("Critical", criticalThreshold))
                         .foregroundStyle(.red.opacity(0.4))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
                 }
@@ -125,7 +127,7 @@ public struct UsageDetailView: View {
                     Rectangle()
                         .fill(.orange.opacity(0.4))
                         .frame(width: 16, height: 1)
-                    Text("Warning 80%")
+                    Text("Warning \(warningThreshold)%")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
@@ -133,7 +135,7 @@ public struct UsageDetailView: View {
                     Rectangle()
                         .fill(.red.opacity(0.4))
                         .frame(width: 16, height: 1)
-                    Text("Critical 95%")
+                    Text("Critical \(criticalThreshold)%")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
@@ -145,6 +147,14 @@ public struct UsageDetailView: View {
         .onAppear {
             viewModel.loadDetailHistory(days: 7)
         }
+    }
+
+    private var warningThreshold: Int {
+        notificationPreferences?.warningThreshold ?? 80
+    }
+
+    private var criticalThreshold: Int {
+        notificationPreferences?.criticalThreshold ?? 95
     }
 
     private func formatDate(_ date: Date) -> String {

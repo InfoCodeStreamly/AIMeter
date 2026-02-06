@@ -2,39 +2,117 @@ import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
 
-/// Connection settings tab - Claude connection status and sync
+/// Connection settings tab - Claude connection status, sync, and notifications
 struct ConnectionSettingsTab: View {
     @Bindable var viewModel: SettingsViewModel
+    var notificationPreferences: NotificationPreferencesService
 
     private let tableName = "SettingsConnection"
+    private let generalTableName = "SettingsGeneral"
 
     var body: some View {
         VStack(spacing: UIConstants.Spacing.lg) {
-                // State-based content
-                switch viewModel.state {
-                case .checking:
-                    checkingView
+            // State-based content
+            switch viewModel.state {
+            case .checking:
+                checkingView
 
-                case .claudeCodeFound(let email):
-                    claudeCodeFoundView(email: email)
+            case .claudeCodeFound(let email):
+                claudeCodeFoundView(email: email)
 
-                case .claudeCodeNotFound:
-                    claudeCodeNotFoundView
+            case .claudeCodeNotFound:
+                claudeCodeNotFoundView
 
-                case .hasKey(let masked):
-                    existingKeyView(masked: masked)
+            case .hasKey(let masked):
+                existingKeyView(masked: masked)
 
-                case .syncing:
-                    syncingView
+            case .syncing:
+                syncingView
 
-                case .success(let message):
-                    successView(message: message)
+            case .success(let message):
+                successView(message: message)
 
-                case .error(let message):
-                    errorView(message: message)
-                }
+            case .error(let message):
+                errorView(message: message)
+            }
+
+            // Notifications
+            notificationsSection
         }
         .padding(UIConstants.Spacing.xl)
+    }
+
+    // MARK: - Notifications
+
+    private var notificationsSection: some View {
+        SettingsCard(title: "Notifications", tableName: generalTableName) {
+            VStack(spacing: UIConstants.Spacing.md) {
+                SettingsToggle(
+                    title: "Usage Alerts",
+                    description: "Notify when usage reaches thresholds",
+                    icon: "bell.badge",
+                    tableName: generalTableName,
+                    isOn: Binding(
+                        get: { notificationPreferences.isEnabled },
+                        set: { notificationPreferences.isEnabled = $0 }
+                    )
+                )
+
+                if notificationPreferences.isEnabled {
+                    Divider()
+
+                    // Warning threshold slider
+                    VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
+                        HStack {
+                            Label {
+                                Text("Warning Threshold", tableName: generalTableName, bundle: .main)
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle")
+                                    .foregroundStyle(.orange)
+                            }
+                            Spacer()
+                            Text("\(notificationPreferences.warningThreshold)%")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(
+                            value: Binding(
+                                get: { Double(notificationPreferences.warningThreshold) },
+                                set: { notificationPreferences.warningThreshold = Int($0) }
+                            ),
+                            in: 50...90,
+                            step: 5
+                        )
+                        .tint(.orange)
+                    }
+
+                    // Critical threshold slider
+                    VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
+                        HStack {
+                            Label {
+                                Text("Critical Threshold", tableName: generalTableName, bundle: .main)
+                            } icon: {
+                                Image(systemName: "xmark.circle")
+                                    .foregroundStyle(.red)
+                            }
+                            Spacer()
+                            Text("\(notificationPreferences.criticalThreshold)%")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(
+                            value: Binding(
+                                get: { Double(notificationPreferences.criticalThreshold) },
+                                set: { notificationPreferences.criticalThreshold = Int($0) }
+                            ),
+                            in: 70...100,
+                            step: 5
+                        )
+                        .tint(.red)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - State Views
