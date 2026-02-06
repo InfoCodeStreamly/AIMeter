@@ -1,18 +1,29 @@
 import SwiftUI
+import AIMeterDomain
 import AIMeterApplication
 import AIMeterInfrastructure
 import KeyboardShortcuts
 
-/// General settings tab - Launch at Login, Notifications, Keyboard Shortcuts
+/// General settings tab - Appearance, Launch at Login, Notifications, Keyboard Shortcuts
 struct GeneralSettingsTab: View {
     var launchAtLogin: LaunchAtLoginService
     var notificationPreferences: NotificationPreferencesService
+    @Environment(ThemeService.self) private var themeService
 
     private let tableName = "SettingsGeneral"
 
     var body: some View {
         ScrollView {
             VStack(spacing: UIConstants.Spacing.lg) {
+                // Appearance
+                SettingsCard(title: "Appearance", tableName: tableName) {
+                    VStack(spacing: UIConstants.Spacing.sm) {
+                        ForEach(AppTheme.allCases, id: \.self) { theme in
+                            themeRow(theme)
+                        }
+                    }
+                }
+
                 // Startup
                 SettingsCard(title: "Startup", tableName: tableName) {
                     SettingsToggle(
@@ -122,5 +133,44 @@ struct GeneralSettingsTab: View {
             }
             .padding(UIConstants.Spacing.xl)
         }
+    }
+
+    // MARK: - Theme Row
+
+    @MainActor
+    private func themeRow(_ theme: AppTheme) -> some View {
+        let isSelected = themeService.selectedTheme == theme
+
+        return Button {
+            withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
+                themeService.selectedTheme = theme
+            }
+        } label: {
+            HStack(spacing: UIConstants.Spacing.md) {
+                Image(systemName: theme.icon)
+                    .font(.body)
+                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .frame(width: 24)
+
+                Text(theme.displayName)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.blue)
+                }
+            }
+            .padding(.vertical, UIConstants.Spacing.sm)
+            .padding(.horizontal, UIConstants.Spacing.md)
+            .background(
+                RoundedRectangle(cornerRadius: UIConstants.CornerRadius.small)
+                    .fill(isSelected ? Color.blue.opacity(0.08) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
