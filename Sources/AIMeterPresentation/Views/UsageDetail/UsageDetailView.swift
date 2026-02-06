@@ -5,7 +5,6 @@ import AIMeterDomain
 /// Detail window showing full usage trend chart
 public struct UsageDetailView: View {
     @Bindable var viewModel: UsageViewModel
-    @State private var selectedDays: Int = 7
 
     public init(viewModel: UsageViewModel) {
         self.viewModel = viewModel
@@ -24,15 +23,6 @@ public struct UsageDetailView: View {
                 }
 
                 Spacer()
-
-                Picker(selection: $selectedDays) {
-                    Text("7 days").tag(7)
-                    Text("30 days").tag(30)
-                } label: {
-                    EmptyView()
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 180)
             }
 
             // Chart
@@ -116,16 +106,16 @@ public struct UsageDetailView: View {
             }
 
             // Legend
-            HStack(spacing: 20) {
+            HStack(spacing: 16) {
                 HStack(spacing: 6) {
                     Circle().fill(.blue).frame(width: 8, height: 8)
-                    Text("Session (5h max)")
+                    Text("Session")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 HStack(spacing: 6) {
                     Circle().fill(.purple).frame(width: 8, height: 8)
-                    Text("Weekly (7d max)")
+                    Text("Weekly")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -151,26 +141,19 @@ public struct UsageDetailView: View {
         .padding(20)
         .frame(minWidth: 480, minHeight: 380)
         .background(.ultraThinMaterial)
-        .onChange(of: selectedDays) { _, newValue in
-            viewModel.loadDetailHistory(days: newValue)
-        }
         .onAppear {
-            viewModel.loadDetailHistory(days: selectedDays)
+            viewModel.loadDetailHistory(days: 7)
         }
     }
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         let calendar = Calendar.current
-        let isToday = calendar.isDateInToday(date)
-        let isYesterday = calendar.isDateInYesterday(date)
 
-        if isToday || isYesterday {
+        if calendar.isDateInToday(date) || calendar.isDateInYesterday(date) {
             formatter.dateFormat = "HH:mm"
-        } else if selectedDays <= 7 {
-            formatter.dateFormat = "E HH:mm"
         } else {
-            formatter.dateFormat = "d MMM HH:mm"
+            formatter.dateFormat = "E HH:mm"
         }
         return formatter.string(from: date)
     }
