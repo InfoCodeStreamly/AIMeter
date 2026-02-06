@@ -7,7 +7,7 @@ struct GlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
-        #if compiler(>=6.1)
+        #if compiler(>=6.2)
             if #available(macOS 26.0, *) {
                 content
                     .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
@@ -40,7 +40,7 @@ struct GlassCardModifier: ViewModifier {
 /// Applies `.buttonStyle(.glass)` on macOS 26+, falls back to `.bordered`.
 struct GlassButtonModifier: ViewModifier {
     func body(content: Content) -> some View {
-        #if compiler(>=6.1)
+        #if compiler(>=6.2)
             if #available(macOS 26.0, *) {
                 content.buttonStyle(.glass)
             } else {
@@ -60,7 +60,7 @@ struct GlassTabModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
-        #if compiler(>=6.1)
+        #if compiler(>=6.2)
             if #available(macOS 26.0, *) {
                 content
                     .glassEffect(
