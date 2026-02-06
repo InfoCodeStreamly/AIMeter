@@ -140,6 +140,100 @@ struct FetchUsageHistoryUseCaseTests {
         #expect(await mockRepo.lastRequestedDays == 30)
     }
 
+    // MARK: - executeHourly Tests
+
+    @Test("ExecuteHourly fetches raw hourly history with default 7 days")
+    func executeHourlyFetchesWithDefaultDays() async throws {
+        // Arrange
+        let mockRepo = MockUsageHistoryRepository()
+        let expectedEntries = createSampleHourlyHistory(hours: 24)
+        await mockRepo.configure(getHistoryResult: expectedEntries)
+
+        let useCase = FetchUsageHistoryUseCase(historyRepository: mockRepo)
+
+        // Act
+        let result = await useCase.executeHourly()
+
+        // Assert
+        #expect(result.count == 24)
+        #expect(await mockRepo.getHistoryCallCount == 1)
+        #expect(await mockRepo.lastRequestedDays == 7)
+    }
+
+    @Test("ExecuteHourly fetches raw hourly history with custom days")
+    func executeHourlyFetchesWithCustomDays() async throws {
+        // Arrange
+        let mockRepo = MockUsageHistoryRepository()
+        let expectedEntries = createSampleHourlyHistory(hours: 48)
+        await mockRepo.configure(getHistoryResult: expectedEntries)
+
+        let useCase = FetchUsageHistoryUseCase(historyRepository: mockRepo)
+
+        // Act
+        let result = await useCase.executeHourly(days: 30)
+
+        // Assert
+        #expect(result.count == 48)
+        #expect(await mockRepo.getHistoryCallCount == 1)
+        #expect(await mockRepo.lastRequestedDays == 30)
+    }
+
+    @Test("ExecuteHourly returns empty array when no history")
+    func executeHourlyReturnsEmptyWhenNoHistory() async throws {
+        // Arrange
+        let mockRepo = MockUsageHistoryRepository()
+        await mockRepo.configure(getHistoryResult: [])
+
+        let useCase = FetchUsageHistoryUseCase(historyRepository: mockRepo)
+
+        // Act
+        let result = await useCase.executeHourly()
+
+        // Assert
+        #expect(result.isEmpty)
+        #expect(await mockRepo.getHistoryCallCount == 1)
+    }
+
+    @Test("ExecuteHourly returns single entry")
+    func executeHourlyReturnsSingleEntry() async throws {
+        // Arrange
+        let mockRepo = MockUsageHistoryRepository()
+        let singleEntry = [
+            UsageHistoryEntry(
+                timestamp: Date(),
+                sessionPercentage: 45.0,
+                weeklyPercentage: 30.0
+            )
+        ]
+        await mockRepo.configure(getHistoryResult: singleEntry)
+
+        let useCase = FetchUsageHistoryUseCase(historyRepository: mockRepo)
+
+        // Act
+        let result = await useCase.executeHourly(days: 1)
+
+        // Assert
+        #expect(result.count == 1)
+        #expect(result[0].sessionPercentage == 45.0)
+        #expect(await mockRepo.lastRequestedDays == 1)
+    }
+
+    @Test("ExecuteHourly calls getHistory not getDailyHistory")
+    func executeHourlyCallsCorrectMethod() async throws {
+        // Arrange
+        let mockRepo = MockUsageHistoryRepository()
+        await mockRepo.configure(getHistoryResult: [])
+
+        let useCase = FetchUsageHistoryUseCase(historyRepository: mockRepo)
+
+        // Act
+        _ = await useCase.executeHourly(days: 7)
+
+        // Assert — getHistory called, NOT getDailyHistory
+        #expect(await mockRepo.getHistoryCallCount == 1)
+        #expect(await mockRepo.getDailyHistoryCallCount == 0)
+    }
+
     // MARK: - Helper Methods
 
     private func createSampleHistory(days: Int) -> [UsageHistoryEntry] {
@@ -149,6 +243,23 @@ struct FetchUsageHistoryUseCaseTests {
             let timestamp = now.addingTimeInterval(-86400 * Double(dayOffset))
             let session = Double(10 + dayOffset * 5)
             let weekly = Double(5 + dayOffset * 3)
+            let entry = UsageHistoryEntry(
+                timestamp: timestamp,
+                sessionPercentage: session,
+                weeklyPercentage: weekly
+            )
+            entries.append(entry)
+        }
+        return entries
+    }
+
+    private func createSampleHourlyHistory(hours: Int) -> [UsageHistoryEntry] {
+        let now = Date()
+        var entries: [UsageHistoryEntry] = []
+        for hourOffset in 0..<hours {
+            let timestamp = now.addingTimeInterval(-3600 * Double(hourOffset))
+            let session = Double(10 + hourOffset * 2)
+            let weekly = Double(5 + hourOffset)
             let entry = UsageHistoryEntry(
                 timestamp: timestamp,
                 sessionPercentage: session,
@@ -175,8 +286,9 @@ private actor MockUsageHistoryRepository: UsageHistoryRepository {
     var lastRequestedDays: Int?
     var lastClearDays: Int?
 
-    func configure(getDailyHistoryResult: [UsageHistoryEntry]? = nil) {
+    func configure(getDailyHistoryResult: [UsageHistoryEntry]? = nil, getHistoryResult: [UsageHistoryEntry]? = nil) {
         if let getDailyHistoryResult { self.getDailyHistoryResult = getDailyHistoryResult }
+        if let getHistoryResult { self.getHistoryResult = getHistoryResult }
     }
 
     func save(_ entry: UsageHistoryEntry) async {

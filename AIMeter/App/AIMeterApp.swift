@@ -16,6 +16,9 @@ struct AIMeterApp: App {
     /// Keyboard shortcut service
     private let keyboardShortcutService = DependencyContainer.shared.keyboardShortcutService
 
+    /// Theme service for appearance (SSOT)
+    private let themeService = DependencyContainer.shared.themeService
+
     /// Sparkle updater controller (ініціалізується один раз)
     private let updaterController: SPUStandardUpdaterController
 
@@ -38,7 +41,9 @@ struct AIMeterApp: App {
                 updater: updaterController.updater
             )
             .environment(languageService)
+            .environment(themeService)
             .environment(\.locale, languageService.currentLocale)
+            .preferredColorScheme(themeService.selectedTheme.colorScheme)
         } label: {
             menuBarLabel
         }
@@ -48,7 +53,9 @@ struct AIMeterApp: App {
         Window("AIMeter Settings", id: "settings") {
             SettingsWindowView(updater: updaterController.updater)
                 .environment(languageService)
+                .environment(themeService)
                 .environment(\.locale, languageService.currentLocale)
+                .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -58,7 +65,9 @@ struct AIMeterApp: App {
         Window("Usage Trend", id: "usage-detail") {
             UsageDetailView(viewModel: viewModel)
                 .environment(languageService)
+                .environment(themeService)
                 .environment(\.locale, languageService.currentLocale)
+                .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 520, height: 420)

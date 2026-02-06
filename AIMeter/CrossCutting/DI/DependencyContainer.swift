@@ -49,6 +49,10 @@ final class DependencyContainer {
         KeyboardShortcutService()
     }()
 
+    lazy var themeService: ThemeService = {
+        ThemeService()
+    }()
+
     lazy var widgetDataService: WidgetDataService = {
         WidgetDataService()
     }()

@@ -162,17 +162,14 @@ struct SmallWidgetView: View {
     }
 
     private func formatShortTime(_ date: Date) -> String {
-        let interval = date.timeIntervalSince(Date())
-        guard interval > 0 else { return "now" }
-
-        let hours = Int(interval / 3600)
-        let minutes = Int((interval.truncatingRemainder(dividingBy: 3600)) / 60)
-
-        if hours > 0 {
-            return "\(hours)h"
+        guard date > Date() else { return "now" }
+        let formatter = DateFormatter()
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateFormat = "HH:mm"
         } else {
-            return "\(minutes)m"
+            formatter.dateFormat = "d MMM"
         }
+        return formatter.string(from: date)
     }
 }
 
@@ -231,7 +228,7 @@ struct MediumWidgetView: View {
                             Text("Weekly resets")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text(resetDate, style: .relative)
+                            Text(formatResetDate(resetDate))
                                 .font(.caption.bold())
                                 .foregroundStyle(.primary)
                         }
@@ -242,7 +239,7 @@ struct MediumWidgetView: View {
                             Text("Session resets")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text(sessionReset, style: .relative)
+                            Text(formatResetDate(sessionReset))
                                 .font(.caption.bold())
                                 .foregroundStyle(.primary)
                         }
@@ -253,6 +250,19 @@ struct MediumWidgetView: View {
         } else {
             PlaceholderView()
         }
+    }
+
+    private func formatResetDate(_ date: Date) -> String {
+        guard date > Date() else { return "Now" }
+        let formatter = DateFormatter()
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateFormat = "HH:mm"
+        } else {
+            formatter.dateFormat = "d MMM, HH:mm"
+        }
+        let time = formatter.string(from: date)
+        let tz = TimeZone.current.identifier
+        return "\(time) (\(tz))"
     }
 }
 
@@ -335,15 +345,14 @@ struct UsageCircleLarge: View {
     }
 
     private func formatResetTime(_ date: Date) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.day, .hour, .minute]
-        formatter.maximumUnitCount = 1
-        formatter.unitsStyle = .abbreviated
-        let interval = date.timeIntervalSince(Date())
-        if interval > 0 {
-            return "↻ " + (formatter.string(from: interval) ?? "")
+        guard date > Date() else { return "↻ now" }
+        let formatter = DateFormatter()
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateFormat = "HH:mm"
+        } else {
+            formatter.dateFormat = "d MMM"
         }
-        return "↻ now"
+        return "↻ " + formatter.string(from: date)
     }
 }
 
