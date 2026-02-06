@@ -2,41 +2,53 @@ import SwiftUI
 
 // MARK: - Glass Card Modifier
 
-/// Applies Liquid Glass on macOS 26+, falls back to material background on older systems.
+/// Applies Liquid Glass on macOS 26+ (Xcode 26 / Swift 6.1+), falls back to material background.
 struct GlassCardModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
-        } else {
-            content
-                .background(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(Color(nsColor: .controlBackgroundColor))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .strokeBorder(
-                            Color.gray.opacity(UIConstants.SettingsCard.borderOpacity),
-                            lineWidth: UIConstants.SettingsCard.borderWidth
-                        )
-                )
-        }
+        #if compiler(>=6.1)
+            if #available(macOS 26.0, *) {
+                content
+                    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+            } else {
+                fallbackCard(content)
+            }
+        #else
+            fallbackCard(content)
+        #endif
+    }
+
+    private func fallbackCard(_ content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .strokeBorder(
+                        Color.gray.opacity(UIConstants.SettingsCard.borderOpacity),
+                        lineWidth: UIConstants.SettingsCard.borderWidth
+                    )
+            )
     }
 }
 
 // MARK: - Glass Button Style Modifier
 
-/// Applies `.buttonStyle(.glass)` on macOS 26+, falls back to `.bordered` on older systems.
+/// Applies `.buttonStyle(.glass)` on macOS 26+, falls back to `.bordered`.
 struct GlassButtonModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content.buttonStyle(.glass)
-        } else {
+        #if compiler(>=6.1)
+            if #available(macOS 26.0, *) {
+                content.buttonStyle(.glass)
+            } else {
+                content.buttonStyle(.bordered)
+            }
+        #else
             content.buttonStyle(.bordered)
-        }
+        #endif
     }
 }
 
@@ -48,19 +60,27 @@ struct GlassTabModifier: ViewModifier {
     let cornerRadius: CGFloat
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .glassEffect(
-                    isSelected ? .regular.interactive() : .clear.interactive(),
-                    in: .rect(cornerRadius: cornerRadius)
-                )
-        } else {
-            content
-                .background(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .fill(isSelected ? Color.blue.opacity(0.12) : Color.clear)
-                )
-        }
+        #if compiler(>=6.1)
+            if #available(macOS 26.0, *) {
+                content
+                    .glassEffect(
+                        isSelected ? .regular.interactive() : .clear.interactive(),
+                        in: .rect(cornerRadius: cornerRadius)
+                    )
+            } else {
+                fallbackTab(content)
+            }
+        #else
+            fallbackTab(content)
+        #endif
+    }
+
+    private func fallbackTab(_ content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(isSelected ? Color.blue.opacity(0.12) : Color.clear)
+            )
     }
 }
 
