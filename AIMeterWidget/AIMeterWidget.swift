@@ -11,6 +11,11 @@ struct WidgetData: Codable {
     let weeklyStatus: String
     let sessionResetDate: Date?
     let weeklyResetDate: Date?
+    // Extra usage (pay-as-you-go)
+    let extraUsageEnabled: Bool
+    let extraUsageSpent: String
+    let extraUsageLimit: String
+    let extraUsagePercentage: Int
 
     static let placeholder = WidgetData(
         sessionPercentage: 45,
@@ -19,7 +24,11 @@ struct WidgetData: Codable {
         sessionStatus: "safe",
         weeklyStatus: "safe",
         sessionResetDate: Date().addingTimeInterval(3600 * 3),
-        weeklyResetDate: Date().addingTimeInterval(3600 * 24 * 3)
+        weeklyResetDate: Date().addingTimeInterval(3600 * 24 * 3),
+        extraUsageEnabled: true,
+        extraUsageSpent: "$0.00",
+        extraUsageLimit: "$50.00",
+        extraUsagePercentage: 0
     )
 }
 
@@ -114,6 +123,17 @@ struct SmallWidgetView: View {
                     }
                     .foregroundStyle(.orange)
                 }
+
+                // Extra usage indicator
+                if data.extraUsageEnabled && data.extraUsagePercentage > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 9))
+                        Text(data.extraUsageSpent)
+                            .font(.system(size: 9).monospacedDigit())
+                    }
+                    .foregroundStyle(.blue)
+                }
             }
             .padding(12)
         } else {
@@ -184,7 +204,7 @@ struct MediumWidgetView: View {
                 Spacer()
 
                 // Right side - info
-                VStack(alignment: .trailing, spacing: 8) {
+                VStack(alignment: .trailing, spacing: 6) {
                     HStack {
                         Image(systemName: "brain.head.profile")
                             .foregroundStyle(.purple)
@@ -193,6 +213,18 @@ struct MediumWidgetView: View {
                     }
 
                     Spacer()
+
+                    // Extra usage
+                    if data.extraUsageEnabled {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("Extra")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            Text("\(data.extraUsageSpent) / \(data.extraUsageLimit)")
+                                .font(.caption.bold().monospacedDigit())
+                                .foregroundStyle(.blue)
+                        }
+                    }
 
                     if let resetDate = data.weeklyResetDate {
                         VStack(alignment: .trailing, spacing: 2) {

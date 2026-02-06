@@ -102,7 +102,9 @@ public struct MenuBarView: View {
 
             // Usage history chart
             if !viewModel.usageHistory.isEmpty {
-                UsageChartView(history: viewModel.usageHistory)
+                UsageChartView(history: viewModel.usageHistory) {
+                    openWindow(id: "usage-detail")
+                }
             }
         }
         .padding(UIConstants.Spacing.md)

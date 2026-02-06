@@ -12,6 +12,7 @@ public final class UsageViewModel {
     public private(set) var lastUpdated: Date?
     public private(set) var extraUsage: ExtraUsageDisplayData?
     public private(set) var usageHistory: [UsageHistoryEntry] = []
+    public private(set) var detailHistory: [UsageHistoryEntry] = []
 
     private let fetchUsageUseCase: FetchUsageUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
@@ -72,6 +73,15 @@ public final class UsageViewModel {
         }
     }
 
+    /// Load detailed history for the trend detail window
+    public func loadDetailHistory(days: Int) {
+        Task {
+            if let history = await fetchUsageHistoryUseCase?.execute(days: days) {
+                detailHistory = history
+            }
+        }
+    }
+
     /// Cleanup on disappear
     public func onDisappear() {
         // Don't stop auto refresh - keep updating in background
@@ -119,7 +129,8 @@ public final class UsageViewModel {
             lastUpdated = Date()
 
             // Fetch extra usage (pay-as-you-go) data
-            if let extraUsageEntity = await getExtraUsageUseCase?.execute() {
+            let extraUsageEntity = await getExtraUsageUseCase?.execute()
+            if let extraUsageEntity {
                 extraUsage = ExtraUsageDisplayData(from: extraUsageEntity)
             } else {
                 extraUsage = nil
@@ -131,8 +142,8 @@ public final class UsageViewModel {
                 usageHistory = history
             }
 
-            // Update widget data
-            widgetDataService?.update(from: entities)
+            // Update widget data (including extra usage)
+            widgetDataService?.update(from: entities, extraUsage: extraUsageEntity)
 
             // Check for threshold notifications
             await checkNotificationUseCase.execute(usages: entities)
