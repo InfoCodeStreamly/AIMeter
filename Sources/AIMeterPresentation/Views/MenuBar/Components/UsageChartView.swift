@@ -2,19 +2,26 @@ import AIMeterDomain
 import Charts
 import SwiftUI
 
-/// Mini chart showing weekly usage trend (daily max values)
+/// Mini chart showing usage trend (daily max values for session & weekly)
 struct UsageChartView: View {
     let history: [UsageHistoryEntry]
     var onTap: (() -> Void)? = nil
-    @State private var selectedEntry: UsageHistoryEntry?
 
     private var hasEnoughData: Bool {
         !history.isEmpty
     }
 
+    private var lastWeekly: Int {
+        Int(history.last?.weeklyPercentage ?? 0)
+    }
+
+    private var lastSession: Int {
+        Int(history.last?.sessionPercentage ?? 0)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: UIConstants.Spacing.xs) {
-            // Header
+            // Header with inline legend
             HStack {
                 Label {
                     Text("Weekly Trend", tableName: "MenuBar", bundle: .main)
@@ -24,9 +31,22 @@ struct UsageChartView: View {
                         .foregroundStyle(.purple)
                 }
                 Spacer()
-                Text("Daily max %", tableName: "MenuBar", bundle: .main)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                if hasEnoughData {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 3) {
+                            Circle().fill(.purple).frame(width: 6, height: 6)
+                            Text("\(lastWeekly)%")
+                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        HStack(spacing: 3) {
+                            Circle().fill(.blue).frame(width: 6, height: 6)
+                            Text("\(lastSession)%")
+                                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
 
             // Chart
@@ -40,14 +60,25 @@ struct UsageChartView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-                .frame(height: 70)
+                .frame(height: 85)
             } else {
                 Chart {
                     ForEach(history) { entry in
+                        // Session line (blue, thinner, no area fill)
+                        LineMark(
+                            x: .value("Day", entry.timestamp, unit: .day),
+                            y: .value("Session", entry.sessionPercentage),
+                            series: .value("Type", "Session")
+                        )
+                        .foregroundStyle(.blue)
+                        .interpolationMethod(.catmullRom)
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+
                         // Weekly line (purple)
                         LineMark(
                             x: .value("Day", entry.timestamp, unit: .day),
-                            y: .value("Weekly", entry.weeklyPercentage)
+                            y: .value("Weekly", entry.weeklyPercentage),
+                            series: .value("Type", "Weekly")
                         )
                         .foregroundStyle(.purple)
                         .interpolationMethod(.catmullRom)
@@ -91,7 +122,8 @@ struct UsageChartView: View {
                         }
                     }
                 }
-                .frame(height: 70)
+                .chartLegend(.hidden)
+                .frame(height: 85)
             }
         }
         .padding(UIConstants.Spacing.md)
@@ -101,8 +133,12 @@ struct UsageChartView: View {
     }
 
     private func dayAbbreviation(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return String(localized: "Today", table: "MenuBar", bundle: .main)
+        }
         let formatter = DateFormatter()
-        formatter.dateFormat = "E"  // Mon, Tue, etc.
+        formatter.dateFormat = "E"
         return formatter.string(from: date)
     }
 }

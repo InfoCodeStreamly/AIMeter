@@ -8,6 +8,8 @@ public struct UsageDetailView: View {
     @Bindable var viewModel: UsageViewModel
     @Environment(NotificationPreferencesService.self) private var notificationPreferences:
         NotificationPreferencesService?
+    @State private var hoveredEntry: UsageHistoryEntry?
+    @State private var hoverLocation: CGPoint = .zero
 
     public init(viewModel: UsageViewModel) {
         self.viewModel = viewModel
@@ -55,6 +57,19 @@ public struct UsageDetailView: View {
                         .symbolSize(24)
                     }
 
+                    // Day separator lines at midnight
+                    ForEach(midnightDates, id: \.self) { midnight in
+                        RuleMark(x: .value("Midnight", midnight))
+                            .foregroundStyle(.secondary.opacity(0.3))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                            .annotation(position: .top, alignment: .leading, spacing: 4) {
+                                Text(formatDayLabel(midnight))
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 4)
+                            }
+                    }
+
                     // Threshold lines (dynamic from Settings)
                     RuleMark(y: .value("Warning", warningThreshold))
                         .foregroundStyle(AccessibleColors.moderate.opacity(0.4))
@@ -66,12 +81,13 @@ public struct UsageDetailView: View {
                 }
                 .chartYScale(domain: 0...100)
                 .chartXAxis {
-                    AxisMarks(values: .automatic) { value in
+                    AxisMarks(values: .stride(by: .hour, count: 3)) { value in
                         AxisGridLine()
                         AxisValueLabel {
                             if let date = value.as(Date.self) {
-                                Text(formatDate(date))
-                                    .font(.caption2)
+                                Text(formatHourLabel(date))
+                                    .font(.system(size: 9))
+                                    .foregroundStyle(.tertiary)
                             }
                         }
                     }
@@ -92,6 +108,28 @@ public struct UsageDetailView: View {
                     "Weekly": .purple,
                 ])
                 .chartLegend(.hidden)
+                .chartOverlay { proxy in
+                    GeometryReader { geo in
+                        Rectangle()
+                            .fill(.clear)
+                            .contentShape(Rectangle())
+                            .onContinuousHover { phase in
+                                switch phase {
+                                case .active(let location):
+                                    hoverLocation = location
+                                    hoveredEntry = findClosestEntry(
+                                        at: location, proxy: proxy, geo: geo)
+                                case .ended:
+                                    hoveredEntry = nil
+                                }
+                            }
+                    }
+                }
+                .overlay(alignment: .topLeading) {
+                    if let entry = hoveredEntry {
+                        tooltipView(for: entry)
+                    }
+                }
                 .frame(minHeight: 280)
             } else {
                 VStack(spacing: 8) {
@@ -143,11 +181,43 @@ public struct UsageDetailView: View {
             }
         }
         .padding(20)
-        .frame(minWidth: 480, minHeight: 380)
+        .frame(minWidth: 520, minHeight: 400)
         .onAppear {
             viewModel.loadDetailHistory(days: 7)
         }
     }
+
+    // MARK: - Tooltip
+
+    @ViewBuilder
+    private func tooltipView(for entry: UsageHistoryEntry) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(
+                entry.timestamp.formatted(
+                    .dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute())
+            )
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.primary)
+            HStack(spacing: 8) {
+                HStack(spacing: 3) {
+                    Circle().fill(.blue).frame(width: 6, height: 6)
+                    Text("\(Int(entry.sessionPercentage))%")
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                }
+                HStack(spacing: 3) {
+                    Circle().fill(.purple).frame(width: 6, height: 6)
+                    Text("\(Int(entry.weeklyPercentage))%")
+                        .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                }
+            }
+        }
+        .padding(8)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .offset(x: max(8, min(hoverLocation.x - 40, 400)), y: 4)
+        .allowsHitTesting(false)
+    }
+
+    // MARK: - Computed Properties
 
     private var warningThreshold: Int {
         notificationPreferences?.warningThreshold ?? 80
@@ -157,15 +227,53 @@ public struct UsageDetailView: View {
         notificationPreferences?.criticalThreshold ?? 95
     }
 
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
+    /// Midnight dates for day separator lines
+    private var midnightDates: [Date] {
         let calendar = Calendar.current
-
-        if calendar.isDateInToday(date) || calendar.isDateInYesterday(date) {
-            formatter.dateFormat = "HH:mm"
-        } else {
-            formatter.dateFormat = "E HH:mm"
+        var dates: Set<Date> = []
+        for entry in viewModel.detailHistory {
+            let dayStart = calendar.startOfDay(for: entry.timestamp)
+            dates.insert(dayStart)
         }
-        return formatter.string(from: date)
+        // Remove the earliest day to avoid a line at the very start
+        if let earliest = dates.min() {
+            dates.remove(earliest)
+        }
+        return dates.sorted()
+    }
+
+    // MARK: - Formatting
+
+    private func formatDayLabel(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        }
+        if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        }
+        return date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+    }
+
+    private func formatHourLabel(_ date: Date) -> String {
+        date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)))
+    }
+
+    // MARK: - Hover Helpers
+
+    private func findClosestEntry(
+        at location: CGPoint, proxy: ChartProxy, geo: GeometryProxy
+    ) -> UsageHistoryEntry? {
+        let plotFrame = geo[proxy.plotFrame!]
+        let relativeX = location.x - plotFrame.origin.x
+        guard relativeX >= 0, relativeX <= plotFrame.width else { return nil }
+
+        guard let hoveredDate: Date = proxy.value(atX: relativeX) else { return nil }
+
+        // Find closest entry by timestamp
+        return viewModel.detailHistory.min(by: {
+            abs($0.timestamp.timeIntervalSince(hoveredDate))
+                < abs($1.timestamp.timeIntervalSince(hoveredDate))
+        })
     }
 }
