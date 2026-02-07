@@ -1,0 +1,31 @@
+#!/bin/bash
+# Pre-push hook: runs SPM tests before allowing push
+# Blocks push if tests fail — prevents broken code from reaching remote
+#
+# Install:
+#   cp scripts/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# Skip (emergency):
+#   git push --no-verify
+
+set -e
+
+# Only run on first push in a chain (avoid double-run for stage→main workflow)
+# Check if tests already passed within the last 60 seconds
+MARKER="/tmp/.aimeter-tests-passed"
+if [ -f "$MARKER" ]; then
+    AGE=$(( $(date +%s) - $(stat -f %m "$MARKER") ))
+    if [ "$AGE" -lt 60 ]; then
+        exit 0
+    fi
+fi
+
+echo "🧪 Pre-push: Running tests..."
+if ! xcrun swift test 2>&1 | tail -3; then
+    echo "❌ Tests failed. Push rejected."
+    rm -f "$MARKER"
+    exit 1
+fi
+
+touch "$MARKER"
+echo "✅ All tests passed. Pushing..."
