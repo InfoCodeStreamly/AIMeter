@@ -1,13 +1,10 @@
-import AIMeterApplication
 import AIMeterInfrastructure
 import AppKit
-import Sparkle
 import SwiftUI
 
 /// About settings tab - App info, updates, and links
 struct AboutSettingsTab: View {
-    let updater: SPUUpdater
-    @ObservedObject var checkForUpdatesViewModel: CheckForUpdatesViewModel
+    var checkForUpdatesViewModel: CheckForUpdatesViewModel
     var appInfo: AppInfoService
 
     private let tableName = "SettingsAbout"
@@ -48,7 +45,7 @@ struct AboutSettingsTab: View {
                     style: .primary,
                     tableName: updatesTableName
                 ) {
-                    updater.checkForUpdates()
+                    checkForUpdatesViewModel.checkForUpdates()
                 }
             } else {
                 SettingsButton(
@@ -57,7 +54,7 @@ struct AboutSettingsTab: View {
                     isLoading: true,
                     tableName: updatesTableName
                 ) {
-                    updater.checkForUpdates()
+                    checkForUpdatesViewModel.checkForUpdates()
                 }
             }
 

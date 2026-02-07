@@ -1,19 +1,17 @@
-import SwiftUI
-import AIMeterApplication
 import AIMeterInfrastructure
 import AIMeterPresentation
-import Sparkle
 import AppKit
+import SwiftUI
 
 /// Settings window content wrapper
 struct SettingsWindowView: View {
     @State private var viewModel = DependencyContainer.shared.makeSettingsViewModel()
-    let updater: SPUUpdater
+    let checkForUpdatesViewModel: CheckForUpdatesViewModel
 
     var body: some View {
         SettingsView(
             viewModel: viewModel,
-            updater: updater,
+            checkForUpdatesViewModel: checkForUpdatesViewModel,
             launchAtLogin: DependencyContainer.shared.launchAtLoginService,
             notificationPreferences: DependencyContainer.shared.notificationPreferencesService,
             appInfo: DependencyContainer.shared.appInfoService

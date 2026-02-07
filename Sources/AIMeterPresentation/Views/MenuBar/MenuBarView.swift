@@ -8,17 +8,14 @@ import SwiftUI
 public struct MenuBarView: View {
     @Bindable var viewModel: UsageViewModel
     let updater: SPUUpdater
-    let updateDelegate: UpdateAvailabilityDelegate?
+    @Environment(UpdateAvailabilityDelegate.self) private var updateDelegate:
+        UpdateAvailabilityDelegate?
     @Environment(\.openWindow) private var openWindow
     @State private var isRefreshing = false
 
-    public init(
-        viewModel: UsageViewModel, updater: SPUUpdater,
-        updateDelegate: UpdateAvailabilityDelegate? = nil
-    ) {
+    public init(viewModel: UsageViewModel, updater: SPUUpdater) {
         self.viewModel = viewModel
         self.updater = updater
-        self.updateDelegate = updateDelegate
     }
 
     public var body: some View {
