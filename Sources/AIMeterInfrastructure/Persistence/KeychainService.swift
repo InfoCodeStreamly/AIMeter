@@ -69,6 +69,7 @@ public actor KeychainService: KeychainServiceProtocol {
     }
 
     public func read(forKey key: String) -> String? {
+        // Try Data Protection keychain first
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -79,7 +80,26 @@ public actor KeychainService: KeychainServiceProtocol {
         ]
 
         var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        var status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        if status == errSecSuccess,
+            let data = result as? Data,
+            let value = String(data: data, encoding: .utf8)
+        {
+            return value
+        }
+
+        // Fallback: try file-based keychain (pre-migration items)
+        let fallbackQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+
+        result = nil
+        status = SecItemCopyMatching(fallbackQuery as CFDictionary, &result)
 
         guard status == errSecSuccess,
             let data = result as? Data,
