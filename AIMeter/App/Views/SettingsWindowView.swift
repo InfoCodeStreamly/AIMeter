@@ -28,7 +28,7 @@ private struct WindowAccessor: NSViewRepresentable {
         let view = NSView()
         DispatchQueue.main.async {
             if let window = view.window {
-                window.level = .floating
+                window.level = UIConstants.WindowLevel.settings
             }
         }
         return view

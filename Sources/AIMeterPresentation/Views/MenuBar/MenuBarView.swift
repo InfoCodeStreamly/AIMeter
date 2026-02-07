@@ -36,7 +36,7 @@ public struct MenuBarView: View {
                     }
                 },
                 onCopy: { viewModel.copyToClipboard() },
-                onSettings: { openWindow(id: "settings") }
+                onSettings: { openWindow(id: UIConstants.WindowID.settings) }
             )
 
             // Update available banner
@@ -113,7 +113,7 @@ public struct MenuBarView: View {
             // Usage history chart
             if !viewModel.usageHistory.isEmpty {
                 UsageChartView(history: viewModel.usageHistory) {
-                    openWindow(id: "usage-detail")
+                    openWindow(id: UIConstants.WindowID.usageDetail)
                     NSApplication.shared.activate()
                 }
             }
@@ -155,7 +155,7 @@ public struct MenuBarView: View {
                 .foregroundStyle(.secondary)
 
             Button {
-                openWindow(id: "settings")
+                openWindow(id: UIConstants.WindowID.settings)
             } label: {
                 Text("Open Settings", tableName: "Localizable", bundle: .main)
             }
