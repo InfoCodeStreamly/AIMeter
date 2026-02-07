@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Sparkle
 
 /// Delegate for gentle update reminders (suitable for menu bar apps)
@@ -18,13 +18,13 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
     }
 
     /// Called when Sparkle wants to show a scheduled update
-    /// We use gentle reminders for menu bar apps
+    /// Bring update window to front — menu bar apps don't auto-activate
     public func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,
         forUpdate update: SUAppcastItem,
         state: SPUUserUpdateState
     ) {
-        // Gentle handling is done automatically by Sparkle when supportsGentleScheduledUpdateReminders is true
+        NSApplication.shared.activate()
     }
 
     /// Called when user dismisses the update
