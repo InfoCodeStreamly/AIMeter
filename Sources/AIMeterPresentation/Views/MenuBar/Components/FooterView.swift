@@ -18,7 +18,7 @@ struct FooterView: View {
                     .foregroundStyle(.tertiary)
 
                 Button {
-                    if let url = URL(string: "https://paperlink.online/") {
+                    if let url = URL(string: "https://www.codestreamly.com") {
                         NSWorkspace.shared.open(url)
                     }
                 } label: {
