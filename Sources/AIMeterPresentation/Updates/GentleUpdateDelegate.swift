@@ -2,7 +2,13 @@ import AppKit
 import Sparkle
 
 /// Delegate for gentle update reminders (suitable for menu bar apps)
-/// Configures Sparkle to show non-intrusive update notifications
+///
+/// Implements Sparkle's recommended pattern for accessory/menu-bar apps:
+/// 1. Show in Dock when update is available
+/// 2. Clean up badge when user acknowledges
+/// 3. Return to accessory mode when session ends
+///
+/// See: https://sparkle-project.org/documentation/gentle-reminders/
 public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate {
 
     public override init() {
@@ -11,26 +17,38 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
 
     // MARK: - SPUStandardUserDriverDelegate
 
-    /// Returns whether the update check was initiated by the user
-    /// For menu bar apps, we want automatic checks to be gentle
     public var supportsGentleScheduledUpdateReminders: Bool {
         true
     }
 
-    /// Called when Sparkle wants to show a scheduled update
-    /// Bring update window to front — menu bar apps don't auto-activate
+    /// Bring app to foreground before showing update alert
     public func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,
         forUpdate update: SUAppcastItem,
         state: SPUUserUpdateState
     ) {
-        Task { @MainActor in
-            NSApplication.shared.activate()
+        let userInitiated = state.userInitiated
+        DispatchQueue.main.async {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate()
+
+            if !userInitiated {
+                NSApp.dockTile.badgeLabel = "1"
+            }
         }
     }
 
-    /// Called when user dismisses the update
+    /// User acknowledged the update — clear badge
     public func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
-        // Optional: track user engagement with updates
+        DispatchQueue.main.async {
+            NSApp.dockTile.badgeLabel = ""
+        }
+    }
+
+    /// Update session ended — return to menu bar only mode
+    public func standardUserDriverWillFinishUpdateSession() {
+        DispatchQueue.main.async {
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
 }
