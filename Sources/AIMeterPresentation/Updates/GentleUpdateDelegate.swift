@@ -24,7 +24,9 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
         forUpdate update: SUAppcastItem,
         state: SPUUserUpdateState
     ) {
-        NSApplication.shared.activate()
+        Task { @MainActor in
+            NSApplication.shared.activate()
+        }
     }
 
     /// Called when user dismisses the update
