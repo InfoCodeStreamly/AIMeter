@@ -1,7 +1,8 @@
-import Testing
-@testable import AIMeterApplication
 import AIMeterDomain
 import Foundation
+import Testing
+
+@testable import AIMeterApplication
 
 /// Tests for SaveUsageHistoryUseCase following Clean Architecture principles
 @Suite
@@ -16,8 +17,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(45.5), resetTime: .defaultSession),
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(45.5), resetTime: .defaultSession),
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -38,10 +41,14 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(50.0), resetTime: .defaultSession),
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(40.0), resetTime: .defaultSession),
-            UsageEntity(type: .opus, percentage: Percentage.clamped(80.0), resetTime: .defaultSession),
-            UsageEntity(type: .sonnet, percentage: Percentage.clamped(60.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(50.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(40.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .opus, percentage: Percentage.clamped(80.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .sonnet, percentage: Percentage.clamped(60.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -62,8 +69,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(0.0), resetTime: .defaultSession),
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(0.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(0.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(0.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -83,8 +92,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(100.0), resetTime: .defaultSession),
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(100.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(100.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(100.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -106,8 +117,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession),
-            UsageEntity(type: .opus, percentage: Percentage.clamped(50.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .opus, percentage: Percentage.clamped(50.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -125,8 +138,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(45.0), resetTime: .defaultSession),
-            UsageEntity(type: .sonnet, percentage: Percentage.clamped(60.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(45.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .sonnet, percentage: Percentage.clamped(60.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -158,8 +173,10 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .opus, percentage: Percentage.clamped(80.0), resetTime: .defaultSession),
-            UsageEntity(type: .sonnet, percentage: Percentage.clamped(70.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .opus, percentage: Percentage.clamped(80.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .sonnet, percentage: Percentage.clamped(70.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -177,9 +194,12 @@ struct SaveUsageHistoryUseCaseTests {
         let useCase = SaveUsageHistoryUseCase(historyRepository: mockRepo)
 
         let usages = [
-            UsageEntity(type: .session, percentage: Percentage.clamped(45.0), resetTime: .defaultSession),
-            UsageEntity(type: .session, percentage: Percentage.clamped(55.0), resetTime: .defaultSession), // duplicate
-            UsageEntity(type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession)
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(45.0), resetTime: .defaultSession),
+            UsageEntity(
+                type: .session, percentage: Percentage.clamped(55.0), resetTime: .defaultSession),  // duplicate
+            UsageEntity(
+                type: .weekly, percentage: Percentage.clamped(30.0), resetTime: .defaultSession),
         ]
 
         // Act
@@ -219,6 +239,12 @@ private actor MockUsageHistoryRepository: UsageHistoryRepository {
     func getDailyHistory(days: Int) async -> [UsageHistoryEntry] {
         getDailyHistoryCallCount += 1
         return getDailyHistoryResult
+    }
+
+    func getAggregatedHistory(days: Int, granularity: TimeGranularity) async -> [UsageHistoryEntry]
+    {
+        getHistoryCallCount += 1
+        return getHistoryResult
     }
 
     func clearOldEntries(olderThan days: Int) async {

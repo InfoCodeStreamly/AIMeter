@@ -111,6 +111,13 @@ enum UIConstants {
         static let windowHeight: CGFloat = 420
     }
 
+    /// Chart dimensions
+    enum Chart {
+        static let pointSpacing: CGFloat = 8
+        static let minVisibleWidth: CGFloat = 520
+        static let detailHeight: CGFloat = 280
+    }
+
     /// Settings card dimensions
     enum SettingsCard {
         static let padding: CGFloat = 16

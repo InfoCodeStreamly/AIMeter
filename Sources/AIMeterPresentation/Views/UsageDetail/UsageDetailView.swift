@@ -17,7 +17,7 @@ public struct UsageDetailView: View {
 
     public var body: some View {
         VStack(spacing: UIConstants.Spacing.md) {
-            // Header
+            // Header with granularity picker
             HStack {
                 Label {
                     Text("Usage Trend")
@@ -28,109 +28,29 @@ public struct UsageDetailView: View {
                 }
 
                 Spacer()
+
+                Picker("Interval", selection: $viewModel.selectedGranularity) {
+                    Text("15m").tag(TimeGranularity.fifteenMinutes)
+                    Text("1h").tag(TimeGranularity.oneHour)
+                    Text("3h").tag(TimeGranularity.threeHours)
+                    Text("6h").tag(TimeGranularity.sixHours)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 200)
             }
 
             // Chart
             if !viewModel.detailHistory.isEmpty {
-                Chart {
-                    ForEach(viewModel.detailHistory) { entry in
-                        // Session line (blue)
-                        LineMark(
-                            x: .value("Time", entry.timestamp, unit: .hour),
-                            y: .value("Session", entry.sessionPercentage),
-                            series: .value("Type", "Session")
-                        )
-                        .foregroundStyle(.blue)
-                        .interpolationMethod(.catmullRom)
-                        .symbol(Circle().strokeBorder(lineWidth: 1.5))
-                        .symbolSize(24)
-
-                        // Weekly line (purple)
-                        LineMark(
-                            x: .value("Time", entry.timestamp, unit: .hour),
-                            y: .value("Weekly", entry.weeklyPercentage),
-                            series: .value("Type", "Weekly")
-                        )
-                        .foregroundStyle(.purple)
-                        .interpolationMethod(.catmullRom)
-                        .symbol(Circle().strokeBorder(lineWidth: 1.5))
-                        .symbolSize(24)
+                if needsScroll {
+                    ScrollView(.horizontal, showsIndicators: true) {
+                        chartContent
+                            .frame(width: chartWidth, height: UIConstants.Chart.detailHeight)
                     }
-
-                    // Day separator lines at midnight
-                    ForEach(midnightDates, id: \.self) { midnight in
-                        RuleMark(x: .value("Midnight", midnight))
-                            .foregroundStyle(.secondary.opacity(0.3))
-                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                            .annotation(position: .top, alignment: .leading, spacing: 4) {
-                                Text(formatDayLabel(midnight))
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 4)
-                            }
-                    }
-
-                    // Threshold lines (dynamic from Settings)
-                    RuleMark(y: .value("Warning", warningThreshold))
-                        .foregroundStyle(AccessibleColors.moderate.opacity(0.4))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-
-                    RuleMark(y: .value("Critical", criticalThreshold))
-                        .foregroundStyle(.red.opacity(0.4))
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                    .defaultScrollAnchor(.trailing)
+                } else {
+                    chartContent
+                        .frame(minHeight: UIConstants.Chart.detailHeight)
                 }
-                .chartYScale(domain: 0...100)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .hour, count: 3)) { value in
-                        AxisGridLine()
-                        AxisValueLabel {
-                            if let date = value.as(Date.self) {
-                                Text(formatHourLabel(date))
-                                    .font(.system(size: 9))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(values: [0, 25, 50, 75, 100]) { value in
-                        AxisGridLine()
-                        AxisValueLabel {
-                            if let intValue = value.as(Int.self) {
-                                Text("\(intValue)%")
-                                    .font(.caption2)
-                            }
-                        }
-                    }
-                }
-                .chartForegroundStyleScale([
-                    "Session": .blue,
-                    "Weekly": .purple,
-                ])
-                .chartLegend(.hidden)
-                .chartOverlay { proxy in
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(.clear)
-                            .contentShape(Rectangle())
-                            .onContinuousHover { phase in
-                                switch phase {
-                                case .active(let location):
-                                    hoverLocation = location
-                                    hoveredEntry = findClosestEntry(
-                                        at: location, proxy: proxy, geo: geo)
-                                case .ended:
-                                    hoveredEntry = nil
-                                }
-                            }
-                    }
-                }
-                .overlay(alignment: .topLeading) {
-                    if let entry = hoveredEntry {
-                        tooltipView(for: entry)
-                    }
-                }
-                .frame(minHeight: 280)
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "clock.arrow.circlepath")
@@ -139,12 +59,12 @@ public struct UsageDetailView: View {
                     Text("Not enough data yet")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    Text("Usage data is collected hourly. Check back after a couple of days.")
+                    Text("Usage data is collected every 15 minutes. Check back later.")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
                 }
-                .frame(minHeight: 280)
+                .frame(minHeight: UIConstants.Chart.detailHeight)
             }
 
             // Legend
@@ -184,6 +104,113 @@ public struct UsageDetailView: View {
         .frame(minWidth: 520, minHeight: 400)
         .onAppear {
             viewModel.loadDetailHistory(days: 7)
+        }
+        .onChange(of: viewModel.selectedGranularity) {
+            viewModel.loadDetailHistory(days: 7)
+        }
+    }
+
+    // MARK: - Chart Content
+
+    @ViewBuilder
+    private var chartContent: some View {
+        Chart {
+            ForEach(viewModel.detailHistory) { entry in
+                // Session line (blue)
+                LineMark(
+                    x: .value("Time", entry.timestamp),
+                    y: .value("Session", entry.sessionPercentage),
+                    series: .value("Type", "Session")
+                )
+                .foregroundStyle(.blue)
+                .interpolationMethod(.catmullRom)
+                .symbol(Circle().strokeBorder(lineWidth: 1.5))
+                .symbolSize(symbolSize)
+
+                // Weekly line (purple)
+                LineMark(
+                    x: .value("Time", entry.timestamp),
+                    y: .value("Weekly", entry.weeklyPercentage),
+                    series: .value("Type", "Weekly")
+                )
+                .foregroundStyle(.purple)
+                .interpolationMethod(.catmullRom)
+                .symbol(Circle().strokeBorder(lineWidth: 1.5))
+                .symbolSize(symbolSize)
+            }
+
+            // Day separator lines at midnight
+            ForEach(midnightDates, id: \.self) { midnight in
+                RuleMark(x: .value("Midnight", midnight))
+                    .foregroundStyle(.secondary.opacity(0.3))
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .annotation(position: .top, alignment: .leading, spacing: 4) {
+                        Text(formatDayLabel(midnight))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 4)
+                    }
+            }
+
+            // Threshold lines (dynamic from Settings)
+            RuleMark(y: .value("Warning", warningThreshold))
+                .foregroundStyle(AccessibleColors.moderate.opacity(0.4))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+
+            RuleMark(y: .value("Critical", criticalThreshold))
+                .foregroundStyle(.red.opacity(0.4))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+        }
+        .chartYScale(domain: 0...100)
+        .chartXAxis {
+            AxisMarks(values: .stride(by: .hour, count: xAxisStrideHours)) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(formatHourLabel(date))
+                            .font(.system(size: 9))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(values: [0, 25, 50, 75, 100]) { value in
+                AxisGridLine()
+                AxisValueLabel {
+                    if let intValue = value.as(Int.self) {
+                        Text("\(intValue)%")
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+        .chartForegroundStyleScale([
+            "Session": .blue,
+            "Weekly": .purple,
+        ])
+        .chartLegend(.hidden)
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(.clear)
+                    .contentShape(Rectangle())
+                    .onContinuousHover { phase in
+                        switch phase {
+                        case .active(let location):
+                            hoverLocation = location
+                            hoveredEntry = findClosestEntry(
+                                at: location, proxy: proxy, geo: geo)
+                        case .ended:
+                            hoveredEntry = nil
+                        }
+                    }
+            }
+        }
+        .overlay(alignment: .topLeading) {
+            if let entry = hoveredEntry {
+                tooltipView(for: entry)
+            }
         }
     }
 
@@ -225,6 +252,34 @@ public struct UsageDetailView: View {
 
     private var criticalThreshold: Int {
         notificationPreferences?.criticalThreshold ?? 95
+    }
+
+    /// Whether the chart needs horizontal scrolling
+    private var needsScroll: Bool {
+        chartWidth > UIConstants.Chart.minVisibleWidth
+    }
+
+    /// Calculated chart width based on data point count
+    private var chartWidth: CGFloat {
+        max(
+            UIConstants.Chart.minVisibleWidth,
+            CGFloat(viewModel.detailHistory.count) * UIConstants.Chart.pointSpacing
+        )
+    }
+
+    /// Symbol size — smaller for dense data
+    private var symbolSize: CGFloat {
+        viewModel.selectedGranularity == .fifteenMinutes ? 12 : 24
+    }
+
+    /// X-axis stride in hours based on granularity
+    private var xAxisStrideHours: Int {
+        switch viewModel.selectedGranularity {
+        case .fifteenMinutes: 3
+        case .oneHour: 3
+        case .threeHours: 6
+        case .sixHours: 12
+        }
     }
 
     /// Midnight dates for day separator lines

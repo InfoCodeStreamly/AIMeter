@@ -1,8 +1,8 @@
-import SwiftUI
-import AppKit
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
+import AppKit
+import SwiftUI
 
 /// ViewModel for usage display
 @MainActor
@@ -13,6 +13,7 @@ public final class UsageViewModel {
     public private(set) var extraUsage: ExtraUsageDisplayData?
     public private(set) var usageHistory: [UsageHistoryEntry] = []
     public private(set) var detailHistory: [UsageHistoryEntry] = []
+    public var selectedGranularity: TimeGranularity = .oneHour
 
     private let fetchUsageUseCase: FetchUsageUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
@@ -24,7 +25,7 @@ public final class UsageViewModel {
     private let widgetDataService: WidgetDataService?
 
     private var refreshTask: Task<Void, Never>?
-    private let refreshInterval: TimeInterval = 60 // 1 minute
+    private let refreshInterval: TimeInterval = 60  // 1 minute
 
     public init(
         fetchUsageUseCase: FetchUsageUseCase,
@@ -73,10 +74,12 @@ public final class UsageViewModel {
         }
     }
 
-    /// Load detailed history for the trend detail window (hourly granularity)
+    /// Load detailed history for the trend detail window with selected granularity
     public func loadDetailHistory(days: Int) {
         Task {
-            if let history = await fetchUsageHistoryUseCase?.executeHourly(days: days) {
+            if let history = await fetchUsageHistoryUseCase?
+                .executeWithGranularity(days: days, granularity: selectedGranularity)
+            {
                 detailHistory = history
             }
         }
@@ -213,14 +216,16 @@ extension UsageViewModel {
     /// Menu bar text "70/30" format (session/weekly)
     public var menuBarText: String {
         guard let session = primaryUsage,
-              let weekly = weeklyUsage else { return "--/--" }
+            let weekly = weeklyUsage
+        else { return "--/--" }
         return "\(session.percentage)/\(weekly.percentage)"
     }
 
     /// Menu bar status based on max(session, weekly)
     public var menuBarStatus: UsageStatus {
         guard let session = primaryUsage,
-              let weekly = weeklyUsage else { return .safe }
+            let weekly = weeklyUsage
+        else { return .safe }
         let maxPercentage = max(session.percentage, weekly.percentage)
         return Percentage.clamped(Double(maxPercentage)).toStatus()
     }

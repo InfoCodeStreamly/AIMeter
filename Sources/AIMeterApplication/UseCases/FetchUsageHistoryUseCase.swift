@@ -1,5 +1,5 @@
-import Foundation
 import AIMeterDomain
+import Foundation
 
 /// Use case for fetching usage history
 public final class FetchUsageHistoryUseCase: Sendable {
@@ -22,5 +22,16 @@ public final class FetchUsageHistoryUseCase: Sendable {
     /// - Returns: Array of hourly history entries sorted by timestamp
     public func executeHourly(days: Int = 7) async -> [UsageHistoryEntry] {
         await historyRepository.getHistory(days: days)
+    }
+
+    /// Fetches history aggregated by time granularity
+    /// - Parameters:
+    ///   - days: Number of days to fetch
+    ///   - granularity: Time interval for aggregation (15min, 1h, 3h, 6h)
+    /// - Returns: Array of aggregated history entries sorted by timestamp
+    public func executeWithGranularity(days: Int = 7, granularity: TimeGranularity) async
+        -> [UsageHistoryEntry]
+    {
+        await historyRepository.getAggregatedHistory(days: days, granularity: granularity)
     }
 }

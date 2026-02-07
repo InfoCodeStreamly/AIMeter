@@ -11,6 +11,9 @@ public protocol UsageHistoryRepository: Sendable {
     /// Gets daily aggregated history (one entry per day with max values)
     func getDailyHistory(days: Int) async -> [UsageHistoryEntry]
 
+    /// Gets history aggregated by time granularity (max values per interval)
+    func getAggregatedHistory(days: Int, granularity: TimeGranularity) async -> [UsageHistoryEntry]
+
     /// Clears old history entries (older than specified days)
     func clearOldEntries(olderThan days: Int) async
 }
