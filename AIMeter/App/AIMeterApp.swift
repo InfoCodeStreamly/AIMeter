@@ -58,7 +58,7 @@ struct AIMeterApp: App {
         .menuBarExtraStyle(.window)
 
         // Settings Window
-        Window("AIMeter Settings", id: "settings") {
+        Window("AIMeter Settings", id: UIConstants.WindowID.settings) {
             SettingsWindowView(
                 checkForUpdatesViewModel: checkForUpdatesViewModel
             )
@@ -72,7 +72,7 @@ struct AIMeterApp: App {
         .defaultPosition(.center)
 
         // Usage Detail Window
-        Window("Usage Trend", id: "usage-detail") {
+        Window("Usage Trend", id: UIConstants.WindowID.usageDetail) {
             UsageDetailView(viewModel: viewModel)
                 .environment(languageService)
                 .environment(themeService)
@@ -81,7 +81,9 @@ struct AIMeterApp: App {
                 .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 520, height: 420)
+        .defaultSize(
+            width: UIConstants.UsageDetail.windowWidth, height: UIConstants.UsageDetail.windowHeight
+        )
         .windowResizability(.contentSize)
         .defaultPosition(.center)
     }

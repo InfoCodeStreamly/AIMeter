@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// UI-related constants
@@ -53,10 +54,33 @@ enum UIConstants {
         // Above 80% is critical
     }
 
+    /// Window identifiers (SSOT for openWindow(id:))
+    enum WindowID {
+        static let settings = "settings"
+        static let usageDetail = "usage-detail"
+    }
+
+    /// Window level hierarchy (SSOT)
+    ///
+    /// Settings window floats above normal windows, but Sparkle update
+    /// alert must appear above Settings so the user always sees it.
+    enum WindowLevel {
+        /// Settings window — above normal, below update alerts
+        static let settings = NSWindow.Level(NSWindow.Level.floating.rawValue)
+        /// Sparkle update alert — above Settings
+        static let updateAlert = NSWindow.Level(NSWindow.Level.floating.rawValue + 1)
+    }
+
     /// Settings window dimensions
     enum Settings {
         static let windowWidth: CGFloat = 450
         static let windowHeight: CGFloat = 520
+    }
+
+    /// Usage Detail window dimensions
+    enum UsageDetail {
+        static let windowWidth: CGFloat = 520
+        static let windowHeight: CGFloat = 420
     }
 
     /// Settings card dimensions
