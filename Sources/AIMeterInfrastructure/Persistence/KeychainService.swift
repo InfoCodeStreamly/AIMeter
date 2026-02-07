@@ -1,5 +1,5 @@
-import Foundation
 import AIMeterDomain
+import Foundation
 import Security
 
 /// Keychain operations service (Infrastructure implementation)
@@ -8,6 +8,40 @@ public actor KeychainService: KeychainServiceProtocol {
 
     public init(service: String = "com.codestreamly.AIMeter") {
         self.service = service
+    }
+
+    /// Migrates items from file-based keychain to Data Protection keychain.
+    /// Old items (created without kSecUseDataProtectionKeychain) have ACL
+    /// tied to code signature, causing password prompts on every rebuild.
+    /// This reads from old keychain, saves to new, then deletes old item.
+    public func migrateFromFileBasedKeychain(forKey key: String) {
+        // Try to read from old file-based keychain
+        let oldQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+
+        var result: AnyObject?
+        let status = SecItemCopyMatching(oldQuery as CFDictionary, &result)
+
+        guard status == errSecSuccess,
+            let data = result as? Data,
+            let value = String(data: data, encoding: .utf8)
+        else { return }
+
+        // Save to Data Protection keychain
+        try? save(value, forKey: key)
+
+        // Delete from old file-based keychain (without kSecUseDataProtectionKeychain)
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+        ]
+        SecItemDelete(deleteQuery as CFDictionary)
     }
 
     public func save(_ value: String, forKey key: String) throws {
@@ -23,7 +57,8 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -40,15 +75,16 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
 
         guard status == errSecSuccess,
-              let data = result as? Data,
-              let value = String(data: data, encoding: .utf8) else {
+            let data = result as? Data,
+            let value = String(data: data, encoding: .utf8)
+        else {
             return nil
         }
 
@@ -59,7 +95,8 @@ public actor KeychainService: KeychainServiceProtocol {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key
+            kSecAttrAccount as String: key,
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemDelete(query as CFDictionary)

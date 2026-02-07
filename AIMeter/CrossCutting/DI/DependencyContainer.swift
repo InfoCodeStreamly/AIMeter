@@ -1,15 +1,24 @@
-import Foundation
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
 import AIMeterPresentation
+import Foundation
 
 /// Dependency injection container
 @MainActor
 final class DependencyContainer {
     static let shared = DependencyContainer()
 
-    private init() {}
+    private init() {
+        // Migrate old keychain items from file-based to Data Protection keychain.
+        // File-based keychain has ACL tied to code signature, causing password
+        // prompts on every rebuild/update. Data Protection keychain does not.
+        Task {
+            let keychain = self.keychainService
+            await keychain.migrateFromFileBasedKeychain(forKey: "sessionKey")
+            await keychain.migrateFromFileBasedKeychain(forKey: "oauthCredentials")
+        }
+    }
 
     // MARK: - Infrastructure
 
@@ -117,7 +126,6 @@ final class DependencyContainer {
             preferencesService: notificationPreferencesService
         )
     }
-
 
     func makeRefreshTokenUseCase() -> RefreshTokenUseCase {
         RefreshTokenUseCase(
