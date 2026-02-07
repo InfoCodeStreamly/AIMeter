@@ -53,7 +53,7 @@ struct SettingsButton: View {
                 Text(title, tableName: tableName, bundle: .main)
                     .font(.body)
             }
-            .frame(maxWidth: style == .primary ? .infinity : nil)
+            .frame(maxWidth: style == .secondary ? nil : .infinity)
         }
 
         switch style {
