@@ -1,7 +1,7 @@
-import SwiftUI
 import AIMeterApplication
 import AIMeterInfrastructure
 import AppKit
+import SwiftUI
 
 /// Footer view for menu bar popover with hover buttons
 struct FooterView: View {
@@ -18,7 +18,7 @@ struct FooterView: View {
                     .foregroundStyle(.tertiary)
 
                 Button {
-                    if let url = URL(string: "https://www.codestreamly.com/en/") {
+                    if let url = URL(string: "https://paperlink.online/") {
                         NSWorkspace.shared.open(url)
                     }
                 } label: {
