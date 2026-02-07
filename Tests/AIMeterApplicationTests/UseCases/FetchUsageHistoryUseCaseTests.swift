@@ -1,7 +1,8 @@
-import Testing
-@testable import AIMeterApplication
 import AIMeterDomain
 import Foundation
+import Testing
+
+@testable import AIMeterApplication
 
 /// Tests for FetchUsageHistoryUseCase following Clean Architecture principles
 @Suite
@@ -82,7 +83,7 @@ struct FetchUsageHistoryUseCaseTests {
                 timestamp: now.addingTimeInterval(-86400),
                 sessionPercentage: 40.0,
                 weeklyPercentage: 35.0
-            )
+            ),
         ]
         await mockRepo.configure(getDailyHistoryResult: unsortedEntries)
 
@@ -286,7 +287,10 @@ private actor MockUsageHistoryRepository: UsageHistoryRepository {
     var lastRequestedDays: Int?
     var lastClearDays: Int?
 
-    func configure(getDailyHistoryResult: [UsageHistoryEntry]? = nil, getHistoryResult: [UsageHistoryEntry]? = nil) {
+    func configure(
+        getDailyHistoryResult: [UsageHistoryEntry]? = nil,
+        getHistoryResult: [UsageHistoryEntry]? = nil
+    ) {
         if let getDailyHistoryResult { self.getDailyHistoryResult = getDailyHistoryResult }
         if let getHistoryResult { self.getHistoryResult = getHistoryResult }
     }
@@ -306,6 +310,13 @@ private actor MockUsageHistoryRepository: UsageHistoryRepository {
         getDailyHistoryCallCount += 1
         lastRequestedDays = days
         return getDailyHistoryResult
+    }
+
+    func getAggregatedHistory(days: Int, granularity: TimeGranularity) async -> [UsageHistoryEntry]
+    {
+        getHistoryCallCount += 1
+        lastRequestedDays = days
+        return getHistoryResult
     }
 
     func clearOldEntries(olderThan days: Int) async {
