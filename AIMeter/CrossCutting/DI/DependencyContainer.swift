@@ -10,13 +10,13 @@ final class DependencyContainer {
     static let shared = DependencyContainer()
 
     private init() {
-        // Migrate old keychain items from file-based to Data Protection keychain.
-        // File-based keychain has ACL tied to code signature, causing password
-        // prompts on every rebuild/update. Data Protection keychain does not.
+        // Migrate old keychain items that had kSecAttrAccessible (ACL tied
+        // to code signature → password prompt on rebuild/update).
+        // Re-saves without ACL attributes.
         Task {
             let keychain = self.keychainService
-            await keychain.migrateFromFileBasedKeychain(forKey: "sessionKey")
-            await keychain.migrateFromFileBasedKeychain(forKey: "oauthCredentials")
+            await keychain.migrateFromACLKeychain(forKey: "sessionKey")
+            await keychain.migrateFromACLKeychain(forKey: "oauthCredentials")
         }
     }
 
