@@ -16,9 +16,9 @@ struct HeaderView: View {
         HStack(spacing: UIConstants.Spacing.md) {
             // App info
             HStack(spacing: UIConstants.Spacing.sm) {
-                Image(systemName: "chart.bar.fill")
-                    .font(.title3)
-                    .foregroundStyle(.blue)
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .frame(width: 24, height: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("AIMeter")
@@ -28,27 +28,29 @@ struct HeaderView: View {
                     Text("Updated \(lastUpdated)", tableName: "MenuBar", bundle: .main)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
 
             Spacer()
 
             // Action buttons
-            HStack(spacing: UIConstants.Spacing.xs) {
+            HStack(spacing: 2) {
                 // Refresh button
                 Button(action: onRefresh) {
                     ZStack {
                         if isRefreshing {
                             ProgressView()
                                 .controlSize(.small)
-                                .scaleEffect(0.7)
+                                .scaleEffect(0.6)
                         } else {
                             Image(systemName: "arrow.clockwise")
-                                .font(.caption)
+                                .font(.caption2)
                         }
                     }
                     .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 24, height: 24)
                 }
                 .glassButton()
                 .disabled(isRefreshing)
@@ -67,9 +69,9 @@ struct HeaderView: View {
                     }
                 } label: {
                     Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(isCopied ? AccessibleColors.success : .secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 24, height: 24)
                 }
                 .glassButton()
                 .help(
@@ -80,9 +82,9 @@ struct HeaderView: View {
                 // Settings button
                 Button(action: onSettings) {
                     Image(systemName: "gearshape")
-                        .font(.caption)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 24, height: 24)
                 }
                 .glassButton()
                 .help(Text("Settings", tableName: "MenuBar", bundle: .main))

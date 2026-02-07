@@ -220,45 +220,45 @@ struct ConnectionSettingsTab: View {
     }
 
     private func existingKeyView(masked: String) -> some View {
-        VStack(spacing: UIConstants.Spacing.lg) {
-            // Status card
-            SettingsCard {
-                HStack(spacing: UIConstants.Spacing.md) {
+        SettingsCard {
+            VStack(spacing: UIConstants.Spacing.md) {
+                // Status row
+                HStack(spacing: UIConstants.Spacing.sm) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(AccessibleColors.success)
-                        .font(.title2)
+                        .font(.title3)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Connected", tableName: tableName, bundle: .main)
-                            .font(.headline)
-
-                        Text(masked)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Connected", tableName: tableName, bundle: .main)
+                        .font(.headline)
 
                     Spacer()
-                }
-            }
 
-            // Actions
-            VStack(spacing: UIConstants.Spacing.sm) {
-                SettingsButton(
-                    "Re-sync",
-                    icon: "arrow.triangle.2.circlepath",
-                    style: .primary,
-                    tableName: tableName
-                ) {
-                    Task { await viewModel.syncFromClaudeCode() }
+                    Text(masked)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
-                SettingsButton(
-                    "Disconnect",
-                    icon: "xmark.circle",
-                    style: .destructive,
-                    tableName: tableName
-                ) {
-                    Task { await viewModel.deleteKey() }
+                Divider()
+
+                // Compact action buttons in a row
+                HStack(spacing: UIConstants.Spacing.sm) {
+                    SettingsButton(
+                        "Re-sync",
+                        icon: "arrow.triangle.2.circlepath",
+                        style: .primary,
+                        tableName: tableName
+                    ) {
+                        Task { await viewModel.syncFromClaudeCode() }
+                    }
+
+                    SettingsButton(
+                        "Disconnect",
+                        icon: "xmark.circle",
+                        style: .destructive,
+                        tableName: tableName
+                    ) {
+                        Task { await viewModel.deleteKey() }
+                    }
                 }
             }
         }
