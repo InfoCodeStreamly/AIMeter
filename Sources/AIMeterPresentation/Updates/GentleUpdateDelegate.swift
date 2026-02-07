@@ -32,10 +32,36 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
             NSApp.setActivationPolicy(.regular)
             NSApp.activate()
 
+            // Ensure Sparkle update window appears above Settings (which is .floating)
+            Self.raiseSparkleWindow()
+
             if !userInitiated {
                 NSApp.dockTile.badgeLabel = "1"
             }
         }
+    }
+
+    /// Find Sparkle's update window and raise it above Settings.
+    /// Retries after a short delay because Sparkle may not have created
+    /// its window yet at the time of the delegate callback.
+    private static func raiseSparkleWindow() {
+        applySparkleWindowLevel()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            applySparkleWindowLevel()
+        }
+    }
+
+    private static func applySparkleWindowLevel() {
+        for window in NSApp.windows where isSparkleWindow(window) {
+            window.level = UIConstants.WindowLevel.updateAlert
+            window.orderFrontRegardless()
+        }
+    }
+
+    /// Detect Sparkle windows by class name prefix
+    private static func isSparkleWindow(_ window: NSWindow) -> Bool {
+        let className = String(describing: type(of: window))
+        return className.hasPrefix("SPU") || className.contains("Sparkle")
     }
 
     /// User acknowledged the update — clear badge
