@@ -1,10 +1,10 @@
-import SwiftUI
-import Sparkle
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
 import AIMeterInfrastructure
 import AIMeterPresentation
 import KeyboardShortcuts
+import Sparkle
+import SwiftUI
 
 @main
 struct AIMeterApp: App {
@@ -28,12 +28,16 @@ struct AIMeterApp: App {
     /// Delegate for tracking update availability (indicator in menu bar)
     private let updateAvailabilityDelegate = UpdateAvailabilityDelegate()
 
+    /// ViewModel for "Check for Updates" button
+    private let checkForUpdatesViewModel: CheckForUpdatesViewModel
+
     init() {
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: updateAvailabilityDelegate,
             userDriverDelegate: gentleUpdateDelegate
         )
+        checkForUpdatesViewModel = CheckForUpdatesViewModel(updater: updaterController.updater)
     }
 
     var body: some Scene {
@@ -41,9 +45,9 @@ struct AIMeterApp: App {
         MenuBarExtra {
             MenuBarView(
                 viewModel: viewModel,
-                updater: updaterController.updater,
-                updateDelegate: updateAvailabilityDelegate
+                updater: updaterController.updater
             )
+            .environment(updateAvailabilityDelegate)
             .environment(languageService)
             .environment(themeService)
             .environment(\.locale, languageService.currentLocale)
@@ -55,11 +59,13 @@ struct AIMeterApp: App {
 
         // Settings Window
         Window("AIMeter Settings", id: "settings") {
-            SettingsWindowView(updater: updaterController.updater)
-                .environment(languageService)
-                .environment(themeService)
-                .environment(\.locale, languageService.currentLocale)
-                .preferredColorScheme(themeService.selectedTheme.colorScheme)
+            SettingsWindowView(
+                checkForUpdatesViewModel: checkForUpdatesViewModel
+            )
+            .environment(languageService)
+            .environment(themeService)
+            .environment(\.locale, languageService.currentLocale)
+            .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)

@@ -1,34 +1,36 @@
-import SwiftUI
 import Sparkle
-import AppKit
+import SwiftUI
 
 /// ViewModel for "Check for Updates" button (Sparkle wrapper)
 @MainActor
-public final class CheckForUpdatesViewModel: ObservableObject {
-    @Published public private(set) var canCheckForUpdates = false
+@Observable
+public final class CheckForUpdatesViewModel {
+    public private(set) var canCheckForUpdates = false
     private let updater: SPUUpdater
+    private nonisolated(unsafe) var observationTask: Task<Void, Never>?
 
     public init(updater: SPUUpdater) {
         self.updater = updater
-        updater.publisher(for: \.canCheckForUpdates)
-            .assign(to: &$canCheckForUpdates)
+        startObserving()
+    }
+
+    deinit {
+        observationTask?.cancel()
     }
 
     public func checkForUpdates() {
-        // Lower settings window level temporarily
-        let settingsWindows = NSApp.windows.filter {
-            $0.title.contains("Settings") || $0.identifier?.rawValue == "settings"
-        }
-        settingsWindows.forEach { $0.level = .normal }
-
         updater.checkForUpdates()
+    }
 
-        // Bring Sparkle windows to front after a short delay
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
-            NSApp.windows
-                .filter { $0.title.contains("AIMeter") || $0.className.contains("Sparkle") }
-                .forEach { $0.orderFrontRegardless() }
+    private func startObserving() {
+        // Poll updater.canCheckForUpdates (KVO property) periodically
+        canCheckForUpdates = updater.canCheckForUpdates
+        observationTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled, let self else { break }
+                self.canCheckForUpdates = self.updater.canCheckForUpdates
+            }
         }
     }
 }

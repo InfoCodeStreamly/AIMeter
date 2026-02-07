@@ -2,7 +2,6 @@ import AIMeterApplication
 import AIMeterDomain
 import AIMeterInfrastructure
 import AppKit
-import Sparkle
 import SwiftUI
 
 /// Settings tab identifiers with localization keys
@@ -41,8 +40,7 @@ enum SettingsTab: CaseIterable {
 /// Settings window view with toolbar-style tabs
 public struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
-    let updater: SPUUpdater
-    @ObservedObject private var checkForUpdatesViewModel: CheckForUpdatesViewModel
+    var checkForUpdatesViewModel: CheckForUpdatesViewModel
     var launchAtLogin: LaunchAtLoginService
     var notificationPreferences: NotificationPreferencesService
     var appInfo: AppInfoService
@@ -53,14 +51,13 @@ public struct SettingsView: View {
 
     public init(
         viewModel: SettingsViewModel,
-        updater: SPUUpdater,
+        checkForUpdatesViewModel: CheckForUpdatesViewModel,
         launchAtLogin: LaunchAtLoginService,
         notificationPreferences: NotificationPreferencesService,
         appInfo: AppInfoService
     ) {
         self.viewModel = viewModel
-        self.updater = updater
-        self.checkForUpdatesViewModel = CheckForUpdatesViewModel(updater: updater)
+        self.checkForUpdatesViewModel = checkForUpdatesViewModel
         self.launchAtLogin = launchAtLogin
         self.notificationPreferences = notificationPreferences
         self.appInfo = appInfo
@@ -145,7 +142,6 @@ public struct SettingsView: View {
 
         case .about:
             AboutSettingsTab(
-                updater: updater,
                 checkForUpdatesViewModel: checkForUpdatesViewModel,
                 appInfo: appInfo
             )
