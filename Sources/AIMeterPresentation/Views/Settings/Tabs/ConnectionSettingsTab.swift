@@ -297,8 +297,8 @@ struct ConnectionSettingsTab: View {
     }
 
     private func errorView(message: String) -> some View {
-        VStack(spacing: UIConstants.Spacing.lg) {
-            SettingsCard {
+        SettingsCard {
+            VStack(spacing: UIConstants.Spacing.md) {
                 HStack(spacing: UIConstants.Spacing.md) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.red)
@@ -315,15 +315,28 @@ struct ConnectionSettingsTab: View {
 
                     Spacer()
                 }
-            }
 
-            SettingsButton(
-                "Try Again",
-                icon: "arrow.clockwise",
-                style: .primary,
-                tableName: tableName
-            ) {
-                Task { await viewModel.retry() }
+                Divider()
+
+                HStack(spacing: UIConstants.Spacing.sm) {
+                    SettingsButton(
+                        "Re-sync",
+                        icon: "arrow.triangle.2.circlepath",
+                        style: .primary,
+                        tableName: tableName
+                    ) {
+                        Task { await viewModel.syncFromClaudeCode() }
+                    }
+
+                    SettingsButton(
+                        "Disconnect",
+                        icon: "xmark.circle",
+                        style: .destructive,
+                        tableName: tableName
+                    ) {
+                        Task { await viewModel.deleteKey() }
+                    }
+                }
             }
         }
     }
