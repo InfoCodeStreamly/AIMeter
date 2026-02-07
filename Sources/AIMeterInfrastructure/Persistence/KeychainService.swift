@@ -3,6 +3,9 @@ import Foundation
 import Security
 
 /// Keychain operations service (Infrastructure implementation)
+///
+/// Uses simple keychain items without kSecAttrAccessible to avoid
+/// ACL-based password prompts on code signature changes (rebuilds/updates).
 public actor KeychainService: KeychainServiceProtocol {
     private let service: String
 
@@ -10,13 +13,15 @@ public actor KeychainService: KeychainServiceProtocol {
         self.service = service
     }
 
-    /// Migrates items from file-based keychain to Data Protection keychain.
-    /// Old items (created without kSecUseDataProtectionKeychain) have ACL
-    /// tied to code signature, causing password prompts on every rebuild.
-    /// This reads from old keychain, saves to new, then deletes old item.
-    public func migrateFromFileBasedKeychain(forKey key: String) {
-        // Try to read from old file-based keychain
-        let oldQuery: [String: Any] = [
+    /// Migrates old items that had kSecAttrAccessible (which creates ACL
+    /// tied to code signature, causing password prompts on rebuild/update).
+    /// Reads old item, saves without kSecAttrAccessible, deletes old.
+    public func migrateFromACLKeychain(forKey key: String) {
+        // Check if a "clean" item already exists (no migration needed)
+        if read(forKey: key) != nil { return }
+
+        // Try reading from any existing keychain item (including ACL-protected)
+        let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
@@ -25,23 +30,23 @@ public actor KeychainService: KeychainServiceProtocol {
         ]
 
         var result: AnyObject?
-        let status = SecItemCopyMatching(oldQuery as CFDictionary, &result)
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
 
         guard status == errSecSuccess,
             let data = result as? Data,
             let value = String(data: data, encoding: .utf8)
         else { return }
 
-        // Save to Data Protection keychain
-        try? save(value, forKey: key)
-
-        // Delete from old file-based keychain (without kSecUseDataProtectionKeychain)
+        // Delete old item (may have ACL attributes)
         let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
         ]
         SecItemDelete(deleteQuery as CFDictionary)
+
+        // Save clean item without kSecAttrAccessible
+        try? save(value, forKey: key)
     }
 
     public func save(_ value: String, forKey key: String) throws {
@@ -57,8 +62,6 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
-            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -69,37 +72,16 @@ public actor KeychainService: KeychainServiceProtocol {
     }
 
     public func read(forKey key: String) -> String? {
-        // Try Data Protection keychain first
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseDataProtectionKeychain as String: true,
         ]
 
         var result: AnyObject?
-        var status = SecItemCopyMatching(query as CFDictionary, &result)
-
-        if status == errSecSuccess,
-            let data = result as? Data,
-            let value = String(data: data, encoding: .utf8)
-        {
-            return value
-        }
-
-        // Fallback: try file-based keychain (pre-migration items)
-        let fallbackQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ]
-
-        result = nil
-        status = SecItemCopyMatching(fallbackQuery as CFDictionary, &result)
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
 
         guard status == errSecSuccess,
             let data = result as? Data,
@@ -116,7 +98,6 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
-            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemDelete(query as CFDictionary)
