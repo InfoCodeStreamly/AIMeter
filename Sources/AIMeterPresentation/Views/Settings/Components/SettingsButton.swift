@@ -34,7 +34,13 @@ struct SettingsButton: View {
     }
 
     var body: some View {
-        Button(action: action) {
+        buttonContent
+            .disabled(isLoading)
+    }
+
+    @ViewBuilder
+    private var buttonContent: some View {
+        let button = Button(action: action) {
             HStack(spacing: 8) {
                 if isLoading {
                     ProgressView()
@@ -49,9 +55,15 @@ struct SettingsButton: View {
             }
             .frame(maxWidth: style == .primary ? .infinity : nil)
         }
-        .glassButton()
-        .tint(tintColor)
-        .disabled(isLoading)
+
+        switch style {
+        case .secondary:
+            button.buttonStyle(.bordered)
+        case .primary:
+            button.buttonStyle(.borderedProminent).tint(.blue)
+        case .destructive:
+            button.buttonStyle(.borderedProminent).tint(.red)
+        }
     }
 
     private var tintColor: Color? {
