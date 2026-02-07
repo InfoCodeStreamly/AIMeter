@@ -1,18 +1,18 @@
-import Foundation
 import AIMeterDomain
+import Foundation
 
 /// UserDefaults-based implementation of UsageHistoryRepository
 public actor UsageHistoryStore: UsageHistoryRepository {
     private let historyKey = "usageHistory"
     private let lastSaveKey = "usageHistoryLastSave"
     private let defaults = UserDefaults.standard
-    private let maxEntries = 200 // Keep at most 200 entries (~8 days at hourly)
-    private let saveIntervalMinutes = 60 // Save once per hour
+    private let maxEntries = 700  // ~7 days at 15-minute intervals (96/day)
+    private let saveIntervalMinutes = 15  // Save every 15 minutes
 
     public init() {}
 
     public func save(_ entry: UsageHistoryEntry) async {
-        // Only save once per hour to avoid noise
+        // Only save once per interval to avoid noise
         if let lastSave = defaults.object(forKey: lastSaveKey) as? Date {
             let minutesSinceLastSave = Date().timeIntervalSince(lastSave) / 60
             if minutesSinceLastSave < Double(saveIntervalMinutes) {
@@ -63,6 +63,47 @@ public actor UsageHistoryStore: UsageHistoryRepository {
 
         // Convert back to entries, sorted by date
         return dailyData.map { date, values in
+            UsageHistoryEntry(
+                timestamp: date,
+                sessionPercentage: values.session,
+                weeklyPercentage: values.weekly
+            )
+        }.sorted { $0.timestamp < $1.timestamp }
+    }
+
+    /// Returns history aggregated by time granularity (max values per interval)
+    public func getAggregatedHistory(days: Int, granularity: TimeGranularity) async
+        -> [UsageHistoryEntry]
+    {
+        let rawHistory = await getHistory(days: days)
+
+        // For 15-minute granularity, return raw data
+        if granularity == .fifteenMinutes {
+            return rawHistory
+        }
+
+        let intervalSeconds = TimeInterval(granularity.rawValue * 60)
+
+        // Group by floored interval
+        var buckets: [Date: (session: Double, weekly: Double)] = [:]
+
+        for entry in rawHistory {
+            let floored = Date(
+                timeIntervalSince1970:
+                    floor(entry.timestamp.timeIntervalSince1970 / intervalSeconds) * intervalSeconds
+            )
+
+            if let existing = buckets[floored] {
+                buckets[floored] = (
+                    session: max(existing.session, entry.sessionPercentage),
+                    weekly: max(existing.weekly, entry.weeklyPercentage)
+                )
+            } else {
+                buckets[floored] = (entry.sessionPercentage, entry.weeklyPercentage)
+            }
+        }
+
+        return buckets.map { date, values in
             UsageHistoryEntry(
                 timestamp: date,
                 sessionPercentage: values.session,
