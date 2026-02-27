@@ -1,7 +1,7 @@
 import Foundation
 import AIMeterDomain
 
-/// Protocol for Claude Code sync service (Infrastructure interface)
+/// Protocol for Claude Code sync service
 public protocol ClaudeCodeSyncServiceProtocol: Sendable {
     func hasCredentials() async -> Bool
     func getSubscriptionInfo() async -> (type: String, email: String?)?

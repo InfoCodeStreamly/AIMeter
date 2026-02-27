@@ -1,5 +1,6 @@
-import Foundation
+import AIMeterApplication
 import AIMeterDomain
+import Foundation
 
 /// Implementation of UsageRepository using Claude OAuth API
 public actor ClaudeUsageRepository: UsageRepository {

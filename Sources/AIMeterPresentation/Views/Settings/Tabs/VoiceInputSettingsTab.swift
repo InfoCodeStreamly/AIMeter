@@ -1,13 +1,12 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import KeyboardShortcuts
 import SwiftUI
 
 /// Voice Input settings tab - Enable, API Key, Balance, Language, Shortcut
 struct VoiceInputSettingsTab: View {
     var viewModel: VoiceInputViewModel
-    var preferencesService: VoiceInputPreferencesService
+    var preferencesService: any VoiceInputPreferencesProtocol
 
     @State private var apiKeyInput: String = ""
     @State private var hasKey: Bool = false
@@ -67,6 +66,11 @@ struct VoiceInputSettingsTab: View {
             hasAccessibility = viewModel.checkAccessibility()
             if hasKey {
                 await viewModel.fetchBalance()
+            }
+            // Poll until accessibility is granted
+            while !hasAccessibility && !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                hasAccessibility = viewModel.checkAccessibility()
             }
         }
     }

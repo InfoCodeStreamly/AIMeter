@@ -3,7 +3,6 @@ import Testing
 
 @testable import AIMeterApplication
 @testable import AIMeterDomain
-@testable import AIMeterInfrastructure
 @testable import AIMeterPresentation
 
 /// Tests for SettingsViewModel
@@ -62,7 +61,7 @@ struct SettingsViewModelTests {
 
         func saveOAuthCredentials(_ credentials: OAuthCredentials) async throws {
             if shouldThrowOnSave {
-                throw InfrastructureError.keychainSaveFailed(errSecParam)
+                throw SyncError.keychainWriteFailed(status: errSecParam)
             }
             storedCredentials = credentials
         }
@@ -98,10 +97,10 @@ struct SettingsViewModelTests {
 
         func extractOAuthCredentials() async throws -> OAuthCredentials {
             if shouldThrowOnExtract {
-                throw ClaudeCodeSyncError.noCredentialsFound
+                throw SyncError.noCredentialsFound
             }
             guard let credentials = extractCredentialsResult else {
-                throw ClaudeCodeSyncError.noCredentialsFound
+                throw SyncError.noCredentialsFound
             }
             return credentials
         }

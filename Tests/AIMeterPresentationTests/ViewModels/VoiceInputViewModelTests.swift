@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AIMeterPresentation
 @testable import AIMeterApplication
-@testable import AIMeterInfrastructure
 import AIMeterDomain
 
 @Suite("VoiceInputViewModel", .serialized)
@@ -107,6 +106,15 @@ struct VoiceInputViewModelTests {
         var selectedLanguage: TranscriptionLanguage = .autoDetect
     }
 
+    @MainActor
+    private final class MockAccessibilityService: AccessibilityServiceProtocol, @unchecked Sendable {
+        var isGranted: Bool = true
+        var requestCallCount: Int = 0
+
+        func isAccessibilityGranted() -> Bool { isGranted }
+        func requestAccessibilityPermission() { requestCallCount += 1 }
+    }
+
     private actor MockKeychainService: KeychainServiceProtocol {
         var storage: [String: String] = [:]
         var saveCallCount = 0
@@ -142,7 +150,8 @@ struct VoiceInputViewModelTests {
         mockAPI: MockDeepgramAPIRepository = MockDeepgramAPIRepository(),
         mockTextInsertion: MockTextInsertionService = MockTextInsertionService(),
         mockPreferences: MockVoiceInputPreferences = MockVoiceInputPreferences(),
-        mockKeychain: MockKeychainService = MockKeychainService()
+        mockKeychain: MockKeychainService = MockKeychainService(),
+        mockAccessibility: MockAccessibilityService = MockAccessibilityService()
     ) -> VoiceInputViewModel {
         VoiceInputViewModel(
             startTranscriptionUseCase: StartTranscriptionUseCase(transcriptionRepository: mockRepo),
@@ -151,7 +160,8 @@ struct VoiceInputViewModelTests {
             insertTextUseCase: InsertTextUseCase(textInsertionService: mockTextInsertion),
             fetchBalanceUseCase: FetchDeepgramBalanceUseCase(deepgramAPIRepository: mockAPI),
             preferencesService: mockPreferences,
-            keychainService: mockKeychain
+            keychainService: mockKeychain,
+            accessibilityService: mockAccessibility
         )
     }
 
@@ -505,5 +515,31 @@ struct VoiceInputViewModelTests {
 
         vm.stopIfRecording()
         #expect(vm.status == .ready)
+    }
+
+    // MARK: - Accessibility Delegation
+
+    @Test("checkAccessibility delegates to AccessibilityService")
+    func checkAccessibilityDelegates() {
+        let mockAccessibility = MockAccessibilityService()
+        mockAccessibility.isGranted = false
+        let vm = makeViewModel(mockAccessibility: mockAccessibility)
+
+        #expect(vm.checkAccessibility() == false)
+
+        mockAccessibility.isGranted = true
+        #expect(vm.checkAccessibility() == true)
+    }
+
+    @Test("requestAccessibility delegates to AccessibilityService")
+    func requestAccessibilityDelegates() {
+        let mockAccessibility = MockAccessibilityService()
+        let vm = makeViewModel(mockAccessibility: mockAccessibility)
+
+        vm.requestAccessibility()
+        #expect(mockAccessibility.requestCallCount == 1)
+
+        vm.requestAccessibility()
+        #expect(mockAccessibility.requestCallCount == 2)
     }
 }

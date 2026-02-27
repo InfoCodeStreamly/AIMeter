@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import Sparkle
 import SwiftUI
 

@@ -1,22 +1,23 @@
-import AppKit
-import ApplicationServices
-import AIMeterDomain
 import AIMeterApplication
+import AIMeterDomain
+import AppKit
 
 /// Service for inserting text into the active application via clipboard + Cmd+V
 @MainActor
 public final class TextInsertionService: TextInsertionServiceProtocol {
-    public init() {}
+    private let accessibilityService: any AccessibilityServiceProtocol
+
+    public init(accessibilityService: any AccessibilityServiceProtocol) {
+        self.accessibilityService = accessibilityService
+    }
 
     public func hasAccessibilityPermission() -> Bool {
-        AXIsProcessTrusted()
+        accessibilityService.isAccessibilityGranted()
     }
 
     public func insertText(_ text: String) throws {
-        guard AXIsProcessTrusted() else {
-            // Prompt user to grant accessibility permission
-            let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-            AXIsProcessTrustedWithOptions(options)
+        guard accessibilityService.isAccessibilityGranted() else {
+            accessibilityService.requestAccessibilityPermission()
             throw TranscriptionError.accessibilityDenied
         }
 

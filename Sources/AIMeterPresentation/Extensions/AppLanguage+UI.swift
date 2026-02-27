@@ -1,7 +1,6 @@
-import SwiftUI
-import AIMeterDomain
 import AIMeterApplication
-import AIMeterInfrastructure
+import AIMeterDomain
+import SwiftUI
 
 /// UI-specific extensions for AppLanguage
 extension AppLanguage {

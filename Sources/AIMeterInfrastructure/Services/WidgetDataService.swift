@@ -1,5 +1,6 @@
-import Foundation
+import AIMeterApplication
 import AIMeterDomain
+import Foundation
 import WidgetKit
 
 /// Shared data structure for widget
@@ -68,7 +69,7 @@ public struct WidgetData: Codable, Sendable {
 
 /// Service for sharing data between main app and widget via App Group
 @MainActor
-public final class WidgetDataService {
+public final class WidgetDataService: WidgetDataServiceProtocol {
     /// App Group identifier - must match entitlements
     public static let appGroupIdentifier = "group.com.codestreamly.AIMeter"
     private static let dataKey = "widgetData"

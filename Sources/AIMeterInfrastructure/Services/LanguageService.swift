@@ -1,11 +1,12 @@
-import SwiftUI
+import AIMeterApplication
 import AIMeterDomain
+import SwiftUI
 
 /// SSOT (Single Source of Truth) for app language selection
 /// Persists user's language preference and provides current locale
 @MainActor
 @Observable
-public final class LanguageService {
+public final class LanguageService: LanguageServiceProtocol {
     private let userDefaultsKey = "selectedLanguage"
 
     /// Currently selected language

@@ -1,5 +1,4 @@
 import AIMeterApplication
-import AIMeterInfrastructure
 import AppKit
 import SwiftUI
 

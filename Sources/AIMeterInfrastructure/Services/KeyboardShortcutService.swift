@@ -1,27 +1,21 @@
 import Foundation
 import KeyboardShortcuts
 
-/// Extension to define global keyboard shortcuts
-public extension KeyboardShortcuts.Name {
-    /// Shortcut to toggle the menu bar popover
-    static let togglePopover = Self("togglePopover")
-    /// Shortcut for voice input (push-to-talk)
-    static let voiceInput = Self("voiceInput")
-}
-
 /// Service for managing global keyboard shortcuts
 @MainActor
 public final class KeyboardShortcutService {
+    private static let togglePopoverName = KeyboardShortcuts.Name("togglePopover")
+
     public init() {
         // Set default shortcut if not already set
-        if KeyboardShortcuts.getShortcut(for: .togglePopover) == nil {
-            KeyboardShortcuts.setShortcut(.init(.u, modifiers: [.command, .shift]), for: .togglePopover)
+        if KeyboardShortcuts.getShortcut(for: Self.togglePopoverName) == nil {
+            KeyboardShortcuts.setShortcut(.init(.u, modifiers: [.command, .shift]), for: Self.togglePopoverName)
         }
     }
 
     /// Registers handler for toggle popover shortcut
     public func onTogglePopover(_ handler: @escaping () -> Void) {
-        KeyboardShortcuts.onKeyUp(for: .togglePopover) {
+        KeyboardShortcuts.onKeyUp(for: Self.togglePopoverName) {
             handler()
         }
     }

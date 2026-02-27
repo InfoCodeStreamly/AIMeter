@@ -1,6 +1,5 @@
-import SwiftUI
 import AIMeterApplication
-import AIMeterInfrastructure
+import SwiftUI
 
 /// Toggle з іконкою та описом
 struct SettingsToggle: View {

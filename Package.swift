@@ -40,13 +40,12 @@ let package = Package(
             path: "Sources/AIMeterInfrastructure"
         ),
 
-        // Presentation - depends on Domain, Application, Infrastructure, Sparkle, KeyboardShortcuts
+        // Presentation - depends on Domain, Application, Sparkle, KeyboardShortcuts
         .target(
             name: "AIMeterPresentation",
             dependencies: [
                 "AIMeterDomain",
                 "AIMeterApplication",
-                "AIMeterInfrastructure",
                 .product(name: "Sparkle", package: "Sparkle"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
             ],
@@ -71,7 +70,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AIMeterPresentationTests",
-            dependencies: ["AIMeterPresentation", "AIMeterDomain"],
+            dependencies: ["AIMeterPresentation", "AIMeterApplication", "AIMeterDomain"],
             path: "Tests/AIMeterPresentationTests"
         ),
     ]

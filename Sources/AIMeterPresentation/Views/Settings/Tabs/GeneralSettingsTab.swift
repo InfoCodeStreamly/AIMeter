@@ -1,65 +1,71 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import KeyboardShortcuts
 import SwiftUI
 
 /// General settings tab - Appearance, Language, Startup, Keyboard Shortcuts
 struct GeneralSettingsTab: View {
-    var launchAtLogin: LaunchAtLoginService
-    @Environment(ThemeService.self) private var themeService
-    @Environment(LanguageService.self) private var languageService
+    var launchAtLogin: any LaunchAtLoginServiceProtocol
+    @Environment(\.themeService) private var themeService
+    @Environment(\.languageService) private var languageService
 
     private let tableName = "SettingsGeneral"
-    private let languageTableName = "SettingsLanguage"
 
     var body: some View {
         VStack(spacing: UIConstants.Spacing.lg) {
             // Appearance
-            SettingsCard(title: "Appearance", tableName: tableName) {
-                @Bindable var theme = themeService
-                HStack {
-                    Label {
-                        Text("Theme", tableName: tableName, bundle: .main)
-                    } icon: {
-                        Image(systemName: "paintbrush")
-                            .foregroundStyle(.blue)
-                    }
-
-                    Spacer()
-
-                    Picker("", selection: $theme.selectedTheme) {
-                        ForEach(AppTheme.allCases, id: \.self) { theme in
-                            Label(theme.displayName, systemImage: theme.icon)
-                                .tag(theme)
+            if let themeService {
+                SettingsCard(title: "Appearance", tableName: tableName) {
+                    HStack {
+                        Label {
+                            Text("Theme", tableName: tableName, bundle: .main)
+                        } icon: {
+                            Image(systemName: "paintbrush")
+                                .foregroundStyle(.blue)
                         }
+
+                        Spacer()
+
+                        Picker("", selection: Binding(
+                            get: { themeService.selectedTheme },
+                            set: { themeService.selectedTheme = $0 }
+                        )) {
+                            ForEach(AppTheme.allCases, id: \.self) { theme in
+                                Label(theme.displayName, systemImage: theme.icon)
+                                    .tag(theme)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .fixedSize()
                     }
-                    .pickerStyle(.menu)
-                    .fixedSize()
                 }
             }
 
             // Language
-            SettingsCard(title: "Language", tableName: tableName) {
-                @Bindable var lang = languageService
-                HStack {
-                    Label {
-                        Text("Language", tableName: tableName, bundle: .main)
-                    } icon: {
-                        Image(systemName: "globe")
-                            .foregroundStyle(.blue)
-                    }
-
-                    Spacer()
-
-                    Picker("", selection: $lang.selectedLanguage) {
-                        ForEach(languageService.availableLanguages, id: \.self) { language in
-                            Text(language.displayName)
-                                .tag(language)
+            if let languageService {
+                SettingsCard(title: "Language", tableName: tableName) {
+                    HStack {
+                        Label {
+                            Text("Language", tableName: tableName, bundle: .main)
+                        } icon: {
+                            Image(systemName: "globe")
+                                .foregroundStyle(.blue)
                         }
+
+                        Spacer()
+
+                        Picker("", selection: Binding(
+                            get: { languageService.selectedLanguage },
+                            set: { languageService.selectedLanguage = $0 }
+                        )) {
+                            ForEach(languageService.availableLanguages, id: \.self) { language in
+                                Text(language.displayName)
+                                    .tag(language)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .fixedSize()
                     }
-                    .pickerStyle(.menu)
-                    .fixedSize()
                 }
             }
 
@@ -102,5 +108,4 @@ struct GeneralSettingsTab: View {
         }
         .padding(UIConstants.Spacing.xl)
     }
-
 }

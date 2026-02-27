@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import AppKit
 import SwiftUI
 
@@ -23,7 +22,7 @@ public final class UsageViewModel {
     private let getExtraUsageUseCase: GetExtraUsageUseCase?
     private let saveUsageHistoryUseCase: SaveUsageHistoryUseCase?
     private let fetchUsageHistoryUseCase: FetchUsageHistoryUseCase?
-    private let widgetDataService: WidgetDataService?
+    private let widgetDataService: (any WidgetDataServiceProtocol)?
     private let fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase?
     private let voiceInputPreferences: (any VoiceInputPreferencesProtocol)?
     private let keychainService: (any KeychainServiceProtocol)?
@@ -39,7 +38,7 @@ public final class UsageViewModel {
         getExtraUsageUseCase: GetExtraUsageUseCase? = nil,
         saveUsageHistoryUseCase: SaveUsageHistoryUseCase? = nil,
         fetchUsageHistoryUseCase: FetchUsageHistoryUseCase? = nil,
-        widgetDataService: WidgetDataService? = nil,
+        widgetDataService: (any WidgetDataServiceProtocol)? = nil,
         fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase? = nil,
         voiceInputPreferences: (any VoiceInputPreferencesProtocol)? = nil,
         keychainService: (any KeychainServiceProtocol)? = nil

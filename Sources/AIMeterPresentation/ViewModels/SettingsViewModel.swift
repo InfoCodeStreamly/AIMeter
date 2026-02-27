@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Settings screen view model
@@ -92,11 +91,9 @@ public final class SettingsViewModel {
                 state = .hasKey(masked: key.masked)
             }
 
-        } catch let error as ClaudeCodeSyncError {
+        } catch let error as SyncError {
             state = .error(message: error.localizedDescription)
         } catch let error as DomainError {
-            state = .error(message: error.localizedDescription)
-        } catch let error as InfrastructureError {
             state = .error(message: error.localizedDescription)
         } catch {
             state = .error(message: error.localizedDescription)
