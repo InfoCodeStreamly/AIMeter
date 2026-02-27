@@ -1,6 +1,9 @@
 import AIMeterApplication
 import AIMeterDomain
 import AppKit
+import OSLog
+
+private let voiceLog = Logger(subsystem: "com.codestreamly.AIMeter", category: "voice")
 
 /// ViewModel for voice input feature
 @MainActor
@@ -49,14 +52,18 @@ public final class VoiceInputViewModel {
     // MARK: - Lifecycle
 
     public func onAppear() async {
+        voiceLog.info("onAppear: isEnabled=\(self.preferencesService.isEnabled)")
         guard preferencesService.isEnabled else {
             status = .idle
+            voiceLog.info("onAppear: disabled → .idle")
             return
         }
         if await hasApiKey() {
             status = .ready
+            voiceLog.info("onAppear: has API key → .ready")
         } else {
             status = .idle
+            voiceLog.info("onAppear: no API key → .idle")
         }
     }
 
@@ -64,39 +71,50 @@ public final class VoiceInputViewModel {
 
     /// Called on key DOWN — starts recording if possible
     public func startRecordingIfReady() {
+        voiceLog.info("startRecordingIfReady: status=\(String(describing: self.status))")
         switch status {
         case .ready:
+            voiceLog.info("startRecordingIfReady: .ready → startRecording()")
             startRecording()
         case .idle:
-            // First use or after restart — check prerequisites and start
+            voiceLog.info("startRecordingIfReady: .idle → checking prerequisites")
             Task {
                 guard preferencesService.isEnabled else {
+                    voiceLog.warning("startRecordingIfReady: voice input disabled → beep")
                     NSSound.beep()
                     return
                 }
                 guard await hasApiKey() else {
+                    voiceLog.warning("startRecordingIfReady: no API key → beep")
                     NSSound.beep()
                     return
                 }
+                voiceLog.info("startRecordingIfReady: prerequisites OK → .ready → startRecording()")
                 status = .ready
                 startRecording()
             }
         case .error, .result:
+            voiceLog.info("startRecordingIfReady: \(String(describing: self.status)) → .ready → startRecording()")
             status = .ready
             startRecording()
         default:
+            voiceLog.warning("startRecordingIfReady: ignored, status=\(String(describing: self.status))")
             break
         }
     }
 
     /// Called on key UP — stops recording and inserts text
     public func stopIfRecording() {
+        voiceLog.info("stopIfRecording: status=\(String(describing: self.status))")
         switch status {
         case .recording:
+            voiceLog.info("stopIfRecording: .recording → stopAndInsert()")
             stopAndInsert()
         case .connecting:
+            voiceLog.info("stopIfRecording: .connecting → cancel()")
             cancel()
         default:
+            voiceLog.info("stopIfRecording: ignored, status=\(String(describing: self.status))")
             break
         }
     }
@@ -119,6 +137,7 @@ public final class VoiceInputViewModel {
 
     public func startRecording() {
         previousApp = NSWorkspace.shared.frontmostApplication
+        voiceLog.info("startRecording: playing Tink, previousApp=\(self.previousApp?.localizedName ?? "nil")")
         NSSound(named: "Tink")?.play()
         status = .connecting
 
@@ -126,43 +145,55 @@ public final class VoiceInputViewModel {
             do {
                 guard let apiKey = await keychainService.read(forKey: apiKeyKeychainKey),
                       !apiKey.isEmpty else {
+                    voiceLog.error("startRecording: API key missing or empty")
                     status = .error(.apiKeyMissing)
                     return
                 }
 
                 let language = preferencesService.selectedLanguage
+                voiceLog.info("startRecording: calling startTranscriptionUseCase, language=\(String(describing: language))")
                 let stream = try await startTranscriptionUseCase.execute(
                     language: language,
                     apiKey: apiKey
                 )
 
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    voiceLog.info("startRecording: cancelled before recording started")
+                    return
+                }
                 status = .recording
+                voiceLog.info("startRecording: → .recording, iterating stream")
 
                 for await text in stream {
                     interimText = text
+                    voiceLog.debug("startRecording: interimText=\(text.prefix(50))")
                 }
 
+                voiceLog.info("startRecording: stream ended, isCancelled=\(Task.isCancelled)")
                 // Stream ended (server closed connection, timeout, etc.)
                 // Transition to ready so the shortcut works again
                 if !Task.isCancelled {
                     status = .ready
                 }
             } catch let error as TranscriptionError {
+                voiceLog.error("startRecording: TranscriptionError: \(error.localizedDescription)")
                 status = .error(error)
             } catch {
+                voiceLog.error("startRecording: error: \(error.localizedDescription)")
                 status = .error(.transcriptionFailed(error.localizedDescription))
             }
         }
     }
 
     public func stopAndInsert() {
+        voiceLog.info("stopAndInsert: playing Pop, cancelling streamTask")
         NSSound(named: "Pop")?.play()
         streamTask?.cancel()
 
         Task {
             do {
                 let result = try await stopTranscriptionUseCase.execute()
+                voiceLog.info("stopAndInsert: result text='\(result.text.prefix(80))', isEmpty=\(result.isEmpty)")
                 status = .result(result)
 
                 if !result.isEmpty {
@@ -171,7 +202,9 @@ public final class VoiceInputViewModel {
 
                     do {
                         try await insertTextUseCase.execute(text: result.text)
+                        voiceLog.info("stopAndInsert: text inserted successfully")
                     } catch TranscriptionError.accessibilityDenied {
+                        voiceLog.error("stopAndInsert: accessibility denied")
                         status = .error(.accessibilityDenied)
                         return
                     }
@@ -183,6 +216,7 @@ public final class VoiceInputViewModel {
                     if case .result = status { status = .ready }
                 }
             } catch {
+                voiceLog.error("stopAndInsert: error: \(error.localizedDescription)")
                 status = .error(.transcriptionFailed(error.localizedDescription))
             }
 

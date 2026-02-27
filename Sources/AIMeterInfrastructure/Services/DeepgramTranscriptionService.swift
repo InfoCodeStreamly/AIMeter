@@ -1,9 +1,12 @@
 import Foundation
 import AVFoundation
 import AIMeterDomain
+import OSLog
 
 /// Real-time speech-to-text service using Deepgram WebSocket API
 public actor DeepgramTranscriptionService: TranscriptionRepository {
+    private static let log = Logger(subsystem: "com.codestreamly.AIMeter", category: "voice.deepgram")
+
     private var webSocketTask: URLSessionWebSocketTask?
     private var audioEngine: AVAudioEngine?
     private var audioConverter: AVAudioConverter?
@@ -22,17 +25,23 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
     // MARK: - TranscriptionRepository
 
     public func startStreaming(language: TranscriptionLanguage, apiKey: String) async throws -> AsyncStream<String> {
+        Self.log.info("startStreaming: checking microphone permission")
         // Check microphone permission
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        Self.log.info("startStreaming: mic auth status=\(status.rawValue) (0=notDetermined, 1=restricted, 2=denied, 3=authorized)")
         switch status {
         case .notDetermined:
             let granted = await AVCaptureDevice.requestAccess(for: .audio)
+            Self.log.info("startStreaming: mic permission requested, granted=\(granted)")
             if !granted { throw TranscriptionError.microphoneAccessDenied }
         case .authorized:
+            Self.log.info("startStreaming: mic authorized ✓")
             break
         case .denied, .restricted:
+            Self.log.error("startStreaming: mic denied/restricted")
             throw TranscriptionError.microphoneAccessDenied
         @unknown default:
+            Self.log.error("startStreaming: mic unknown status")
             throw TranscriptionError.microphoneAccessDenied
         }
 
@@ -60,6 +69,7 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         request.setValue("Token \(apiKey)", forHTTPHeaderField: "Authorization")
 
         // Create WebSocket
+        Self.log.info("startStreaming: creating WebSocket to Deepgram")
         let wsTask = URLSession.shared.webSocketTask(with: request)
         self.webSocketTask = wsTask
         wsTask.resume()
@@ -68,7 +78,9 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         do {
             let keepAlive = try JSONEncoder().encode(DeepgramClientMessage(type: "KeepAlive"))
             try await wsTask.send(.data(keepAlive))
+            Self.log.info("startStreaming: WebSocket connected, KeepAlive sent ✓")
         } catch {
+            Self.log.error("startStreaming: WebSocket connection failed: \(error.localizedDescription)")
             wsTask.cancel(with: .normalClosure, reason: nil)
             self.webSocketTask = nil
             if error.localizedDescription.contains("401") || error.localizedDescription.contains("Unauthorized") {
@@ -106,18 +118,23 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         }
 
         // Start audio capture
+        Self.log.info("startStreaming: starting audio capture")
         try startAudioCapture(wsTask: wsTask)
+        Self.log.info("startStreaming: audio capture started ✓, returning stream")
 
         return stream
     }
 
     public func stopStreaming() async throws -> TranscriptionEntity {
+        Self.log.info("stopStreaming: isRecording=\(self.isRecording)")
         guard isRecording else {
+            Self.log.info("stopStreaming: not recording, returning empty")
             return TranscriptionEntity.empty()
         }
 
         // Stop audio capture
         stopAudioCapture()
+        Self.log.info("stopStreaming: audio capture stopped")
 
         // Send Finalize to flush Deepgram's buffer
         if let wsTask = webSocketTask {
@@ -174,7 +191,10 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         let inputNode = engine.inputNode
         let nativeFormat = inputNode.outputFormat(forBus: 0)
 
+        Self.log.info("startAudioCapture: nativeFormat sampleRate=\(nativeFormat.sampleRate), channels=\(nativeFormat.channelCount), formatID=\(nativeFormat.settings.description)")
+
         guard nativeFormat.sampleRate > 0 else {
+            Self.log.error("startAudioCapture: sampleRate is 0 — no microphone available")
             throw TranscriptionError.microphoneAccessDenied
         }
 
@@ -188,8 +208,16 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         let converter = AVAudioConverter(from: nativeFormat, to: targetFormat)!
         self.audioConverter = converter
 
+        Self.log.info("startAudioCapture: installing tap on inputNode, bufferSize=4096")
+        var tapCallCount = 0
+
         inputNode.installTap(onBus: 0, bufferSize: 4096, format: nativeFormat) { [weak wsTask] buffer, _ in
             guard let wsTask else { return }
+
+            tapCallCount += 1
+            if tapCallCount <= 3 || tapCallCount % 100 == 0 {
+                Self.log.debug("audioTap: callback #\(tapCallCount), frameLength=\(buffer.frameLength)")
+            }
 
             let frameCount = AVAudioFrameCount(
                 Double(buffer.frameLength) * 16000.0 / nativeFormat.sampleRate
@@ -207,7 +235,12 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
                 return buffer
             }
 
-            guard status == .haveData, error == nil else { return }
+            guard status == .haveData, error == nil else {
+                if let error {
+                    Self.log.error("audioTap: conversion error: \(error.localizedDescription)")
+                }
+                return
+            }
 
             let data = Data(
                 bytes: convertedBuffer.int16ChannelData![0],
@@ -219,8 +252,11 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
             }
         }
 
+        Self.log.info("startAudioCapture: preparing engine")
         engine.prepare()
+        Self.log.info("startAudioCapture: starting engine")
         try engine.start()
+        Self.log.info("startAudioCapture: engine started ✓, isRunning=\(engine.isRunning)")
         self.audioEngine = engine
     }
 
@@ -236,6 +272,7 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
     private func receiveMessages(from wsTask: URLSessionWebSocketTask) async {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
+        Self.log.info("receiveMessages: starting receive loop")
 
         while !Task.isCancelled {
             do {
@@ -251,21 +288,26 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
                     break
                 }
             } catch {
-                // WebSocket closed or error
+                Self.log.info("receiveMessages: WebSocket closed/error: \(error.localizedDescription)")
                 streamContinuation?.finish()
                 break
             }
         }
+        Self.log.info("receiveMessages: loop ended")
     }
 
     private func handleResponse(_ data: Data, decoder: JSONDecoder) {
-        guard let response = try? decoder.decode(DeepgramResponse.self, from: data) else { return }
+        guard let response = try? decoder.decode(DeepgramResponse.self, from: data) else {
+            Self.log.warning("handleResponse: failed to decode response, raw=\(String(data: data.prefix(200), encoding: .utf8) ?? "binary")")
+            return
+        }
 
         switch response.type {
         case "Results":
             let transcript = response.channel?.alternatives.first?.transcript ?? ""
 
             if response.isFinal == true {
+                Self.log.info("handleResponse: FINAL transcript='\(transcript.prefix(60))', fromFinalize=\(response.fromFinalize ?? false)")
                 if !transcript.isEmpty {
                     if !finalizedText.isEmpty {
                         finalizedText += " "
@@ -292,6 +334,7 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
             streamContinuation?.yield(combined)
 
         default:
+            Self.log.debug("handleResponse: type=\(response.type)")
             break
         }
     }
