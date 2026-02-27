@@ -1,10 +1,11 @@
+import AIMeterApplication
 import Foundation
 import ServiceManagement
 
 /// Service for managing launch at login functionality
 @Observable
 @MainActor
-public final class LaunchAtLoginService {
+public final class LaunchAtLoginService: LaunchAtLoginServiceProtocol {
     public private(set) var isEnabled: Bool = false
 
     public init() {

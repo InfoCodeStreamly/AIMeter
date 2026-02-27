@@ -1,11 +1,11 @@
-import AIMeterInfrastructure
+import AIMeterApplication
 import AppKit
 import SwiftUI
 
 /// About settings tab - App info, updates, and links
 struct AboutSettingsTab: View {
     var checkForUpdatesViewModel: CheckForUpdatesViewModel
-    var appInfo: AppInfoService
+    var appInfo: any AppInfoServiceProtocol
 
     private let tableName = "SettingsAbout"
     private let updatesTableName = "SettingsUpdates"
@@ -111,13 +111,13 @@ struct AboutSettingsTab: View {
     // MARK: - Actions
 
     private func openGitHub() {
-        if let url = URL(string: APIConstants.GitHub.repoURL) {
+        if let url = URL(string: AppConstants.GitHub.repoURL) {
             NSWorkspace.shared.open(url)
         }
     }
 
     private func openIssues() {
-        if let url = URL(string: "\(APIConstants.GitHub.repoURL)/issues") {
+        if let url = URL(string: "\(AppConstants.GitHub.repoURL)/issues") {
             NSWorkspace.shared.open(url)
         }
     }

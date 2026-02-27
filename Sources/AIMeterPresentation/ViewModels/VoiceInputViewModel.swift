@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import AppKit
 
 /// ViewModel for voice input feature
@@ -23,6 +22,7 @@ public final class VoiceInputViewModel {
     private let fetchBalanceUseCase: FetchDeepgramBalanceUseCase
     private var preferencesService: any VoiceInputPreferencesProtocol
     private let keychainService: any KeychainServiceProtocol
+    private let accessibilityService: any AccessibilityServiceProtocol
 
     private let apiKeyKeychainKey = "deepgramApiKey"
 
@@ -33,7 +33,8 @@ public final class VoiceInputViewModel {
         insertTextUseCase: InsertTextUseCase,
         fetchBalanceUseCase: FetchDeepgramBalanceUseCase,
         preferencesService: any VoiceInputPreferencesProtocol,
-        keychainService: any KeychainServiceProtocol
+        keychainService: any KeychainServiceProtocol,
+        accessibilityService: any AccessibilityServiceProtocol
     ) {
         self.startTranscriptionUseCase = startTranscriptionUseCase
         self.stopTranscriptionUseCase = stopTranscriptionUseCase
@@ -42,6 +43,7 @@ public final class VoiceInputViewModel {
         self.fetchBalanceUseCase = fetchBalanceUseCase
         self.preferencesService = preferencesService
         self.keychainService = keychainService
+        self.accessibilityService = accessibilityService
     }
 
     // MARK: - Lifecycle
@@ -260,12 +262,11 @@ public final class VoiceInputViewModel {
     // MARK: - Permissions
 
     public func checkAccessibility() -> Bool {
-        AXIsProcessTrusted()
+        accessibilityService.isAccessibilityGranted()
     }
 
     public func requestAccessibility() {
-        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
-        AXIsProcessTrustedWithOptions(options)
+        accessibilityService.requestAccessibilityPermission()
     }
 
     public func openMicrophoneSettings() {

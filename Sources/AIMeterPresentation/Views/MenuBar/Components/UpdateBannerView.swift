@@ -1,4 +1,3 @@
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Banner shown in menu bar popover when a new update is available

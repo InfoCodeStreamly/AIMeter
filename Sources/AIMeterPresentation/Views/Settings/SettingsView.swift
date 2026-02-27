@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import AppKit
 import SwiftUI
 
@@ -43,11 +42,11 @@ enum SettingsTab: CaseIterable {
 public struct SettingsView: View {
     @Bindable var viewModel: SettingsViewModel
     var checkForUpdatesViewModel: CheckForUpdatesViewModel
-    var launchAtLogin: LaunchAtLoginService
-    var notificationPreferences: NotificationPreferencesService
-    var appInfo: AppInfoService
+    var launchAtLogin: any LaunchAtLoginServiceProtocol
+    var notificationPreferences: any NotificationPreferencesProtocol
+    var appInfo: any AppInfoServiceProtocol
     var voiceInputViewModel: VoiceInputViewModel?
-    var voiceInputPreferences: VoiceInputPreferencesService?
+    var voiceInputPreferences: (any VoiceInputPreferencesProtocol)?
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTab: SettingsTab = .general
@@ -56,11 +55,11 @@ public struct SettingsView: View {
     public init(
         viewModel: SettingsViewModel,
         checkForUpdatesViewModel: CheckForUpdatesViewModel,
-        launchAtLogin: LaunchAtLoginService,
-        notificationPreferences: NotificationPreferencesService,
-        appInfo: AppInfoService,
+        launchAtLogin: any LaunchAtLoginServiceProtocol,
+        notificationPreferences: any NotificationPreferencesProtocol,
+        appInfo: any AppInfoServiceProtocol,
         voiceInputViewModel: VoiceInputViewModel? = nil,
-        voiceInputPreferences: VoiceInputPreferencesService? = nil
+        voiceInputPreferences: (any VoiceInputPreferencesProtocol)? = nil
     ) {
         self.viewModel = viewModel
         self.checkForUpdatesViewModel = checkForUpdatesViewModel
@@ -183,10 +182,19 @@ private struct WindowResizeAnchorModifier: ViewModifier {
 
 // MARK: - Preview
 
+private actor PreviewClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
+    func hasCredentials() async -> Bool { false }
+    func getSubscriptionInfo() async -> (type: String, email: String?)? { nil }
+    func extractOAuthCredentials() async throws -> OAuthCredentials {
+        throw SyncError.noCredentialsFound
+    }
+    func updateCredentials(_ credentials: OAuthCredentials) async throws {}
+}
+
 @MainActor
 private func makePreviewViewModel() -> SettingsViewModel {
     SettingsViewModel(
-        claudeCodeSync: ClaudeCodeSyncService(),
+        claudeCodeSync: PreviewClaudeCodeSyncService(),
         validateUseCase: ValidateSessionKeyUseCase(
             sessionKeyRepository: PreviewSessionKeyRepository()
         ),

@@ -1,5 +1,4 @@
 import AIMeterApplication
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Картка для групування налаштувань

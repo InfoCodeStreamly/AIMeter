@@ -1,5 +1,4 @@
 import AIMeterApplication
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Header view for menu bar popover with Liquid Glass buttons

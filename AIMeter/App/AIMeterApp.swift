@@ -49,8 +49,8 @@ struct AIMeterApp: App {
                 updater: updaterController.updater
             )
             .environment(updateAvailabilityDelegate)
-            .environment(languageService)
-            .environment(themeService)
+            .environment(\.languageService, languageService)
+            .environment(\.themeService, themeService)
             .environment(\.locale, languageService.currentLocale)
             .preferredColorScheme(themeService.selectedTheme.colorScheme)
         } label: {
@@ -63,8 +63,8 @@ struct AIMeterApp: App {
             SettingsWindowView(
                 checkForUpdatesViewModel: checkForUpdatesViewModel
             )
-            .environment(languageService)
-            .environment(themeService)
+            .environment(\.languageService, languageService)
+            .environment(\.themeService, themeService)
             .environment(\.locale, languageService.currentLocale)
             .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }
@@ -75,9 +75,9 @@ struct AIMeterApp: App {
         // Usage Detail Window
         Window("Usage Trend", id: UIConstants.WindowID.usageDetail) {
             UsageDetailView(viewModel: viewModel)
-                .environment(languageService)
-                .environment(themeService)
-                .environment(DependencyContainer.shared.notificationPreferencesService)
+                .environment(\.languageService, languageService)
+                .environment(\.themeService, themeService)
+                .environment(\.notificationPreferences, DependencyContainer.shared.notificationPreferencesService)
                 .environment(\.locale, languageService.currentLocale)
                 .preferredColorScheme(themeService.selectedTheme.colorScheme)
         }

@@ -1,5 +1,4 @@
 import AIMeterApplication
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Кнопка для налаштувань з Liquid Glass стилем

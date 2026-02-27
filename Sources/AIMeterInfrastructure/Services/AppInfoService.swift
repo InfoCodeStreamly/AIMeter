@@ -1,9 +1,10 @@
-import Foundation
+import AIMeterApplication
 import AIMeterDomain
+import Foundation
 
 /// Service for accessing app bundle information (Infrastructure)
 @MainActor
-public final class AppInfoService {
+public final class AppInfoService: AppInfoServiceProtocol {
     public init() {}
 
     public var appName: String { "AIMeter" }

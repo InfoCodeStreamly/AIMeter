@@ -24,30 +24,30 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     public func extractSessionKey() async throws -> String {
 
         guard let json = try await readCredentialsJSON() else {
-            throw ClaudeCodeSyncError.noCredentialsFound
+            throw SyncError.noCredentialsFound
         }
 
 
         guard let data = json.data(using: .utf8) else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
         guard let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
 
         guard let oauth = parsed["claudeAiOauth"] as? [String: Any] else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
 
         guard let accessToken = oauth["accessToken"] as? String else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
         guard !accessToken.isEmpty else {
-            throw ClaudeCodeSyncError.emptyAccessToken
+            throw SyncError.emptyAccessToken
         }
 
         return accessToken
@@ -72,19 +72,19 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     public func extractOAuthCredentials() async throws -> OAuthCredentials {
 
         guard let json = try await readCredentialsJSON() else {
-            throw ClaudeCodeSyncError.noCredentialsFound
+            throw SyncError.noCredentialsFound
         }
 
         guard let data = json.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
         do {
             let credentials = try OAuthCredentials.fromClaudeCodeJSON(parsed)
             return credentials
         } catch {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
     }
 
@@ -95,7 +95,7 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: json, options: []),
               let jsonString = String(data: jsonData, encoding: .utf8) else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
         try await writeCredentialsJSON(jsonString)
@@ -151,14 +151,14 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
         switch status {
         case errSecSuccess:
             guard let data = result as? Data else {
-                throw ClaudeCodeSyncError.invalidCredentialsFormat
+                throw SyncError.invalidCredentialsFormat
             }
 
 
             // Data format: first byte is 0x07, then JSON content without outer braces
             // e.g., \x07"claudeAiOauth":{...}
             guard data.count > 1 else {
-                throw ClaudeCodeSyncError.invalidCredentialsFormat
+                throw SyncError.invalidCredentialsFormat
             }
 
             let firstByte = data[0]
@@ -170,13 +170,13 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
             } else if firstByte == 0x07 { // Old format with prefix byte
                 jsonData = Data(data.dropFirst())
             } else {
-                throw ClaudeCodeSyncError.invalidCredentialsFormat
+                throw SyncError.invalidCredentialsFormat
             }
 
             guard let content = String(data: jsonData, encoding: .utf8) else {
                 if let latin1 = String(data: jsonData, encoding: .isoLatin1) {
                 }
-                throw ClaudeCodeSyncError.invalidCredentialsFormat
+                throw SyncError.invalidCredentialsFormat
             }
 
 
@@ -194,14 +194,14 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
             return nil
 
         default:
-            throw ClaudeCodeSyncError.keychainAccessFailed(status: status)
+            throw SyncError.keychainAccessFailed(status: status)
         }
     }
 
     /// Writes credentials to Keychain using native Security framework
     private nonisolated func writeToKeychain(_ json: String) throws {
         guard let data = json.data(using: .utf8) else {
-            throw ClaudeCodeSyncError.invalidCredentialsFormat
+            throw SyncError.invalidCredentialsFormat
         }
 
         let username = NSUserName()
@@ -231,33 +231,9 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
 
         // Accept both success and interaction-not-allowed (skip dialog case)
         guard status == errSecSuccess || status == errSecInteractionNotAllowed else {
-            throw ClaudeCodeSyncError.keychainWriteFailed(status: status)
+            throw SyncError.keychainWriteFailed(status: status)
         }
 
     }
 }
 
-// MARK: - Errors
-
-public enum ClaudeCodeSyncError: LocalizedError, Sendable {
-    case noCredentialsFound
-    case invalidCredentialsFormat
-    case emptyAccessToken
-    case keychainAccessFailed(status: OSStatus)
-    case keychainWriteFailed(status: OSStatus)
-
-    public var errorDescription: String? {
-        switch self {
-        case .noCredentialsFound:
-            return "Claude Code not logged in. Please run 'claude' in terminal and login first."
-        case .invalidCredentialsFormat:
-            return "Claude Code credentials are corrupted."
-        case .emptyAccessToken:
-            return "Claude Code session expired. Please re-login in terminal."
-        case .keychainAccessFailed(let status):
-            return "Cannot access Keychain (error \(status)). Check System Preferences → Security."
-        case .keychainWriteFailed(let status):
-            return "Cannot write to Keychain (error \(status)). Check app permissions."
-        }
-    }
-}

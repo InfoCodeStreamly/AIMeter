@@ -1,11 +1,10 @@
 import AIMeterApplication
-import AIMeterInfrastructure
 import SwiftUI
 
 /// Connection settings tab - Claude connection status, sync, and notifications
 struct ConnectionSettingsTab: View {
     @Bindable var viewModel: SettingsViewModel
-    var notificationPreferences: NotificationPreferencesService
+    var notificationPreferences: any NotificationPreferencesProtocol
 
     private let tableName = "SettingsConnection"
     private let generalTableName = "SettingsGeneral"

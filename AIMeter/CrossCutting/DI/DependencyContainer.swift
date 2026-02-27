@@ -69,8 +69,12 @@ final class DependencyContainer {
         DeepgramAPIService()
     }()
 
+    lazy var accessibilityService: AccessibilityService = {
+        AccessibilityService()
+    }()
+
     lazy var textInsertionService: TextInsertionService = {
-        TextInsertionService()
+        TextInsertionService(accessibilityService: accessibilityService)
     }()
 
     lazy var voiceInputPreferencesService: VoiceInputPreferencesService = {
@@ -220,7 +224,8 @@ final class DependencyContainer {
             insertTextUseCase: makeInsertTextUseCase(),
             fetchBalanceUseCase: makeFetchDeepgramBalanceUseCase(),
             preferencesService: voiceInputPreferencesService,
-            keychainService: keychainService
+            keychainService: keychainService,
+            accessibilityService: accessibilityService
         )
     }
 }

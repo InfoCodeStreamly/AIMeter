@@ -1,6 +1,4 @@
 import Foundation
-import AIMeterDomain
-import AIMeterApplication
 
 /// Protocol for Keychain operations (enables testing)
 public protocol KeychainServiceProtocol: Sendable {

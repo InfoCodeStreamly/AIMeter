@@ -3,7 +3,7 @@ import AIMeterDomain
 
 /// Protocol for managing voice input preferences
 @MainActor
-public protocol VoiceInputPreferencesProtocol: Sendable {
+public protocol VoiceInputPreferencesProtocol: AnyObject, Sendable {
     /// Whether voice input feature is enabled
     var isEnabled: Bool { get set }
 

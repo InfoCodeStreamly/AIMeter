@@ -1,6 +1,5 @@
 import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import SwiftUI
 
 /// UI-specific extensions for UsageStatus

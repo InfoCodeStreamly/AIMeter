@@ -1,13 +1,12 @@
+import AIMeterApplication
 import AIMeterDomain
-import AIMeterInfrastructure
 import Charts
 import SwiftUI
 
 /// Detail window showing full usage trend chart
 public struct UsageDetailView: View {
     @Bindable var viewModel: UsageViewModel
-    @Environment(NotificationPreferencesService.self) private var notificationPreferences:
-        NotificationPreferencesService?
+    @Environment(\.notificationPreferences) private var notificationPreferences
     @State private var hoveredEntry: UsageHistoryEntry?
     @State private var hoverLocation: CGPoint = .zero
 

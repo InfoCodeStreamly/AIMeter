@@ -3,7 +3,7 @@ import AIMeterDomain
 
 /// Protocol for managing notification preferences
 @MainActor
-public protocol NotificationPreferencesProtocol: Sendable {
+public protocol NotificationPreferencesProtocol: AnyObject, Sendable {
     /// Whether notifications are enabled
     var isEnabled: Bool { get set }
 
