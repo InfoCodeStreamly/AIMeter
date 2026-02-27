@@ -141,13 +141,15 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
             let finalize = try? JSONEncoder().encode(DeepgramClientMessage(type: "Finalize"))
             if let finalize {
                 try? await wsTask.send(.data(finalize))
+                Self.log.warning("stopStreaming: Finalize sent to Deepgram")
             }
 
-            // Wait for finalize response (up to 1 second)
-            let deadline = Date().addingTimeInterval(1.0)
+            // Wait for finalize response (up to 2 seconds)
+            let deadline = Date().addingTimeInterval(2.0)
             while !finalizeReceived && Date() < deadline {
                 try? await Task.sleep(for: .milliseconds(50))
             }
+            Self.log.warning("stopStreaming: finalize wait done, received=\(self.finalizeReceived)")
 
             // Send CloseStream
             let close = try? JSONEncoder().encode(DeepgramClientMessage(type: "CloseStream"))
@@ -164,8 +166,15 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
         receiveTask?.cancel()
 
         let duration = recordingStartTime.map { Date().timeIntervalSince($0) } ?? 0
-        let resultText = finalizedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        Self.log.warning("stopStreaming: finalizeReceived=\(self.finalizeReceived), finalizedText='\(resultText.prefix(100), privacy: .public)', duration=\(duration, format: .fixed(precision: 1))s")
+        var resultText = finalizedText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Fallback: if no final results arrived, use the last interim text
+        if resultText.isEmpty && !interimText.isEmpty {
+            resultText = interimText.trimmingCharacters(in: .whitespacesAndNewlines)
+            Self.log.warning("stopStreaming: using interimText as fallback: '\(resultText.prefix(100), privacy: .public)'")
+        }
+
+        Self.log.warning("stopStreaming: finalizeReceived=\(self.finalizeReceived), resultText='\(resultText.prefix(100), privacy: .public)', duration=\(duration, format: .fixed(precision: 1))s")
 
         let result = TranscriptionEntity(
             text: resultText,
