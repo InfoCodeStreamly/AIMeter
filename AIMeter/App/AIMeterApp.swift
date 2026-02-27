@@ -75,6 +75,7 @@ struct AIMeterApp: App {
         // Usage Detail Window
         Window("Usage Trend", id: UIConstants.WindowID.usageDetail) {
             UsageDetailView(viewModel: viewModel)
+                .windowLevel(.init(NSWindow.Level.floating.rawValue))
                 .environment(\.languageService, languageService)
                 .environment(\.themeService, themeService)
                 .environment(\.notificationPreferences, DependencyContainer.shared.notificationPreferencesService)
