@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import AIMeterDomain
 import AIMeterApplication
 
@@ -6,6 +7,7 @@ import AIMeterApplication
 public actor ClaudeAPIClient: ClaudeAPIClientProtocol {
     private let session: URLSession
     private let decoder: JSONDecoder
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "api")
 
     public init(session: URLSession = .shared) {
         self.session = session
@@ -36,16 +38,20 @@ public actor ClaudeAPIClient: ClaudeAPIClientProtocol {
             throw InfrastructureError.networkUnavailable
         }
 
-
-        // Log response body for debugging
-        if let bodyString = String(data: data.prefix(500), encoding: .utf8) {
-        }
+        logger.debug("API response status: \(httpResponse.statusCode)")
 
         switch httpResponse.statusCode {
         case 200..<300:
             do {
                 return try decoder.decode(T.self, from: data)
             } catch {
+                // Log raw response body and detailed decode error for diagnosis
+                if let body = String(data: data.prefix(1000), encoding: .utf8) {
+                    logger.error("Decode failed. Response body: \(body, privacy: .private)")
+                }
+                if let decodingError = error as? DecodingError {
+                    logger.error("DecodingError detail: \(String(describing: decodingError))")
+                }
                 throw InfrastructureError.decodingFailed(error)
             }
 

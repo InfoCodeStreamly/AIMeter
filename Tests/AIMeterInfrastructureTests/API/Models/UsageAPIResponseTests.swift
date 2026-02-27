@@ -335,4 +335,89 @@ struct UsageAPIResponseTests {
         // Assert
         #expect(response.fiveHour?.utilization == 45.5678901234)
     }
+
+    // MARK: - Optional Field Resilience Tests
+
+    @Test("UsagePeriodData decodes with null utilization")
+    func usagePeriodDataNullUtilization() throws {
+        let json = """
+        {
+          "resets_at": "2026-02-06T15:00:00Z",
+          "utilization": null
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(UsagePeriodData.self, from: json)
+        #expect(data.utilization == nil)
+        #expect(data.resetsAt == "2026-02-06T15:00:00Z")
+    }
+
+    @Test("UsagePeriodData decodes with null resetsAt")
+    func usagePeriodDataNullResetsAt() throws {
+        let json = """
+        {
+          "resets_at": null,
+          "utilization": 45.0
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(UsagePeriodData.self, from: json)
+        #expect(data.utilization == 45.0)
+        #expect(data.resetsAt == nil)
+    }
+
+    @Test("UsagePeriodData decodes with missing utilization field")
+    func usagePeriodDataMissingUtilization() throws {
+        let json = """
+        {
+          "resets_at": "2026-02-06T15:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(UsagePeriodData.self, from: json)
+        #expect(data.utilization == nil)
+        #expect(data.resetsAt == "2026-02-06T15:00:00Z")
+    }
+
+    @Test("UsagePeriodData decodes with missing resetsAt field")
+    func usagePeriodDataMissingResetsAt() throws {
+        let json = """
+        {
+          "utilization": 80.0
+        }
+        """.data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(UsagePeriodData.self, from: json)
+        #expect(data.utilization == 80.0)
+        #expect(data.resetsAt == nil)
+    }
+
+    @Test("UsagePeriodData decodes empty object")
+    func usagePeriodDataEmpty() throws {
+        let json = "{}".data(using: .utf8)!
+
+        let data = try JSONDecoder().decode(UsagePeriodData.self, from: json)
+        #expect(data.utilization == nil)
+        #expect(data.resetsAt == nil)
+    }
+
+    @Test("full response with partial period data decodes")
+    func fullResponseWithPartialPeriodData() throws {
+        let json = """
+        {
+          "five_hour": {
+            "utilization": 50.0
+          },
+          "seven_day": {
+            "resets_at": "2026-02-10T00:00:00Z"
+          }
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(UsageAPIResponse.self, from: json)
+        #expect(response.fiveHour?.utilization == 50.0)
+        #expect(response.fiveHour?.resetsAt == nil)
+        #expect(response.sevenDay?.utilization == nil)
+        #expect(response.sevenDay?.resetsAt == "2026-02-10T00:00:00Z")
+    }
 }

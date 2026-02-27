@@ -117,6 +117,13 @@ public struct MenuBarView: View {
                     NSApplication.shared.activate()
                 }
             }
+
+            // Deepgram voice input usage (separate section at the end)
+            if let deepgramUsage = viewModel.deepgramUsage {
+                Divider()
+                    .padding(.vertical, UIConstants.Spacing.xs)
+                DeepgramUsageCardView(data: deepgramUsage)
+            }
         }
         .padding(UIConstants.Spacing.md)
     }

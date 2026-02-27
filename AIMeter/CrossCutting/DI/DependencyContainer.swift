@@ -10,13 +10,14 @@ final class DependencyContainer {
     static let shared = DependencyContainer()
 
     private init() {
-        // Migrate old keychain items that had kSecAttrAccessible (ACL tied
-        // to code signature → password prompt on rebuild/update).
-        // Re-saves without ACL attributes.
+        // Migrate old keychain items from file-based keychain (ACL tied to
+        // code signature → password prompt on rebuild/update) to Data
+        // Protection keychain (no per-app ACL).
         Task {
             let keychain = self.keychainService
             await keychain.migrateFromACLKeychain(forKey: "sessionKey")
             await keychain.migrateFromACLKeychain(forKey: "oauthCredentials")
+            await keychain.migrateFromACLKeychain(forKey: "deepgramApiKey")
         }
     }
 
@@ -70,6 +71,22 @@ final class DependencyContainer {
         TokenRefreshService()
     }()
 
+    private lazy var deepgramTranscriptionService: DeepgramTranscriptionService = {
+        DeepgramTranscriptionService()
+    }()
+
+    private lazy var deepgramAPIService: DeepgramAPIService = {
+        DeepgramAPIService()
+    }()
+
+    lazy var textInsertionService: TextInsertionService = {
+        TextInsertionService()
+    }()
+
+    lazy var voiceInputPreferencesService: VoiceInputPreferencesService = {
+        VoiceInputPreferencesService()
+    }()
+
     // MARK: - Repositories
 
     private lazy var keychainSessionRepository: KeychainSessionRepository = {
@@ -98,6 +115,14 @@ final class DependencyContainer {
     private lazy var usageHistoryRepository: any UsageHistoryRepository = {
         UsageHistoryStore()
     }()
+
+    private var transcriptionRepository: any TranscriptionRepository {
+        deepgramTranscriptionService
+    }
+
+    private var deepgramAPIRepository: any DeepgramAPIRepository {
+        deepgramAPIService
+    }
 
     // MARK: - Use Cases
 
@@ -146,6 +171,30 @@ final class DependencyContainer {
         FetchUsageHistoryUseCase(historyRepository: usageHistoryRepository)
     }
 
+    func makeStartTranscriptionUseCase() -> StartTranscriptionUseCase {
+        StartTranscriptionUseCase(transcriptionRepository: transcriptionRepository)
+    }
+
+    func makeStopTranscriptionUseCase() -> StopTranscriptionUseCase {
+        StopTranscriptionUseCase(transcriptionRepository: transcriptionRepository)
+    }
+
+    func makeCancelTranscriptionUseCase() -> CancelTranscriptionUseCase {
+        CancelTranscriptionUseCase(transcriptionRepository: transcriptionRepository)
+    }
+
+    func makeInsertTextUseCase() -> InsertTextUseCase {
+        InsertTextUseCase(textInsertionService: textInsertionService)
+    }
+
+    func makeFetchDeepgramBalanceUseCase() -> FetchDeepgramBalanceUseCase {
+        FetchDeepgramBalanceUseCase(deepgramAPIRepository: deepgramAPIRepository)
+    }
+
+    func makeFetchDeepgramUsageUseCase() -> FetchDeepgramUsageUseCase {
+        FetchDeepgramUsageUseCase(deepgramAPIRepository: deepgramAPIRepository)
+    }
+
     // MARK: - ViewModels
 
     func makeUsageViewModel() -> UsageViewModel {
@@ -157,7 +206,10 @@ final class DependencyContainer {
             getExtraUsageUseCase: makeGetExtraUsageUseCase(),
             saveUsageHistoryUseCase: makeSaveUsageHistoryUseCase(),
             fetchUsageHistoryUseCase: makeFetchUsageHistoryUseCase(),
-            widgetDataService: widgetDataService
+            widgetDataService: widgetDataService,
+            fetchDeepgramUsageUseCase: makeFetchDeepgramUsageUseCase(),
+            voiceInputPreferences: voiceInputPreferencesService,
+            keychainService: keychainService
         )
     }
 
@@ -167,6 +219,18 @@ final class DependencyContainer {
             validateUseCase: makeValidateSessionKeyUseCase(),
             getSessionKeyUseCase: makeGetSessionKeyUseCase(),
             credentialsRepository: credentialsRepository
+        )
+    }
+
+    func makeVoiceInputViewModel() -> VoiceInputViewModel {
+        VoiceInputViewModel(
+            startTranscriptionUseCase: makeStartTranscriptionUseCase(),
+            stopTranscriptionUseCase: makeStopTranscriptionUseCase(),
+            cancelTranscriptionUseCase: makeCancelTranscriptionUseCase(),
+            insertTextUseCase: makeInsertTextUseCase(),
+            fetchBalanceUseCase: makeFetchDeepgramBalanceUseCase(),
+            preferencesService: voiceInputPreferencesService,
+            keychainService: keychainService
         )
     }
 }

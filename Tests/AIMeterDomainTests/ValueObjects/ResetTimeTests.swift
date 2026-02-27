@@ -141,8 +141,11 @@ struct ResetTimeTests {
     @Test("localTimeString shows time for today")
     func localTimeStringToday() {
         let calendar = Calendar.current
+        // Use a fixed time today that's always in the future but still today
+        // (noon if before noon, or +30 min if after noon — avoids midnight edge case)
         let now = Date()
-        let futureToday = calendar.date(byAdding: .hour, value: 2, to: now)!
+        let endOfToday = calendar.date(bySettingHour: 23, minute: 59, second: 0, of: now)!
+        let futureToday = min(calendar.date(byAdding: .minute, value: 30, to: now)!, endOfToday)
         let resetTime = ResetTime(futureToday)
 
         let formatter = DateFormatter()
