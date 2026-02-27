@@ -4,26 +4,27 @@ import AIMeterInfrastructure
 import AppKit
 import SwiftUI
 
-/// Settings tab identifiers with localization keys
+/// Settings tab identifiers
 enum SettingsTab: CaseIterable {
     case general
     case connection
+    case voiceInput
     case about
 
-    /// Localization key for the tab title
     var titleKey: String {
         switch self {
         case .general: return "General"
         case .connection: return "Connection"
+        case .voiceInput: return "Voice Input"
         case .about: return "About"
         }
     }
 
-    /// Localization table name
     var tableName: String {
         switch self {
         case .general: return "SettingsGeneral"
         case .connection: return "SettingsConnection"
+        case .voiceInput: return "SettingsVoiceInput"
         case .about: return "SettingsAbout"
         }
     }
@@ -32,6 +33,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .connection: return "link"
+        case .voiceInput: return "mic"
         case .about: return "info.circle"
         }
     }
@@ -44,6 +46,8 @@ public struct SettingsView: View {
     var launchAtLogin: LaunchAtLoginService
     var notificationPreferences: NotificationPreferencesService
     var appInfo: AppInfoService
+    var voiceInputViewModel: VoiceInputViewModel?
+    var voiceInputPreferences: VoiceInputPreferencesService?
     @Environment(\.dismiss) private var dismiss
 
     @State private var selectedTab: SettingsTab = .general
@@ -54,13 +58,17 @@ public struct SettingsView: View {
         checkForUpdatesViewModel: CheckForUpdatesViewModel,
         launchAtLogin: LaunchAtLoginService,
         notificationPreferences: NotificationPreferencesService,
-        appInfo: AppInfoService
+        appInfo: AppInfoService,
+        voiceInputViewModel: VoiceInputViewModel? = nil,
+        voiceInputPreferences: VoiceInputPreferencesService? = nil
     ) {
         self.viewModel = viewModel
         self.checkForUpdatesViewModel = checkForUpdatesViewModel
         self.launchAtLogin = launchAtLogin
         self.notificationPreferences = notificationPreferences
         self.appInfo = appInfo
+        self.voiceInputViewModel = voiceInputViewModel
+        self.voiceInputPreferences = voiceInputPreferences
     }
 
     public var body: some View {
@@ -92,15 +100,15 @@ public struct SettingsView: View {
         }
     }
 
-    // MARK: - Tab Bar (TG Pro style)
+    // MARK: - Tab Bar
 
     private var tabBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: UIConstants.Spacing.sm) {
             ForEach(SettingsTab.allCases, id: \.self) { tab in
                 tabButton(for: tab)
             }
         }
-        .padding(.horizontal, UIConstants.Spacing.lg)
+        .padding(.horizontal, UIConstants.Spacing.xl)
     }
 
     private func tabButton(for tab: SettingsTab) -> some View {
@@ -139,6 +147,14 @@ public struct SettingsView: View {
                 viewModel: viewModel,
                 notificationPreferences: notificationPreferences
             )
+
+        case .voiceInput:
+            if let voiceVM = voiceInputViewModel, let voicePrefs = voiceInputPreferences {
+                VoiceInputSettingsTab(
+                    viewModel: voiceVM,
+                    preferencesService: voicePrefs
+                )
+            }
 
         case .about:
             AboutSettingsTab(

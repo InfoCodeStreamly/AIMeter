@@ -1,26 +1,30 @@
 import AIMeterDomain
 import Foundation
+import OSLog
 import Security
 
 /// Keychain operations service (Infrastructure implementation)
 ///
-/// Uses simple keychain items without kSecAttrAccessible to avoid
-/// ACL-based password prompts on code signature changes (rebuilds/updates).
+/// Uses Data Protection keychain (kSecUseDataProtectionKeychain) which
+/// does NOT have per-app ACL tied to code signature. This prevents
+/// password prompts on app rebuild/update.
+/// Requires application-groups or keychain-access-groups entitlement.
 public actor KeychainService: KeychainServiceProtocol {
     private let service: String
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "keychain")
 
     public init(service: String = "com.codestreamly.AIMeter") {
         self.service = service
     }
 
-    /// Migrates old items that had kSecAttrAccessible (which creates ACL
-    /// tied to code signature, causing password prompts on rebuild/update).
-    /// Reads old item, saves without kSecAttrAccessible, deletes old.
+    /// Migrates items from the file-based login keychain (which has ACL
+    /// tied to code signature, causing password prompts) to the Data
+    /// Protection keychain (no per-app ACL).
     public func migrateFromACLKeychain(forKey key: String) {
-        // Check if a "clean" item already exists (no migration needed)
+        // Check if item already exists in Data Protection keychain
         if read(forKey: key) != nil { return }
 
-        // Try reading from any existing keychain item (including ACL-protected)
+        // Try reading from old file-based keychain (without kSecUseDataProtectionKeychain)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -37,7 +41,9 @@ public actor KeychainService: KeychainServiceProtocol {
             let value = String(data: data, encoding: .utf8)
         else { return }
 
-        // Delete old item (may have ACL attributes)
+        logger.info("Migrating keychain item '\(key)' to Data Protection keychain")
+
+        // Delete old item from file-based keychain
         let deleteQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -45,7 +51,7 @@ public actor KeychainService: KeychainServiceProtocol {
         ]
         SecItemDelete(deleteQuery as CFDictionary)
 
-        // Save clean item without kSecAttrAccessible
+        // Save to Data Protection keychain
         try? save(value, forKey: key)
     }
 
@@ -62,6 +68,7 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -78,6 +85,7 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecAttrAccount as String: key,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         var result: AnyObject?
@@ -98,6 +106,7 @@ public actor KeychainService: KeychainServiceProtocol {
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
+            kSecUseDataProtectionKeychain as String: true,
         ]
 
         let status = SecItemDelete(query as CFDictionary)

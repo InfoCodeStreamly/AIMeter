@@ -40,7 +40,7 @@ struct SettingsButton: View {
 
     @ViewBuilder
     private var buttonContent: some View {
-        let button = Button(action: action) {
+        Button(action: action) {
             HStack(spacing: 8) {
                 if isLoading {
                     ProgressView()
@@ -55,23 +55,7 @@ struct SettingsButton: View {
             }
             .frame(maxWidth: style == .secondary ? nil : .infinity)
         }
-
-        switch style {
-        case .secondary:
-            button.buttonStyle(.bordered)
-        case .primary:
-            button.buttonStyle(.borderedProminent).tint(.blue)
-        case .destructive:
-            button.buttonStyle(.borderedProminent).tint(.red)
-        }
-    }
-
-    private var tintColor: Color? {
-        switch style {
-        case .primary: return .blue
-        case .secondary: return nil
-        case .destructive: return .red
-        }
+        .buttonStyle(.bordered)
     }
 }
 

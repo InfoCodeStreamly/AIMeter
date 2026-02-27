@@ -14,6 +14,7 @@ public final class UsageViewModel {
     public private(set) var usageHistory: [UsageHistoryEntry] = []
     public private(set) var detailHistory: [UsageHistoryEntry] = []
     public var selectedGranularity: TimeGranularity = .oneHour
+    public private(set) var deepgramUsage: DeepgramUsageStats?
 
     private let fetchUsageUseCase: FetchUsageUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
@@ -23,6 +24,9 @@ public final class UsageViewModel {
     private let saveUsageHistoryUseCase: SaveUsageHistoryUseCase?
     private let fetchUsageHistoryUseCase: FetchUsageHistoryUseCase?
     private let widgetDataService: WidgetDataService?
+    private let fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase?
+    private let voiceInputPreferences: (any VoiceInputPreferencesProtocol)?
+    private let keychainService: (any KeychainServiceProtocol)?
 
     private var refreshTask: Task<Void, Never>?
     private let refreshInterval: TimeInterval = 60  // 1 minute
@@ -35,7 +39,10 @@ public final class UsageViewModel {
         getExtraUsageUseCase: GetExtraUsageUseCase? = nil,
         saveUsageHistoryUseCase: SaveUsageHistoryUseCase? = nil,
         fetchUsageHistoryUseCase: FetchUsageHistoryUseCase? = nil,
-        widgetDataService: WidgetDataService? = nil
+        widgetDataService: WidgetDataService? = nil,
+        fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase? = nil,
+        voiceInputPreferences: (any VoiceInputPreferencesProtocol)? = nil,
+        keychainService: (any KeychainServiceProtocol)? = nil
     ) {
         self.fetchUsageUseCase = fetchUsageUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
@@ -45,6 +52,9 @@ public final class UsageViewModel {
         self.saveUsageHistoryUseCase = saveUsageHistoryUseCase
         self.fetchUsageHistoryUseCase = fetchUsageHistoryUseCase
         self.widgetDataService = widgetDataService
+        self.fetchDeepgramUsageUseCase = fetchDeepgramUsageUseCase
+        self.voiceInputPreferences = voiceInputPreferences
+        self.keychainService = keychainService
     }
 
     /// Start background refresh (called once at app launch)
@@ -150,6 +160,16 @@ public final class UsageViewModel {
 
             // Check for threshold notifications
             await checkNotificationUseCase.execute(usages: entities)
+
+            // Fetch Deepgram usage if Voice Input is enabled
+            if let prefs = voiceInputPreferences, prefs.isEnabled,
+               let keychain = keychainService,
+               let apiKey = await keychain.read(forKey: "deepgramApiKey"),
+               let useCase = fetchDeepgramUsageUseCase {
+                deepgramUsage = try? await useCase.execute(apiKey: apiKey)
+            } else {
+                deepgramUsage = nil
+            }
         } catch let error as DomainError {
             if error == .sessionKeyNotFound {
                 state = .needsSetup

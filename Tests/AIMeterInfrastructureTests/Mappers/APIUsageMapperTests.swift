@@ -309,4 +309,53 @@ struct APIUsageMapperTests {
         #expect(entity?.usedCredits == 0.0)
         #expect(entity?.utilization.value == 0.0)
     }
+
+    // MARK: - Optional Fields Resilience
+
+    @Test("toDomain skips period with nil resetsAt")
+    func toDomainSkipsNilResetsAt() {
+        let response = UsageAPIResponse(
+            fiveHour: UsagePeriodData(utilization: 45.5, resetsAt: nil),
+            sevenDay: UsagePeriodData(utilization: 30.0, resetsAt: "2026-02-10T00:00:00Z"),
+            sevenDayOpus: nil,
+            sevenDaySonnet: nil,
+            sevenDayOauthApps: nil,
+            extraUsage: nil
+        )
+
+        let entities = APIUsageMapper.toDomain(response)
+        #expect(entities.count == 1)
+        #expect(entities[0].type == .weekly)
+    }
+
+    @Test("toDomain uses 0 for nil utilization")
+    func toDomainUsesZeroForNilUtilization() {
+        let response = UsageAPIResponse(
+            fiveHour: UsagePeriodData(utilization: nil, resetsAt: "2026-02-06T15:00:00Z"),
+            sevenDay: nil,
+            sevenDayOpus: nil,
+            sevenDaySonnet: nil,
+            sevenDayOauthApps: nil,
+            extraUsage: nil
+        )
+
+        let entities = APIUsageMapper.toDomain(response)
+        #expect(entities.count == 1)
+        #expect(entities[0].percentage.value == 0.0)
+    }
+
+    @Test("toDomain skips period with both fields nil")
+    func toDomainSkipsBothNil() {
+        let response = UsageAPIResponse(
+            fiveHour: UsagePeriodData(utilization: nil, resetsAt: nil),
+            sevenDay: nil,
+            sevenDayOpus: nil,
+            sevenDaySonnet: nil,
+            sevenDayOauthApps: nil,
+            extraUsage: nil
+        )
+
+        let entities = APIUsageMapper.toDomain(response)
+        #expect(entities.isEmpty)
+    }
 }

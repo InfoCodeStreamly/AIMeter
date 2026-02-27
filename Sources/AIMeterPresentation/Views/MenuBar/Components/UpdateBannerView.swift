@@ -31,7 +31,6 @@ struct UpdateBannerView: View {
                     .font(.caption.bold())
             }
             .glassButton()
-            .tint(.blue)
         }
         .padding(.horizontal, UIConstants.SettingsCard.padding)
         .padding(.vertical, UIConstants.Spacing.sm)

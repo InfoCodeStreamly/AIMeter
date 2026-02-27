@@ -1,11 +1,19 @@
-import Testing
 import Foundation
+import Testing
 
-/// Architecture tests verifying Clean Architecture dependency rules
-/// Domain → (nothing)
-/// Application → Domain
-/// Infrastructure → Domain, Application
-/// Presentation → Domain, Application (should NOT import Infrastructure directly)
+/// Architecture tests verifying Clean Architecture dependency rules.
+///
+/// Allowed dependencies (→ = "can import"):
+///   Domain    → Foundation
+///   Application → Foundation, AIMeterDomain
+///   Infrastructure → Foundation, AIMeterDomain, AIMeterApplication, SwiftUI, AppKit, OSLog, …
+///   Presentation   → Foundation, AIMeterDomain, AIMeterApplication, SwiftUI, AppKit, OSLog, …
+///
+/// Forbidden:
+///   Domain         ✗ Application, Infrastructure, Presentation, SwiftUI, AppKit
+///   Application    ✗ Infrastructure, Presentation, SwiftUI, AppKit
+///   Infrastructure ✗ Presentation
+///   Presentation   ✗ Infrastructure
 @Suite("Clean Architecture Dependency Rules")
 struct DependencyRuleTests {
 
@@ -15,64 +23,111 @@ struct DependencyRuleTests {
         .deletingLastPathComponent() // Tests/
         .deletingLastPathComponent() // AIMeter project root
 
-    // MARK: - Domain Layer
+    // MARK: - Domain Layer (purest — only Foundation)
 
-    @Test("Domain layer does not import Application")
+    @Test("Domain does not import Application")
     func domainDoesNotImportApplication() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterDomain",
             forbiddenImports: ["AIMeterApplication"]
         )
-        #expect(violations.isEmpty, "Domain must not import Application: \(violations)")
+        #expect(violations.isEmpty, "Domain must not import Application:\n\(formatted(violations))")
     }
 
-    @Test("Domain layer does not import Infrastructure")
+    @Test("Domain does not import Infrastructure")
     func domainDoesNotImportInfrastructure() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterDomain",
             forbiddenImports: ["AIMeterInfrastructure"]
         )
-        #expect(violations.isEmpty, "Domain must not import Infrastructure: \(violations)")
+        #expect(violations.isEmpty, "Domain must not import Infrastructure:\n\(formatted(violations))")
     }
 
-    @Test("Domain layer does not import Presentation")
+    @Test("Domain does not import Presentation")
     func domainDoesNotImportPresentation() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterDomain",
             forbiddenImports: ["AIMeterPresentation"]
         )
-        #expect(violations.isEmpty, "Domain must not import Presentation: \(violations)")
+        #expect(violations.isEmpty, "Domain must not import Presentation:\n\(formatted(violations))")
     }
 
-    // MARK: - Application Layer
+    @Test("Domain does not import SwiftUI")
+    func domainDoesNotImportSwiftUI() throws {
+        let violations = try findImportViolations(
+            in: "Sources/AIMeterDomain",
+            forbiddenImports: ["SwiftUI"]
+        )
+        #expect(violations.isEmpty, "Domain must not import SwiftUI:\n\(formatted(violations))")
+    }
 
-    @Test("Application layer does not import Infrastructure")
+    @Test("Domain does not import AppKit")
+    func domainDoesNotImportAppKit() throws {
+        let violations = try findImportViolations(
+            in: "Sources/AIMeterDomain",
+            forbiddenImports: ["AppKit"]
+        )
+        #expect(violations.isEmpty, "Domain must not import AppKit:\n\(formatted(violations))")
+    }
+
+    // MARK: - Application Layer (Use Cases — only Domain + Foundation)
+
+    @Test("Application does not import Infrastructure")
     func applicationDoesNotImportInfrastructure() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterApplication",
             forbiddenImports: ["AIMeterInfrastructure"]
         )
-        #expect(violations.isEmpty, "Application must not import Infrastructure: \(violations)")
+        #expect(violations.isEmpty, "Application must not import Infrastructure:\n\(formatted(violations))")
     }
 
-    @Test("Application layer does not import Presentation")
+    @Test("Application does not import Presentation")
     func applicationDoesNotImportPresentation() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterApplication",
             forbiddenImports: ["AIMeterPresentation"]
         )
-        #expect(violations.isEmpty, "Application must not import Presentation: \(violations)")
+        #expect(violations.isEmpty, "Application must not import Presentation:\n\(formatted(violations))")
     }
 
-    // MARK: - Infrastructure Layer
+    @Test("Application does not import SwiftUI")
+    func applicationDoesNotImportSwiftUI() throws {
+        let violations = try findImportViolations(
+            in: "Sources/AIMeterApplication",
+            forbiddenImports: ["SwiftUI"]
+        )
+        #expect(violations.isEmpty, "Application must not import SwiftUI:\n\(formatted(violations))")
+    }
 
-    @Test("Infrastructure layer does not import Presentation")
+    @Test("Application does not import AppKit")
+    func applicationDoesNotImportAppKit() throws {
+        let violations = try findImportViolations(
+            in: "Sources/AIMeterApplication",
+            forbiddenImports: ["AppKit"]
+        )
+        #expect(violations.isEmpty, "Application must not import AppKit:\n\(formatted(violations))")
+    }
+
+    // MARK: - Infrastructure Layer (implementations — no Presentation)
+
+    @Test("Infrastructure does not import Presentation")
     func infrastructureDoesNotImportPresentation() throws {
         let violations = try findImportViolations(
             in: "Sources/AIMeterInfrastructure",
             forbiddenImports: ["AIMeterPresentation"]
         )
-        #expect(violations.isEmpty, "Infrastructure must not import Presentation: \(violations)")
+        #expect(violations.isEmpty, "Infrastructure must not import Presentation:\n\(formatted(violations))")
+    }
+
+    // MARK: - Presentation Layer (UI — no Infrastructure)
+
+    @Test("Presentation does not import Infrastructure")
+    func presentationDoesNotImportInfrastructure() throws {
+        let violations = try findImportViolations(
+            in: "Sources/AIMeterPresentation",
+            forbiddenImports: ["AIMeterInfrastructure"]
+        )
+        #expect(violations.isEmpty, "Presentation must not import Infrastructure:\n\(formatted(violations))")
     }
 
     // MARK: - Helpers
@@ -104,7 +159,7 @@ struct DependencyRuleTests {
 
                 for forbidden in forbiddenImports {
                     if trimmed == "import \(forbidden)" ||
-                       trimmed == "@testable import \(forbidden)" {
+                        trimmed == "@testable import \(forbidden)" {
                         let fileName = fileURL.lastPathComponent
                         violations.append("\(fileName):\(lineNumber + 1) imports \(forbidden)")
                     }
@@ -113,5 +168,9 @@ struct DependencyRuleTests {
         }
 
         return violations
+    }
+
+    private func formatted(_ violations: [String]) -> String {
+        violations.map { "  - \($0)" }.joined(separator: "\n")
     }
 }

@@ -25,8 +25,8 @@ public struct UsageAPIResponse: Sendable, Codable {
 /// Usage period data
 /// Fields: utilization (0-100), resets_at (ISO8601)
 public struct UsagePeriodData: Sendable, Codable {
-    public let utilization: Double
-    public let resetsAt: String
+    public let utilization: Double?
+    public let resetsAt: String?
 
     enum CodingKeys: String, CodingKey {
         case utilization

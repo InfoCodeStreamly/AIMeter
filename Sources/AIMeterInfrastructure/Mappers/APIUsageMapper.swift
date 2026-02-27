@@ -69,11 +69,12 @@ enum APIUsageMapper {
         _ data: UsagePeriodData,
         type: UsageType
     ) -> UsageEntity? {
-        guard let resetTime = ResetTime.fromISO8601(data.resetsAt) else {
+        guard let resetsAt = data.resetsAt,
+              let resetTime = ResetTime.fromISO8601(resetsAt) else {
             return nil
         }
 
-        let percentage = Percentage.clamped(data.utilization)
+        let percentage = Percentage.clamped(data.utilization ?? 0)
 
         return UsageEntity(
             type: type,

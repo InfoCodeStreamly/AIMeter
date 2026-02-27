@@ -9,6 +9,7 @@ import SwiftUI
 @main
 struct AIMeterApp: App {
     @State private var viewModel = DependencyContainer.shared.makeUsageViewModel()
+    @State private var voiceInputViewModel = DependencyContainer.shared.makeVoiceInputViewModel()
 
     /// Language service for localization (SSOT)
     private let languageService = DependencyContainer.shared.languageService
@@ -116,6 +117,14 @@ struct AIMeterApp: App {
     private func setupKeyboardShortcut() {
         keyboardShortcutService.onTogglePopover { [viewModel] in
             viewModel.copyToClipboard()
+        }
+
+        // Push-to-talk: hold to record, release to stop & insert
+        KeyboardShortcuts.onKeyDown(for: .voiceInput) { [voiceInputViewModel] in
+            voiceInputViewModel.startRecordingIfReady()
+        }
+        KeyboardShortcuts.onKeyUp(for: .voiceInput) { [voiceInputViewModel] in
+            voiceInputViewModel.stopIfRecording()
         }
     }
 }
