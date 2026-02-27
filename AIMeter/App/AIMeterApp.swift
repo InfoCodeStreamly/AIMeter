@@ -111,6 +111,9 @@ struct AIMeterApp: App {
             await viewModel.startBackgroundRefresh()
         }
         .task {
+            await voiceInputViewModel.onAppear()
+        }
+        .task {
             setupKeyboardShortcut()
         }
     }
