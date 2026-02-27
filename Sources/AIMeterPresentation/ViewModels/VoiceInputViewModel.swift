@@ -111,8 +111,26 @@ public final class VoiceInputViewModel {
             voiceLog.info("stopIfRecording: .recording → stopAndInsert()")
             stopAndInsert()
         case .connecting:
-            voiceLog.info("stopIfRecording: .connecting → cancel()")
-            cancel()
+            // Don't cancel — wait for connection to complete, then stop
+            voiceLog.info("stopIfRecording: .connecting → waiting for recording to start, then stop")
+            Task {
+                // Wait up to 3 seconds for status to change from .connecting
+                for _ in 0..<30 {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    if status == .recording {
+                        voiceLog.info("stopIfRecording: connection ready → stopAndInsert()")
+                        stopAndInsert()
+                        return
+                    }
+                    if status != .connecting {
+                        voiceLog.info("stopIfRecording: status changed to \(String(describing: self.status)), done")
+                        return
+                    }
+                }
+                // Timeout — still connecting, cancel
+                voiceLog.warning("stopIfRecording: timeout waiting for connection → cancel()")
+                cancel()
+            }
         default:
             voiceLog.info("stopIfRecording: ignored, status=\(String(describing: self.status))")
             break
@@ -176,10 +194,10 @@ public final class VoiceInputViewModel {
                     status = .ready
                 }
             } catch let error as TranscriptionError {
-                voiceLog.error("startRecording: TranscriptionError: \(error.localizedDescription)")
+                voiceLog.error("startRecording: TranscriptionError: \(error.localizedDescription, privacy: .public)")
                 status = .error(error)
             } catch {
-                voiceLog.error("startRecording: error: \(error.localizedDescription)")
+                voiceLog.error("startRecording: error: \(error.localizedDescription, privacy: .public)")
                 status = .error(.transcriptionFailed(error.localizedDescription))
             }
         }

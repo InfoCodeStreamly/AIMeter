@@ -80,7 +80,7 @@ public actor DeepgramTranscriptionService: TranscriptionRepository {
             try await wsTask.send(.data(keepAlive))
             Self.log.info("startStreaming: WebSocket connected, KeepAlive sent ✓")
         } catch {
-            Self.log.error("startStreaming: WebSocket connection failed: \(error.localizedDescription)")
+            Self.log.error("startStreaming: WebSocket connection failed: \(error.localizedDescription, privacy: .public)")
             wsTask.cancel(with: .normalClosure, reason: nil)
             self.webSocketTask = nil
             if error.localizedDescription.contains("401") || error.localizedDescription.contains("Unauthorized") {
