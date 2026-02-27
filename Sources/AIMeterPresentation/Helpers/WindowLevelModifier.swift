@@ -37,7 +37,8 @@ private final class WindowLevelNSView: NSView {
         applyLevel()
 
         // Also re-apply after a short delay (SwiftUI may reset window properties)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(100))
             self?.applyLevel()
         }
 
@@ -48,9 +49,10 @@ private final class WindowLevelNSView: NSView {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.applyLevel()
-                // Re-raise after brief delay (macOS may reorder windows on deactivation)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                Task { @MainActor [weak self] in
+                    self?.applyLevel()
+                    // Re-raise after brief delay (macOS may reorder windows on deactivation)
+                    try? await Task.sleep(for: .milliseconds(50))
                     self?.window?.orderFrontRegardless()
                 }
             }
