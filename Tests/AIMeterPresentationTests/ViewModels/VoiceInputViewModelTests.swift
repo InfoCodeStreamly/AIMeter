@@ -438,7 +438,7 @@ struct VoiceInputViewModelTests {
         }
     }
 
-    @Test("stopIfRecording from .connecting cancels and returns to ready")
+    @Test("stopIfRecording from .connecting waits for connection then stops")
     func stopFromConnecting() async throws {
         let repo = MockTranscriptionRepository()
         await repo.configure(keepStreamOpen: true)
@@ -447,11 +447,13 @@ struct VoiceInputViewModelTests {
         vm.startRecordingIfReady()
         #expect(vm.status == .connecting)
 
+        // Key UP while connecting — should wait for connection, then stopAndInsert
         vm.stopIfRecording()
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .ready)
-        #expect(await repo.cancelStreamingCallCount == 1)
-        #expect(await repo.stopStreamingCallCount == 0)
+        // Wait for connection + stopAndInsert to complete
+        try await Task.sleep(for: .milliseconds(300))
+        // Should have transitioned through .recording → .result → eventually .ready
+        #expect(await repo.stopStreamingCallCount == 1)
+        #expect(await repo.cancelStreamingCallCount == 0)
     }
 
     @Test("stopIfRecording from .idle is no-op")
