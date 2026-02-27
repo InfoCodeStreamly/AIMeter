@@ -10,40 +10,42 @@
 
 <p align="center">
   <a href="https://github.com/InfoCodeStreamly/AIMeter/releases/latest">
-    <img src="https://img.shields.io/github/v/release/InfoCodeStreamly/AIMeter?style=flat-square" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/release/InfoCodeStreamly/AIMeter?style=for-the-badge" alt="Latest Release">
   </a>
   <a href="https://github.com/InfoCodeStreamly/AIMeter/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/InfoCodeStreamly/AIMeter?style=flat-square" alt="License">
+    <img src="https://img.shields.io/github/license/InfoCodeStreamly/AIMeter?style=for-the-badge" alt="License">
   </a>
-  <img src="https://img.shields.io/badge/platform-macOS%2015%2B-blue?style=flat-square" alt="Platform">
-  <img src="https://img.shields.io/badge/swift-6.0-orange?style=flat-square" alt="Swift">
+  <img src="https://img.shields.io/badge/platform-macOS%2015%2B-blue?style=for-the-badge" alt="Platform">
+  <img src="https://img.shields.io/badge/swift-6.0-orange?style=for-the-badge" alt="Swift">
 </p>
 
 ---
 
-## What is AIMeter?
+## About
 
-AIMeter is a native macOS menu bar app that displays your Claude AI (claude.ai) usage limits at a glance. No more guessing when your limits will reset!
+AIMeter sits in your macOS menu bar and shows Claude AI usage limits at a glance — session limits, weekly limits, reset countdowns, and more. No more guessing when your limits will reset.
 
-**Features:**
-- Real-time usage tracking (session & weekly limits)
-- Color-coded status (green/orange/red)
-- Reset time countdown
-- Auto-refresh every 30 seconds
-- Native macOS design with glassmorphism UI
-- Launch at login support
-- Secure OAuth token storage in Keychain
+Automatically syncs your OAuth token from Claude Code CLI. Zero configuration.
+
+### Key Features
+
+- **Usage Tracking** — real-time session & weekly limits with selectable time granularity (15m / 1h / 3h / 6h)
+- **Color-coded Status** — green (safe), orange (moderate), red (critical)
+- **Reset Countdown** — know exactly when your limits refresh
+- **Voice Input** — push-to-talk transcription powered by on-device Whisper
+- **Auto-Updates** — seamless updates via Sparkle
+- **Native macOS** — glassmorphism UI, menu bar integration, launch at login
 
 ## Installation
 
-### Download DMG (Recommended)
+### Download (Recommended)
 
-1. Go to [Releases](https://github.com/InfoCodeStreamly/AIMeter/releases/latest)
+1. Go to [**Releases**](https://github.com/InfoCodeStreamly/AIMeter/releases/latest)
 2. Download `AIMeter-x.x.x.dmg`
-3. Open DMG and drag AIMeter to Applications
-4. Launch AIMeter from Applications
+3. Drag AIMeter to Applications
+4. Launch from Applications
 
-> **Note:** The app is signed and notarized by Apple for your security.
+> The app is signed and notarized by Apple.
 
 ### Build from Source
 
@@ -53,68 +55,45 @@ cd AIMeter
 open AIMeter.xcodeproj
 ```
 
-Build and run in Xcode (⌘R).
+Build and run in Xcode (`Cmd+R`).
 
-## Setup
+## Getting Started
 
-1. Launch AIMeter
-2. Click the menu bar icon
-3. Open Settings (gear icon)
-4. Enter your Claude session key or connect via OAuth
+1. Install [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview)
+2. Launch AIMeter — your OAuth token syncs automatically from `~/.claude` keychain
+3. Usage appears in the menu bar immediately
 
-### Getting Your Session Key
-
-AIMeter syncs with Claude Code CLI automatically. If you have Claude Code installed, the token will be detected.
-
-Alternatively, you can manually enter your OAuth token from claude.ai.
-
-## Screenshots
-
-<p align="center">
-  <em>Menu bar usage display</em>
-</p>
+No API keys or manual setup required.
 
 ## Requirements
 
 - macOS 15.0 (Sequoia) or later
-- Claude Pro/Team subscription (for API access)
+- Claude Pro / Team / Enterprise subscription
 
-## Tech Stack
+## Built With
 
-- **Swift 6.0** with strict concurrency
-- **SwiftUI** for modern UI
-- **MenuBarExtra** for native menu bar integration
-- **Keychain** for secure token storage
-- **Clean Architecture** (Domain/Application/Infrastructure/Presentation)
+| Technology | Purpose |
+|---|---|
+| **Swift 6.0** | Strict concurrency, actors, Sendable |
+| **SwiftUI** | Modern declarative UI |
+| **MenuBarExtra** | Native menu bar integration |
+| **Whisper** | On-device speech-to-text |
+| **Sparkle** | Auto-update framework |
+| **Keychain** | Secure credential storage |
+
+**Architecture:** Clean Architecture — Domain / Application / Infrastructure / Presentation
 
 ## Contributing
 
-Contributions are welcome! Feel free to:
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Support the Project
-
-If you find AIMeter useful, consider:
-
-- Starring the repository
-- [Sponsoring on GitHub](https://github.com/sponsors/InfoCodeStreamly)
-- Sharing with friends and colleagues
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes
+4. Push and open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[MIT](LICENSE)
 
 ## Author
 
-**Ievgen Chugunov** — [@prdxn](https://x.com/prdxn)
-
----
-
-<p align="center">
-  Made with ❤️ for the Claude community
-</p>
+**Ievgen Chugunov** — [@CodeStreamly](https://x.com/CodeStreamly)
