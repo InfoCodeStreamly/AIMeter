@@ -142,6 +142,12 @@ public final class VoiceInputViewModel {
                 for await text in stream {
                     interimText = text
                 }
+
+                // Stream ended (server closed connection, timeout, etc.)
+                // Transition to ready so the shortcut works again
+                if !Task.isCancelled {
+                    status = .ready
+                }
             } catch let error as TranscriptionError {
                 status = .error(error)
             } catch {

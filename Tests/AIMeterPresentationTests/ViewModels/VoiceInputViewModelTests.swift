@@ -1,7 +1,7 @@
 import Foundation
 import Testing
-@testable import AIMeterPresentation
 @testable import AIMeterApplication
+@testable import AIMeterPresentation
 import AIMeterDomain
 
 @Suite("VoiceInputViewModel", .serialized)
@@ -37,6 +37,10 @@ struct VoiceInputViewModelTests {
         func finishStream() {
             streamContinuation?.finish()
             streamContinuation = nil
+        }
+
+        func yieldText(_ text: String) {
+            streamContinuation?.yield(text)
         }
 
         func startStreaming(language: TranscriptionLanguage, apiKey: String) async throws -> AsyncStream<String> {
@@ -165,13 +169,35 @@ struct VoiceInputViewModelTests {
         )
     }
 
-    // MARK: - State Management
+    /// Helper: create a ready ViewModel with enabled prefs + API key
+    private func makeReadyViewModel(
+        mockRepo: MockTranscriptionRepository = MockTranscriptionRepository(),
+        mockTextInsertion: MockTextInsertionService = MockTextInsertionService()
+    ) async -> (VoiceInputViewModel, MockTranscriptionRepository, MockTextInsertionService, MockKeychainService) {
+        let keychain = MockKeychainService()
+        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = true
+        let vm = makeViewModel(mockRepo: mockRepo, mockTextInsertion: mockTextInsertion, mockPreferences: prefs, mockKeychain: keychain)
+        await vm.onAppear()
+        return (vm, mockRepo, mockTextInsertion, keychain)
+    }
+
+    // MARK: - Initial State
 
     @Test("initial status is idle")
     func initialStatusIsIdle() {
         let vm = makeViewModel()
         #expect(vm.status == .idle)
     }
+
+    @Test("initial interimText is empty")
+    func initialInterimTextIsEmpty() {
+        let vm = makeViewModel()
+        #expect(vm.interimText == "")
+    }
+
+    // MARK: - onAppear
 
     @Test("onAppear sets ready when enabled and has API key")
     func onAppearSetsReady() async {
@@ -207,6 +233,8 @@ struct VoiceInputViewModelTests {
         #expect(vm.status == .idle)
     }
 
+    // MARK: - Enable / Disable
+
     @Test("enable sets ready when API key exists")
     func enableSetsReady() async {
         let keychain = MockKeychainService()
@@ -217,7 +245,14 @@ struct VoiceInputViewModelTests {
         #expect(vm.status == .ready)
     }
 
-    @Test("disable sets idle")
+    @Test("enable stays idle when no API key")
+    func enableStaysIdleNoKey() async {
+        let vm = makeViewModel()
+        await vm.enable()
+        #expect(vm.status == .idle)
+    }
+
+    @Test("disable sets idle and cancels recording")
     func disableSetsIdle() async {
         let keychain = MockKeychainService()
         await keychain.configure(storage: ["deepgramApiKey": "test-key"])
@@ -232,13 +267,641 @@ struct VoiceInputViewModelTests {
         #expect(vm.status == .idle)
     }
 
-    // MARK: - toggleRecording
+    // MARK: - startRecordingIfReady — from every status
 
-    @Test("toggleRecording from idle beeps (no state change)")
+    @Test("startRecordingIfReady from .ready transitions to connecting then recording")
+    func startFromReady() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        #expect(vm.status == .ready)
+        vm.startRecordingIfReady()
+        #expect(vm.status == .connecting)
+
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+        #expect(await repo.startStreamingCallCount == 1)
+
+        await repo.finishStream()
+    }
+
+    @Test("startRecordingIfReady from .idle with prereqs transitions to recording")
+    func startFromIdleWithPrereqs() async throws {
+        let keychain = MockKeychainService()
+        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = true
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
+
+        #expect(vm.status == .idle)
+        vm.startRecordingIfReady()
+
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(vm.status == .recording)
+        #expect(await repo.startStreamingCallCount == 1)
+
+        await repo.finishStream()
+    }
+
+    @Test("startRecordingIfReady from .idle when disabled stays idle")
+    func startFromIdleDisabled() async throws {
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = false
+        let vm = makeViewModel(mockPreferences: prefs)
+
+        #expect(vm.status == .idle)
+        vm.startRecordingIfReady()
+
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .idle)
+    }
+
+    @Test("startRecordingIfReady from .idle without API key stays idle")
+    func startFromIdleNoKey() async throws {
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = true
+        let vm = makeViewModel(mockPreferences: prefs)
+
+        #expect(vm.status == .idle)
+        vm.startRecordingIfReady()
+
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .idle)
+    }
+
+    @Test("startRecordingIfReady from .error resets and starts recording")
+    func startFromError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(startStreamingError: TranscriptionError.connectionFailed("test"))
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        // Force error state
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        if case .error = vm.status {} else {
+            Issue.record("Expected .error status, got \(vm.status)")
+        }
+
+        // Now fix the repo and try again from .error
+        await repo.configure(startStreamingError: nil, keepStreamOpen: true)
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        await repo.finishStream()
+    }
+
+    @Test("startRecordingIfReady from .result resets and starts recording")
+    func startFromResult() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        // Get to .result state
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(100))
+        if case .result = vm.status {} else {
+            Issue.record("Expected .result status, got \(vm.status)")
+        }
+
+        // Now start again from .result
+        await repo.configure(keepStreamOpen: true)
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        await repo.finishStream()
+    }
+
+    @Test("startRecordingIfReady from .connecting is no-op")
+    func startFromConnecting() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        #expect(vm.status == .connecting)
+
+        // Press again while connecting — should be no-op
+        vm.startRecordingIfReady()
+        #expect(vm.status == .connecting)
+
+        try await Task.sleep(for: .milliseconds(50))
+        await repo.finishStream()
+    }
+
+    @Test("startRecordingIfReady from .recording is no-op")
+    func startFromRecording() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        // Press again while recording — should be no-op
+        vm.startRecordingIfReady()
+        #expect(vm.status == .recording)
+        #expect(await repo.startStreamingCallCount == 1)
+
+        await repo.finishStream()
+    }
+
+    // MARK: - stopIfRecording — from every status
+
+    @Test("stopIfRecording from .recording calls stop and transitions to result")
+    func stopFromRecording() async throws {
+        let repo = MockTranscriptionRepository()
+        let result = TranscriptionEntity(text: "hello world", language: .english, duration: 2.0)
+        await repo.configure(stopStreamingResult: result, keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(await repo.stopStreamingCallCount == 1)
+        if case .result(let entity) = vm.status {
+            #expect(entity.text == "hello world")
+        } else {
+            Issue.record("Expected .result status, got \(vm.status)")
+        }
+    }
+
+    @Test("stopIfRecording from .connecting cancels and returns to ready")
+    func stopFromConnecting() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        #expect(vm.status == .connecting)
+
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .ready)
+        #expect(await repo.cancelStreamingCallCount == 1)
+        #expect(await repo.stopStreamingCallCount == 0)
+    }
+
+    @Test("stopIfRecording from .idle is no-op")
+    func stopFromIdle() {
+        let vm = makeViewModel()
+        #expect(vm.status == .idle)
+        vm.stopIfRecording()
+        #expect(vm.status == .idle)
+    }
+
+    @Test("stopIfRecording from .ready is no-op")
+    func stopFromReady() async {
+        let (vm, _, _, _) = await makeReadyViewModel()
+        #expect(vm.status == .ready)
+        vm.stopIfRecording()
+        #expect(vm.status == .ready)
+    }
+
+    @Test("stopIfRecording from .error is no-op")
+    func stopFromError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(startStreamingError: TranscriptionError.connectionFailed("fail"))
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        if case .error = vm.status {} else {
+            Issue.record("Expected .error, got \(vm.status)")
+        }
+
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        if case .error = vm.status {} else {
+            Issue.record("Expected .error unchanged, got \(vm.status)")
+        }
+    }
+
+    // MARK: - Full Push-to-Talk Flow
+
+    @Test("full push-to-talk: keyDown → recording → keyUp → text inserted")
+    func fullPushToTalkFlow() async throws {
+        let repo = MockTranscriptionRepository()
+        let result = TranscriptionEntity(text: "transcribed text", language: .english, duration: 3.0)
+        await repo.configure(stopStreamingResult: result, keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        // Simulate key DOWN
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        // Simulate key UP
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+
+        // Text should be inserted
+        #expect(textService.insertTextCallCount == 1)
+        #expect(textService.lastInsertedText == "transcribed text")
+        if case .result(let entity) = vm.status {
+            #expect(entity.text == "transcribed text")
+        } else {
+            Issue.record("Expected .result, got \(vm.status)")
+        }
+    }
+
+    @Test("full push-to-talk with empty result: no text inserted")
+    func fullPushToTalkEmptyResult() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(stopStreamingResult: .empty(), keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(textService.insertTextCallCount == 0)
+    }
+
+    @Test("push-to-talk auto-resets to ready after result")
+    func pushToTalkAutoResets() async throws {
+        let repo = MockTranscriptionRepository()
+        let result = TranscriptionEntity(text: "hello", language: .english, duration: 1.0)
+        await repo.configure(stopStreamingResult: result, keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+        if case .result = vm.status {} else {
+            Issue.record("Expected .result, got \(vm.status)")
+        }
+
+        // Wait for auto-reset (1.5s in code)
+        try await Task.sleep(for: .seconds(2))
+        #expect(vm.status == .ready)
+    }
+
+    @Test("consecutive push-to-talk sessions work")
+    func consecutivePushToTalkSessions() async throws {
+        let repo = MockTranscriptionRepository()
+        let result1 = TranscriptionEntity(text: "first", language: .english, duration: 1.0)
+        await repo.configure(stopStreamingResult: result1, keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        // Session 1
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(textService.insertTextCallCount == 1)
+
+        // Wait for auto-reset
+        try await Task.sleep(for: .seconds(2))
+        #expect(vm.status == .ready)
+
+        // Session 2
+        let result2 = TranscriptionEntity(text: "second", language: .english, duration: 2.0)
+        await repo.configure(stopStreamingResult: result2, keepStreamOpen: true)
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(textService.insertTextCallCount == 2)
+        #expect(textService.lastInsertedText == "second")
+    }
+
+    // MARK: - Stream Finishes Unexpectedly (BUG DETECTOR)
+
+    @Test("when stream finishes unexpectedly status must not stay stuck at recording")
+    func streamFinishesUnexpectedly() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        // Server closes connection — stream finishes
+        await repo.finishStream()
+        try await Task.sleep(for: .milliseconds(100))
+
+        // Status MUST transition out of .recording — otherwise shortcut will never work again
+        #expect(vm.status != .recording, "BUG: Status stuck at .recording after stream ended — subsequent shortcut presses will be silently ignored")
+    }
+
+    @Test("after unexpected stream end the shortcut must work again")
+    func shortcutWorksAfterUnexpectedStreamEnd() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        // Start recording
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+        #expect(await repo.startStreamingCallCount == 1)
+
+        // Stream ends unexpectedly
+        await repo.finishStream()
+        try await Task.sleep(for: .milliseconds(100))
+
+        // User presses shortcut again — it MUST start a new recording
+        await repo.configure(keepStreamOpen: true)
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(vm.status == .recording, "BUG: Cannot start new recording after stream ended unexpectedly")
+        // Verify it's actually a NEW recording session, not stuck from the old one
+        #expect(await repo.startStreamingCallCount == 2, "BUG: Second recording session did not start — shortcut is dead after stream ended")
+
+        await repo.finishStream()
+    }
+
+    // MARK: - interimText
+
+    @Test("interimText updates during stream")
+    func interimTextUpdates() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        await repo.yieldText("hello")
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.interimText == "hello")
+
+        await repo.yieldText("hello world")
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.interimText == "hello world")
+
+        await repo.finishStream()
+    }
+
+    @Test("interimText clears after stop")
+    func interimTextClearsAfterStop() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+
+        await repo.yieldText("some text")
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.interimText == "some text")
+
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(vm.interimText == "")
+    }
+
+    @Test("interimText clears after cancel")
+    func interimTextClearsAfterCancel() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+
+        await repo.yieldText("interim")
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.interimText == "interim")
+
+        vm.cancel()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(vm.interimText == "")
+    }
+
+    // MARK: - Error Handling
+
+    @Test("startRecording with empty API key in keychain sets error")
+    func startRecordingEmptyApiKey() async throws {
+        let keychain = MockKeychainService()
+        await keychain.configure(storage: ["deepgramApiKey": ""])
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = true
+        let repo = MockTranscriptionRepository()
+        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
+
+        // Force to .ready state manually (onAppear sees key exists but startRecording checks !isEmpty)
+        await vm.enable()
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(vm.status == .error(.apiKeyMissing), "Empty API key string should be treated as missing")
+    }
+
+    @Test("startRecording with transcription error sets error status")
+    func startRecordingTranscriptionError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(startStreamingError: TranscriptionError.connectionFailed("timeout"))
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(vm.status == .error(.connectionFailed("timeout")))
+    }
+
+    @Test("startRecording with auth error sets error status")
+    func startRecordingAuthError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(startStreamingError: TranscriptionError.authenticationFailed)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(vm.status == .error(.authenticationFailed))
+    }
+
+    @Test("stopAndInsert with accessibility denied sets error")
+    func stopAndInsertAccessibilityDenied() async throws {
+        let repo = MockTranscriptionRepository()
+        let result = TranscriptionEntity(text: "text", language: .english, duration: 1.0)
+        await repo.configure(stopStreamingResult: result, keepStreamOpen: true)
+        let textService = MockTextInsertionService()
+        textService.insertTextError = TranscriptionError.accessibilityDenied
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo, mockTextInsertion: textService)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(300))
+
+        #expect(vm.status == .error(.accessibilityDenied))
+    }
+
+    @Test("stopAndInsert with stop error sets error status")
+    func stopAndInsertStopError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(stopStreamingError: TranscriptionError.transcriptionFailed("network"), keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(100))
+
+        if case .error = vm.status {} else {
+            Issue.record("Expected .error, got \(vm.status)")
+        }
+    }
+
+    // MARK: - cancel()
+
+    @Test("cancel cancels stream task and resets to ready")
+    func cancelResetsToReady() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        vm.cancel()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(vm.status == .ready)
+        #expect(vm.interimText == "")
+        #expect(await repo.cancelStreamingCallCount == 1)
+    }
+
+    // MARK: - toggleRecording — from every status
+
+    @Test("toggleRecording from .idle beeps (no state change)")
     func toggleFromIdleBeeps() {
         let vm = makeViewModel()
         vm.toggleRecording()
         #expect(vm.status == .idle)
+    }
+
+    @Test("toggleRecording from .ready starts recording")
+    func toggleFromReady() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+        #expect(await repo.startStreamingCallCount == 1)
+
+        await repo.finishStream()
+    }
+
+    @Test("toggleRecording from .recording stops and inserts")
+    func toggleFromRecording() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(await repo.stopStreamingCallCount == 1)
+    }
+
+    @Test("toggleRecording from .connecting cancels")
+    func toggleFromConnecting() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.toggleRecording()
+        #expect(vm.status == .connecting)
+
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .ready)
+        #expect(await repo.cancelStreamingCallCount == 1)
+    }
+
+    @Test("toggleRecording from .error starts recording")
+    func toggleFromError() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(startStreamingError: TranscriptionError.connectionFailed("fail"))
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        if case .error = vm.status {} else {
+            Issue.record("Expected .error, got \(vm.status)")
+        }
+
+        await repo.configure(startStreamingError: nil, keepStreamOpen: true)
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        await repo.finishStream()
+    }
+
+    @Test("toggleRecording from .result starts recording")
+    func toggleFromResult() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let (vm, _, _, _) = await makeReadyViewModel(mockRepo: repo)
+
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+        vm.stopIfRecording()
+        try await Task.sleep(for: .milliseconds(100))
+        if case .result = vm.status {} else {
+            Issue.record("Expected .result, got \(vm.status)")
+        }
+
+        await repo.configure(keepStreamOpen: true)
+        vm.toggleRecording()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(vm.status == .recording)
+
+        await repo.finishStream()
+    }
+
+    // MARK: - Language Selection
+
+    @Test("startRecording passes selected language to repository")
+    func startRecordingPassesLanguage() async throws {
+        let repo = MockTranscriptionRepository()
+        await repo.configure(keepStreamOpen: true)
+        let keychain = MockKeychainService()
+        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = true
+        prefs.selectedLanguage = .ukrainian
+        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
+
+        await vm.onAppear()
+        vm.startRecordingIfReady()
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(await repo.lastLanguage == .ukrainian)
+        #expect(await repo.lastApiKey == "test-key")
+
+        await repo.finishStream()
     }
 
     // MARK: - API Key Management
@@ -262,6 +925,17 @@ struct VoiceInputViewModelTests {
 
         await vm.saveApiKey("new-key")
         #expect(vm.status == .ready)
+    }
+
+    @Test("saveApiKey does NOT set ready when disabled")
+    func saveApiKeyDoesNotSetReadyWhenDisabled() async {
+        let keychain = MockKeychainService()
+        let prefs = MockVoiceInputPreferences()
+        prefs.isEnabled = false
+        let vm = makeViewModel(mockPreferences: prefs, mockKeychain: keychain)
+
+        await vm.saveApiKey("new-key")
+        #expect(vm.status == .idle)
     }
 
     @Test("deleteApiKey removes from keychain and sets idle")
@@ -373,148 +1047,8 @@ struct VoiceInputViewModelTests {
         await keychain.configure(storage: ["deepgramApiKey": "key"])
         let vm = makeViewModel(mockKeychain: keychain)
 
-        // After fetch completes, isLoadingBalance should be false
         await vm.fetchBalance()
         #expect(vm.isLoadingBalance == false)
-    }
-
-    // MARK: - Push-to-Talk (startRecordingIfReady / stopIfRecording)
-
-    @Test("startRecordingIfReady from ready transitions connecting → recording")
-    func startRecordingIfReadyFromReady() async throws {
-        let keychain = MockKeychainService()
-        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let repo = MockTranscriptionRepository()
-        await repo.configure(keepStreamOpen: true)
-        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
-
-        await vm.onAppear()
-        #expect(vm.status == .ready)
-
-        vm.startRecordingIfReady()
-        #expect(vm.status == .connecting)
-
-        // Let the Task run — stream stays open, so status settles on .recording
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .recording)
-        #expect(await repo.startStreamingCallCount == 1)
-
-        await repo.finishStream()
-    }
-
-    @Test("startRecordingIfReady from idle when disabled stays idle")
-    func startRecordingIfReadyFromIdleDisabled() async throws {
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = false
-        let vm = makeViewModel(mockPreferences: prefs)
-
-        #expect(vm.status == .idle)
-        vm.startRecordingIfReady()
-
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .idle)
-    }
-
-    @Test("startRecordingIfReady from idle without API key stays idle")
-    func startRecordingIfReadyFromIdleNoKey() async throws {
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let vm = makeViewModel(mockPreferences: prefs)
-
-        #expect(vm.status == .idle)
-        vm.startRecordingIfReady()
-
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .idle)
-    }
-
-    @Test("startRecordingIfReady from idle with prerequisites transitions to recording")
-    func startRecordingIfReadyFromIdleWithPrereqs() async throws {
-        let keychain = MockKeychainService()
-        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let repo = MockTranscriptionRepository()
-        await repo.configure(keepStreamOpen: true)
-        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
-
-        #expect(vm.status == .idle)
-        vm.startRecordingIfReady()
-
-        // Internal Task: checks enabled → checks API key → .ready → startRecording() → .connecting → .recording
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(vm.status == .recording)
-        #expect(await repo.startStreamingCallCount == 1)
-
-        await repo.finishStream()
-    }
-
-    @Test("stopIfRecording from recording calls stopStreaming")
-    func stopIfRecordingFromRecording() async throws {
-        let keychain = MockKeychainService()
-        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let repo = MockTranscriptionRepository()
-        await repo.configure(keepStreamOpen: true)
-        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
-
-        await vm.onAppear()
-        vm.startRecordingIfReady()
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .recording)
-
-        vm.stopIfRecording()
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(await repo.stopStreamingCallCount == 1)
-    }
-
-    @Test("stopIfRecording from connecting cancels without transitioning to recording")
-    func stopIfRecordingFromConnecting() async throws {
-        let keychain = MockKeychainService()
-        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let repo = MockTranscriptionRepository()
-        await repo.configure(keepStreamOpen: true)
-        let vm = makeViewModel(mockRepo: repo, mockPreferences: prefs, mockKeychain: keychain)
-
-        await vm.onAppear()
-        vm.startRecordingIfReady()
-        #expect(vm.status == .connecting)
-
-        // Immediately stop while still connecting (Task hasn't run yet)
-        vm.stopIfRecording()
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(vm.status == .ready)
-        #expect(await repo.cancelStreamingCallCount == 1)
-        // Cancelled task should NOT have transitioned to .recording
-        #expect(await repo.stopStreamingCallCount == 0)
-    }
-
-    @Test("stopIfRecording from idle is no-op")
-    func stopIfRecordingFromIdle() {
-        let vm = makeViewModel()
-        #expect(vm.status == .idle)
-        vm.stopIfRecording()
-        #expect(vm.status == .idle)
-    }
-
-    @Test("stopIfRecording from ready is no-op")
-    func stopIfRecordingFromReady() async {
-        let keychain = MockKeychainService()
-        await keychain.configure(storage: ["deepgramApiKey": "test-key"])
-        let prefs = MockVoiceInputPreferences()
-        prefs.isEnabled = true
-        let vm = makeViewModel(mockPreferences: prefs, mockKeychain: keychain)
-
-        await vm.onAppear()
-        #expect(vm.status == .ready)
-
-        vm.stopIfRecording()
-        #expect(vm.status == .ready)
     }
 
     // MARK: - Accessibility Delegation
