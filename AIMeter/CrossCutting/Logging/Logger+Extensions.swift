@@ -57,6 +57,9 @@ extension Logger {
 
     /// Settings screen operations
     static let settings = Logger(subsystem: subsystem, category: "settings")
+
+    /// Voice input operations
+    static let voice = Logger(subsystem: subsystem, category: "voice")
 }
 
 // MARK: - Convenience for Data Debugging
