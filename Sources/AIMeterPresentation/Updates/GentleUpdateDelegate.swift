@@ -11,7 +11,7 @@ import Sparkle
 /// See: https://sparkle-project.org/documentation/gentle-reminders/
 public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate {
 
-    /// Observers stored with nonisolated(unsafe) — only accessed on main queue
+    /// Observers stored with nonisolated(unsafe) — only accessed on main actor
     nonisolated(unsafe) private static var windowObserver: Any?
     nonisolated(unsafe) private static var deactivateObserver: Any?
 
@@ -33,7 +33,7 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
     ) {
         let userInitiated = state.userInitiated
         let level = UIConstants.WindowLevel.updateAlert
-        DispatchQueue.main.async {
+        Task { @MainActor in
             NSApp.setActivationPolicy(.regular)
             NSApp.activate()
 
@@ -51,7 +51,9 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
                 object: nil,
                 queue: .main
             ) { _ in
-                Self.applyUpdateLevel(level)
+                Task { @MainActor in
+                    Self.applyUpdateLevel(level)
+                }
             }
 
             // Re-raise Sparkle windows when app loses focus
@@ -60,12 +62,15 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
                 object: nil,
                 queue: .main
             ) { _ in
-                Self.applyUpdateLevel(level)
+                Task { @MainActor in
+                    Self.applyUpdateLevel(level)
+                }
             }
 
             // Retries — Sparkle may not have created its window yet
             for delay in [0.3, 0.7, 1.5] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(delay))
                     Self.applyUpdateLevel(level)
                 }
             }
@@ -74,14 +79,14 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
 
     /// User acknowledged the update — clear badge
     public func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             NSApp.dockTile.badgeLabel = ""
         }
     }
 
     /// Update session ended — return to menu bar only mode
     public func standardUserDriverWillFinishUpdateSession() {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             Self.removeObservers()
             NSApp.setActivationPolicy(.accessory)
         }
@@ -89,6 +94,7 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
 
     // MARK: - Private
 
+    @MainActor
     private static func removeObservers() {
         if let windowObserver {
             NotificationCenter.default.removeObserver(windowObserver)
@@ -100,6 +106,7 @@ public final class GentleUpdateDelegate: NSObject, SPUStandardUserDriverDelegate
         deactivateObserver = nil
     }
 
+    @MainActor
     private static func applyUpdateLevel(_ level: NSWindow.Level) {
         for window in NSApp.windows where window.isVisible {
             // Skip the MenuBarExtra panel (managed by macOS, already at statusBar level)
