@@ -111,7 +111,7 @@ struct AboutSettingsTab: View {
     // MARK: - Actions
 
     private func openGitHub() {
-        if let url = URL(string: AppConstants.GitHub.repoURL) {
+        if let url = URL(string: "\(AppConstants.GitHub.repoURL)/releases") {
             NSWorkspace.shared.open(url)
         }
     }
