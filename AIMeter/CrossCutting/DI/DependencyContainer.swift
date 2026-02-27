@@ -9,17 +9,7 @@ import Foundation
 final class DependencyContainer {
     static let shared = DependencyContainer()
 
-    private init() {
-        // Migrate old keychain items from file-based keychain (ACL tied to
-        // code signature → password prompt on rebuild/update) to Data
-        // Protection keychain (no per-app ACL).
-        Task {
-            let keychain = self.keychainService
-            await keychain.migrateFromACLKeychain(forKey: "sessionKey")
-            await keychain.migrateFromACLKeychain(forKey: "oauthCredentials")
-            await keychain.migrateFromACLKeychain(forKey: "deepgramApiKey")
-        }
-    }
+    private init() {}
 
     // MARK: - Infrastructure
 
