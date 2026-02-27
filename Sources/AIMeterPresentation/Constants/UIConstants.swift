@@ -90,13 +90,15 @@ enum UIConstants {
 
     /// Window level hierarchy (SSOT)
     ///
-    /// Settings window floats above normal windows, but Sparkle update
-    /// alert must appear above Settings so the user always sees it.
+    /// All app windows float above normal windows.
+    /// Hierarchy (low → high): usageDetail < settings < updateAlert
     enum WindowLevel {
-        /// Settings window — above normal, below update alerts
-        static let settings = NSWindow.Level(NSWindow.Level.floating.rawValue)
-        /// Sparkle update alert — above Settings
-        static let updateAlert = NSWindow.Level(NSWindow.Level.floating.rawValue + 1)
+        /// Usage detail / stats window — above normal apps
+        static let usageDetail = NSWindow.Level(NSWindow.Level.floating.rawValue)
+        /// Settings window — above usage detail
+        static let settings = NSWindow.Level(NSWindow.Level.floating.rawValue + 1)
+        /// Sparkle update alert — highest, above all app windows
+        static let updateAlert = NSWindow.Level(NSWindow.Level.floating.rawValue + 2)
     }
 
     /// Settings window dimensions

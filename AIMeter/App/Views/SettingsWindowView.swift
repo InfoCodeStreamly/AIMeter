@@ -1,6 +1,5 @@
 import AIMeterInfrastructure
 import AIMeterPresentation
-import AppKit
 import SwiftUI
 
 /// Settings window content wrapper
@@ -19,23 +18,6 @@ struct SettingsWindowView: View {
             voiceInputViewModel: voiceInputViewModel,
             voiceInputPreferences: DependencyContainer.shared.voiceInputPreferencesService
         )
-        .background(WindowAccessor())
+        .windowLevel(UIConstants.WindowLevel.settings)
     }
-}
-
-// MARK: - Window Level Helper
-
-/// Makes the window float above other windows
-private struct WindowAccessor: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            if let window = view.window {
-                window.level = UIConstants.WindowLevel.settings
-            }
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
 }
