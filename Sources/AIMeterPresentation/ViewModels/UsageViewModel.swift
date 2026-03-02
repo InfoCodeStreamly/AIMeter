@@ -232,20 +232,39 @@ extension UsageViewModel {
         state.data.first { $0.type == .weekly }
     }
 
-    /// Menu bar text "70/30" format (session/weekly)
+    /// Menu bar text: "session/weekly" when both exist, or single value with suffix
     public var menuBarText: String {
-        guard let session = primaryUsage,
-            let weekly = weeklyUsage
-        else { return "--/--" }
-        return "\(session.percentage)/\(weekly.percentage)"
+        let session = primaryUsage
+        let weekly = weeklyUsage
+
+        switch (session, weekly) {
+        case let (s?, w?):
+            return "\(s.percentage)/\(w.percentage)"
+        case let (s?, nil):
+            return "\(s.percentage)%"
+        case let (nil, w?):
+            return "\(w.percentage)%"
+        case (nil, nil):
+            return "--"
+        }
     }
 
-    /// Menu bar status based on max(session, weekly)
+    /// Menu bar status based on max of available usages
     public var menuBarStatus: UsageStatus {
-        guard let session = primaryUsage,
-            let weekly = weeklyUsage
-        else { return .safe }
-        let maxPercentage = max(session.percentage, weekly.percentage)
+        let session = primaryUsage
+        let weekly = weeklyUsage
+
+        let maxPercentage: Int
+        switch (session, weekly) {
+        case let (s?, w?):
+            maxPercentage = max(s.percentage, w.percentage)
+        case let (s?, nil):
+            maxPercentage = s.percentage
+        case let (nil, w?):
+            maxPercentage = w.percentage
+        case (nil, nil):
+            return .safe
+        }
         return Percentage.clamped(Double(maxPercentage)).toStatus()
     }
 
