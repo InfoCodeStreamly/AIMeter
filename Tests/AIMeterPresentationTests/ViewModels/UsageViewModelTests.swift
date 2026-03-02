@@ -292,7 +292,7 @@ struct UsageViewModelTests {
         #expect(viewModel.menuBarText == "70/30")
     }
 
-    @Test("menuBarText returns '--/--' when no data")
+    @Test("menuBarText returns '--' when no data")
     func menuBarTextReturnsPlaceholderWhenNoData() {
         let mockUsageRepo = MockUsageRepository()
         let mockSessionRepo = MockSessionKeyRepository()
@@ -306,7 +306,7 @@ struct UsageViewModelTests {
             mockNotificationPrefs: mockNotificationPrefs
         )
 
-        #expect(viewModel.menuBarText == "--/--")
+        #expect(viewModel.menuBarText == "--")
     }
 
     @Test("menuBarStatus returns safe when no data")
