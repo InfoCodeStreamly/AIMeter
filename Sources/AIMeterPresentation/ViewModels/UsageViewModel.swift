@@ -28,7 +28,10 @@ public final class UsageViewModel {
     private let keychainService: (any KeychainServiceProtocol)?
 
     private var refreshTask: Task<Void, Never>?
-    private let refreshInterval: TimeInterval = 60  // 1 minute
+    private let baseRefreshInterval: TimeInterval = 300  // 5 minutes
+    private var consecutiveFailures: Int = 0
+    private let maxBackoffInterval: TimeInterval = 900  // 15 minutes
+    private var isLoadingUsage = false
 
     public init(
         fetchUsageUseCase: FetchUsageUseCase,
@@ -67,13 +70,12 @@ public final class UsageViewModel {
 
     /// Initial load (when popup appears)
     public func onAppear() {
+        // Background refresh already handles loading — only load if not yet started
+        guard refreshTask == nil else { return }
         Task {
             await checkSetupAndLoad()
         }
-        // Auto refresh is already running from startBackgroundRefresh
-        if refreshTask == nil {
-            startAutoRefresh()
-        }
+        startAutoRefresh()
     }
 
     /// Manual refresh
@@ -113,6 +115,11 @@ public final class UsageViewModel {
     }
 
     private func loadUsage() async {
+        // Prevent concurrent loads (debounce)
+        guard !isLoadingUsage else { return }
+        isLoadingUsage = true
+        defer { isLoadingUsage = false }
+
         // Only show loading spinner on first load (not when refreshing)
         let isFirstLoad = !state.hasData
 
@@ -128,10 +135,17 @@ public final class UsageViewModel {
                 } catch let error as TokenRefreshError where error.requiresReauth {
                     // Token refresh failed - user needs to re-authenticate
                     state = .needsSetup
+                    consecutiveFailures = 0
                     return
+                } catch let error as TokenRefreshError {
+                    if case .refreshFailed(let code) = error, code == 429 {
+                        // Rate limited — skip API call, back off
+                        consecutiveFailures += 1
+                        return
+                    }
+                    // Other non-fatal errors — try API call anyway
                 } catch {
-                    // Non-fatal refresh error - try the API call anyway
-                    // The token might still be valid
+                    // Unknown refresh error — try API call anyway
                 }
             }
 
@@ -139,6 +153,7 @@ public final class UsageViewModel {
             let displayData = entities.map { UsageDisplayData(from: $0) }
             state = .loaded(displayData)
             lastUpdated = Date()
+            consecutiveFailures = 0  // Reset backoff on success
 
             // Fetch extra usage (pay-as-you-go) data
             let extraUsageEntity = await getExtraUsageUseCase?.execute()
@@ -170,23 +185,33 @@ public final class UsageViewModel {
                 deepgramUsage = nil
             }
         } catch let error as DomainError {
+            consecutiveFailures += 1
             if error == .sessionKeyNotFound {
                 state = .needsSetup
             } else if isFirstLoad {
-                // Only show error on first load
                 state = .error(error.localizedDescription)
             }
         } catch {
+            consecutiveFailures += 1
             if isFirstLoad {
                 state = .error(error.localizedDescription)
             }
         }
     }
 
+    /// Current refresh interval with exponential backoff
+    private var currentRefreshInterval: TimeInterval {
+        guard consecutiveFailures > 0 else { return baseRefreshInterval }
+        // 60s → 120s → 240s → 300s (max)
+        let backoff = baseRefreshInterval * pow(2.0, Double(min(consecutiveFailures, 3)))
+        return min(backoff, maxBackoffInterval)
+    }
+
     private func startAutoRefresh() {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(self?.refreshInterval ?? 60))
+                let interval = self?.currentRefreshInterval ?? 60
+                try? await Task.sleep(for: .seconds(interval))
                 guard !Task.isCancelled else { break }
                 await self?.loadUsage()
             }

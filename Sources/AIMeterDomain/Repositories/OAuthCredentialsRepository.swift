@@ -10,4 +10,7 @@ public protocol OAuthCredentialsRepository: Sendable {
 
     /// Updates Claude Code keychain with credentials
     func updateClaudeCodeKeychain(_ credentials: OAuthCredentials) async throws
+
+    /// Re-syncs credentials from Claude Code keychain (fallback when refresh fails)
+    func resyncFromClaudeCode() async throws -> OAuthCredentials
 }

@@ -239,6 +239,7 @@ actor MockOAuthCredentialsRepository: OAuthCredentialsRepository {
     private var credentials: OAuthCredentials?
     private var saveErrorToThrow: Error?
     private var updateKeychainErrorToThrow: Error?
+    private var resyncShouldFail = true
 
     private(set) var savedCredentials: OAuthCredentials?
     private(set) var updateKeychainCallCount = 0
@@ -253,6 +254,10 @@ actor MockOAuthCredentialsRepository: OAuthCredentialsRepository {
 
     func configure(updateKeychainError: Error?) {
         self.updateKeychainErrorToThrow = updateKeychainError
+    }
+
+    func configure(resyncShouldFail: Bool) {
+        self.resyncShouldFail = resyncShouldFail
     }
 
     func getOAuthCredentials() async -> OAuthCredentials? {
@@ -272,6 +277,16 @@ actor MockOAuthCredentialsRepository: OAuthCredentialsRepository {
         if let error = updateKeychainErrorToThrow {
             throw error
         }
+    }
+
+    func resyncFromClaudeCode() async throws -> OAuthCredentials {
+        if resyncShouldFail {
+            throw TokenRefreshError.noCredentials
+        }
+        guard let credentials else {
+            throw TokenRefreshError.noCredentials
+        }
+        return credentials
     }
 }
 

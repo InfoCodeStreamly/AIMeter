@@ -23,41 +23,40 @@ public final class RefreshTokenUseCase: Sendable {
             throw TokenRefreshError.noCredentials
         }
 
-
         // Check if refresh needed
         guard credentials.shouldRefresh else {
-            let remaining = Int(credentials.timeUntilExpiry)
             return credentials
         }
 
-        if credentials.isExpired {
-        } else {
-        }
-
         // Perform refresh
-        let response = try await tokenRefreshService.refresh(
-            using: credentials.refreshToken
-        )
-
-        // Create updated credentials
-        let newCredentials = credentials.withRefreshedTokens(
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            expiresIn: response.expiresIn
-        )
-
-        // Save to our keychain
-        try await credentialsRepository.saveOAuthCredentials(newCredentials)
-
-        // Update Claude Code keychain (keep apps in sync)
         do {
-            try await credentialsRepository.updateClaudeCodeKeychain(newCredentials)
+            let response = try await tokenRefreshService.refresh(
+                using: credentials.refreshToken
+            )
+
+            // Create updated credentials
+            let newCredentials = credentials.withRefreshedTokens(
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
+                expiresIn: response.expiresIn
+            )
+
+            // Save to our keychain
+            try await credentialsRepository.saveOAuthCredentials(newCredentials)
+
+            // Update Claude Code keychain (keep apps in sync)
+            try? await credentialsRepository.updateClaudeCodeKeychain(newCredentials)
+
+            return newCredentials
         } catch {
-            // Non-fatal: our app still works, just Claude Code CLI won't have new token
+            // Refresh failed — fallback: re-sync from Claude Code keychain
+            // Claude Code CLI may have already refreshed the token
+            if let resynced = try? await credentialsRepository.resyncFromClaudeCode(),
+               !resynced.isExpired {
+                return resynced
+            }
+            throw error
         }
-
-
-        return newCredentials
     }
 
     /// Checks if credentials exist and are valid (or can be refreshed)
