@@ -1,8 +1,10 @@
 import Foundation
+import OSLog
 import AIMeterDomain
 
 /// Use case for refreshing OAuth tokens
 public final class RefreshTokenUseCase: Sendable {
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "token-refresh")
     private let credentialsRepository: any OAuthCredentialsRepository
     private let tokenRefreshService: any TokenRefreshServiceProtocol
 
@@ -20,42 +22,63 @@ public final class RefreshTokenUseCase: Sendable {
     public func execute() async throws -> OAuthCredentials {
 
         guard let credentials = await credentialsRepository.getOAuthCredentials() else {
+            logger.warning("execute: no credentials found")
             throw TokenRefreshError.noCredentials
         }
 
-        // Check if refresh needed
         guard credentials.shouldRefresh else {
+            logger.debug("execute: token still valid, no refresh needed")
             return credentials
         }
 
-        // Perform refresh
+        logger.info("execute: token needs refresh, attempting...")
+
         do {
             let response = try await tokenRefreshService.refresh(
                 using: credentials.refreshToken
             )
 
-            // Create updated credentials
             let newCredentials = credentials.withRefreshedTokens(
                 accessToken: response.accessToken,
                 refreshToken: response.refreshToken,
                 expiresIn: response.expiresIn
             )
 
-            // Save to our keychain
             try await credentialsRepository.saveOAuthCredentials(newCredentials)
+            logger.info("execute: token refreshed and saved successfully")
 
-            // Update Claude Code keychain (keep apps in sync)
             try? await credentialsRepository.updateClaudeCodeKeychain(newCredentials)
 
             return newCredentials
         } catch {
-            // Refresh failed — fallback: re-sync from Claude Code keychain
-            // Claude Code CLI may have already refreshed the token
+            logger.warning("execute: refresh failed (\(error.localizedDescription)), trying resync from Claude Code keychain")
             if let resynced = try? await credentialsRepository.resyncFromClaudeCode(),
                !resynced.isExpired {
+                logger.info("execute: resync from Claude Code keychain succeeded")
                 return resynced
             }
+            logger.error("execute: resync also failed, propagating error")
             throw error
+        }
+    }
+
+    /// Force resync credentials from Claude Code keychain (e.g. after 429 — user may have /login'd)
+    /// - Returns: Resynced credentials if different from current, nil if same or failed
+    public func forceResync() async -> OAuthCredentials? {
+        logger.info("forceResync: attempting resync from Claude Code keychain")
+        do {
+            let current = await credentialsRepository.getOAuthCredentials()
+            let resynced = try await credentialsRepository.resyncFromClaudeCode()
+            if resynced.accessToken != current?.accessToken {
+                logger.info("forceResync: got DIFFERENT token, resync successful")
+                return resynced
+            } else {
+                logger.info("forceResync: same token as before, no change")
+                return nil
+            }
+        } catch {
+            logger.warning("forceResync: failed (\(error.localizedDescription, privacy: .public))")
+            return nil
         }
     }
 

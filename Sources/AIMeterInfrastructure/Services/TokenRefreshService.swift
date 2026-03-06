@@ -1,13 +1,16 @@
 import Foundation
+import OSLog
 import AIMeterApplication
 
 /// Service for refreshing OAuth tokens (Infrastructure implementation)
 public actor TokenRefreshService: TokenRefreshServiceProtocol {
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "token-service")
 
     public init() {}
 
     /// Refresh OAuth token using refresh token
     public func refresh(using refreshToken: String) async throws -> TokenRefreshResponse {
+        logger.info("refresh: sending token refresh request")
         let tokenURL = URL(string: APIConstants.OAuth.tokenURL)!
 
         var request = URLRequest(url: tokenURL)
@@ -26,13 +29,18 @@ public actor TokenRefreshService: TokenRefreshServiceProtocol {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            logger.error("refresh: invalid response (not HTTP)")
             throw TokenRefreshError.invalidResponse
         }
 
+        logger.info("refresh: response status=\(httpResponse.statusCode)")
+
         guard httpResponse.statusCode == 200 else {
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {
+                logger.error("refresh: refresh token expired (status=\(httpResponse.statusCode))")
                 throw TokenRefreshError.refreshTokenExpired
             }
+            logger.error("refresh: failed with status=\(httpResponse.statusCode)")
             throw TokenRefreshError.refreshFailed(statusCode: httpResponse.statusCode)
         }
 
@@ -40,9 +48,11 @@ public actor TokenRefreshService: TokenRefreshServiceProtocol {
               let accessToken = json["access_token"] as? String,
               let newRefreshToken = json["refresh_token"] as? String,
               let expiresIn = json["expires_in"] as? Int else {
+            logger.error("refresh: invalid response body")
             throw TokenRefreshError.invalidResponse
         }
 
+        logger.info("refresh: success (expiresIn=\(expiresIn)s)")
         return TokenRefreshResponse(
             accessToken: accessToken,
             refreshToken: newRefreshToken,
