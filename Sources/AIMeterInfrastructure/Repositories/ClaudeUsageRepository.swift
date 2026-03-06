@@ -24,7 +24,15 @@ public actor ClaudeUsageRepository: UsageRepository {
             throw DomainError.sessionKeyNotFound
         }
 
-        let response = try await apiClient.fetchUsage(token: token)
+        let response: UsageAPIResponse
+        do {
+            response = try await apiClient.fetchUsage(token: token)
+        } catch let error as InfrastructureError {
+            if case .requestFailed(let code) = error, code == 429 {
+                throw DomainError.rateLimited
+            }
+            throw error
+        }
         let entities = APIUsageMapper.toDomain(response)
         cachedEntities = entities
 

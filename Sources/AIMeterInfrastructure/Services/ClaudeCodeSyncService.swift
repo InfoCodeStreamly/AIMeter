@@ -1,10 +1,12 @@
 import Foundation
+import OSLog
 import AIMeterDomain
 import AIMeterApplication
 import Security
 
 /// Reads Claude Code CLI credentials from system Keychain (Infrastructure implementation)
 public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
+    private nonisolated let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "claude-sync")
     private let keychainService = "Claude Code-credentials"
 
     public init() {}
@@ -14,8 +16,11 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     /// Checks if Claude Code credentials exist in system Keychain
     public func hasCredentials() async -> Bool {
         do {
-            return try await readCredentialsJSON() != nil
+            let result = try await readCredentialsJSON() != nil
+            logger.debug("hasCredentials: \(result)")
+            return result
         } catch {
+            logger.debug("hasCredentials: false (error: \(error.localizedDescription))")
             return false
         }
     }
@@ -70,20 +75,25 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
 
     /// Extracts full OAuth credentials from Claude Code keychain
     public func extractOAuthCredentials() async throws -> OAuthCredentials {
+        logger.info("extractOAuthCredentials: reading from Claude Code keychain")
 
         guard let json = try await readCredentialsJSON() else {
+            logger.error("extractOAuthCredentials: no credentials found in keychain")
             throw SyncError.noCredentialsFound
         }
 
         guard let data = json.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            logger.error("extractOAuthCredentials: invalid JSON format")
             throw SyncError.invalidCredentialsFormat
         }
 
         do {
             let credentials = try OAuthCredentials.fromClaudeCodeJSON(parsed)
+            logger.info("extractOAuthCredentials: success (expired=\(credentials.isExpired))")
             return credentials
         } catch {
+            logger.error("extractOAuthCredentials: failed to parse: \(error.localizedDescription)")
             throw SyncError.invalidCredentialsFormat
         }
     }
@@ -151,8 +161,10 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
         switch status {
         case errSecSuccess:
             guard let data = result as? Data else {
+                logger.error("readFromKeychain: result is not Data")
                 throw SyncError.invalidCredentialsFormat
             }
+            logger.debug("readFromKeychain: got \(data.count) bytes")
 
 
             // Data format: first byte is 0x07, then JSON content without outer braces
@@ -191,9 +203,15 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
             return json
 
         case errSecItemNotFound:
+            logger.info("readFromKeychain: item not found")
             return nil
 
+        case errSecInteractionNotAllowed:
+            logger.warning("readFromKeychain: interaction not allowed (keychain locked?)")
+            throw SyncError.keychainAccessFailed(status: status)
+
         default:
+            logger.error("readFromKeychain: failed with OSStatus=\(status)")
             throw SyncError.keychainAccessFailed(status: status)
         }
     }

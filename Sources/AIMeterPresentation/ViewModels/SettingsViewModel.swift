@@ -1,11 +1,13 @@
 import AIMeterApplication
 import AIMeterDomain
+import OSLog
 import SwiftUI
 
 /// Settings screen view model
 @Observable
 @MainActor
 public final class SettingsViewModel {
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "settings-vm")
 
     // MARK: - State
 
@@ -55,52 +57,59 @@ public final class SettingsViewModel {
     /// Checks for Claude Code credentials in system Keychain
     public func checkClaudeCode() async {
         state = .checking
+        logger.info("checkClaudeCode: checking keychain...")
 
         let hasCredentials = await claudeCodeSync.hasCredentials()
 
         if hasCredentials {
             let info = await claudeCodeSync.getSubscriptionInfo()
+            logger.info("checkClaudeCode: found credentials (email=\(info?.email ?? "nil", privacy: .private))")
             state = .claudeCodeFound(email: info?.email)
         } else {
+            logger.info("checkClaudeCode: no credentials found")
             state = .claudeCodeNotFound
         }
     }
 
     /// Syncs credentials from Claude Code
     public func syncFromClaudeCode() async {
+        logger.info("syncFromClaudeCode: started")
         state = .syncing
 
         do {
-            // Extract full OAuth credentials from Claude Code keychain
             let oauthCredentials = try await claudeCodeSync.extractOAuthCredentials()
+            logger.info("syncFromClaudeCode: extracted credentials, saving...")
 
-            // Save credentials directly (includes session key)
-            // No API validation needed — token comes from Claude Code's own keychain
             try await credentialsRepository.saveOAuthCredentials(oauthCredentials)
+            logger.info("syncFromClaudeCode: credentials saved successfully")
 
             state = .success(message: "Successfully connected!")
 
-            // Notify parent to refresh after delay
             try? await Task.sleep(for: .seconds(1.5))
             onSaveSuccess?()
+            logger.info("syncFromClaudeCode: onSaveSuccess callback fired")
 
-            // Transition to hasKey state so disconnect button appears
             if let key = await getSessionKeyUseCase.execute() {
                 state = .hasKey(masked: key.masked)
             }
 
         } catch let error as SyncError {
+            logger.error("syncFromClaudeCode: SyncError: \(error.localizedDescription)")
             state = .error(message: error.localizedDescription)
         } catch let error as DomainError {
+            logger.error("syncFromClaudeCode: DomainError: \(error.localizedDescription)")
             state = .error(message: error.localizedDescription)
         } catch {
+            logger.error("syncFromClaudeCode: error: \(error.localizedDescription)")
             state = .error(message: error.localizedDescription)
         }
     }
 
     /// Deletes stored key and credentials
     public func deleteKey() async {
+        logger.info("deleteKey: disconnecting...")
         await getSessionKeyUseCase.delete()
+        logger.info("deleteKey: credentials deleted, checking Claude Code state")
         await checkClaudeCode()
     }
 

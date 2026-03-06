@@ -10,6 +10,7 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
     // Business rule errors
     case sessionKeyNotFound
     case sessionKeyExpired
+    case rateLimited
 
     public var errorDescription: String? {
         switch self {
@@ -23,6 +24,8 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
             return "Session key not found"
         case .sessionKeyExpired:
             return "Session key has expired"
+        case .rateLimited:
+            return "Rate limited by API"
         }
     }
 
@@ -30,6 +33,8 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
         switch self {
         case .sessionKeyNotFound, .sessionKeyExpired, .invalidSessionKeyFormat, .emptySessionKey:
             return "Please sync from Claude Code in Settings"
+        case .rateLimited:
+            return "Too many requests. Will retry with backoff"
         default:
             return nil
         }

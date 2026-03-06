@@ -1,12 +1,14 @@
 import AIMeterApplication
 import AIMeterDomain
 import AppKit
+import OSLog
 import SwiftUI
 
 /// ViewModel for usage display
 @MainActor
 @Observable
 public final class UsageViewModel {
+    private let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "usage-vm")
     public private(set) var state: UsageViewState = .loading
     public private(set) var lastUpdated: Date?
     public private(set) var extraUsage: ExtraUsageDisplayData?
@@ -32,6 +34,7 @@ public final class UsageViewModel {
     private var consecutiveFailures: Int = 0
     private let maxBackoffInterval: TimeInterval = 900  // 15 minutes
     private var isLoadingUsage = false
+    private var lastRateLimitedAt: Date?
 
     public init(
         fetchUsageUseCase: FetchUsageUseCase,
@@ -62,8 +65,12 @@ public final class UsageViewModel {
     /// Start background refresh (called once at app launch)
     public func startBackgroundRefresh() async {
         // Only start once
-        guard refreshTask == nil else { return }
+        guard refreshTask == nil else {
+            logger.debug("startBackgroundRefresh: already running, skipping")
+            return
+        }
 
+        logger.info("startBackgroundRefresh: starting initial load")
         await checkSetupAndLoad()
         startAutoRefresh()
     }
@@ -111,14 +118,35 @@ public final class UsageViewModel {
             return
         }
 
+        // Always try to pick up fresh tokens from Claude Code on startup
+        if let refreshTokenUseCase {
+            let result = await refreshTokenUseCase.forceResync()
+            if result != nil {
+                logger.info("checkSetupAndLoad: picked up fresh token from Claude Code")
+            } else {
+                logger.debug("checkSetupAndLoad: no new token from Claude Code (same or unavailable)")
+            }
+        }
+
         await loadUsage()
     }
 
     private func loadUsage() async {
         // Prevent concurrent loads (debounce)
-        guard !isLoadingUsage else { return }
+        guard !isLoadingUsage else {
+            logger.debug("loadUsage: skipped (already loading)")
+            return
+        }
         isLoadingUsage = true
         defer { isLoadingUsage = false }
+
+        // Cooldown after 429 — don't hit API for at least 30s
+        if let lastRL = lastRateLimitedAt, Date().timeIntervalSince(lastRL) < 30 {
+            logger.debug("loadUsage: skipped (rate limit cooldown, \(Int(30 - Date().timeIntervalSince(lastRL)))s remaining)")
+            return
+        }
+
+        logger.info("loadUsage: started (failures=\(self.consecutiveFailures), interval=\(self.currentRefreshInterval)s)")
 
         // Only show loading spinner on first load (not when refreshing)
         let isFirstLoad = !state.hasData
@@ -133,19 +161,26 @@ public final class UsageViewModel {
                 do {
                     _ = try await refreshTokenUseCase.execute()
                 } catch let error as TokenRefreshError where error.requiresReauth {
-                    // Token refresh failed - user needs to re-authenticate
+                    logger.warning("loadUsage: token requires re-auth, switching to needsSetup")
                     state = .needsSetup
                     consecutiveFailures = 0
                     return
                 } catch let error as TokenRefreshError {
                     if case .refreshFailed(let code) = error, code == 429 {
-                        // Rate limited — skip API call, back off
-                        consecutiveFailures += 1
-                        return
+                        logger.warning("loadUsage: token refresh got 429, trying resync from Claude Code...")
+                        if let resynced = await refreshTokenUseCase.forceResync() {
+                            logger.info("loadUsage: token refresh 429 → resync got fresh token (prefix=\(String(resynced.accessToken.prefix(15)), privacy: .public))")
+                            // Continue to usage API call with fresh token
+                        } else {
+                            consecutiveFailures += 1
+                            lastRateLimitedAt = Date()
+                            logger.warning("loadUsage: token refresh 429, no fresh token available, backing off (failures=\(self.consecutiveFailures))")
+                            return
+                        }
                     }
-                    // Other non-fatal errors — try API call anyway
+                    logger.warning("loadUsage: token refresh error (non-fatal): \(error.localizedDescription, privacy: .public)")
                 } catch {
-                    // Unknown refresh error — try API call anyway
+                    logger.warning("loadUsage: unknown refresh error (non-fatal): \(error.localizedDescription, privacy: .public)")
                 }
             }
 
@@ -153,7 +188,8 @@ public final class UsageViewModel {
             let displayData = entities.map { UsageDisplayData(from: $0) }
             state = .loaded(displayData)
             lastUpdated = Date()
-            consecutiveFailures = 0  // Reset backoff on success
+            consecutiveFailures = 0
+            logger.info("loadUsage: success (\(entities.count) usage items)")
 
             // Fetch extra usage (pay-as-you-go) data
             let extraUsageEntity = await getExtraUsageUseCase?.execute()
@@ -185,7 +221,43 @@ public final class UsageViewModel {
                 deepgramUsage = nil
             }
         } catch let error as DomainError {
+            if error == .rateLimited {
+                logger.warning("loadUsage: API rate limited (429), trying resync from Claude Code keychain...")
+
+                // Try to get fresh tokens from Claude Code (user may have /login'd)
+                if let refreshTokenUseCase,
+                   let resynced = await refreshTokenUseCase.forceResync() {
+                    logger.info("loadUsage: got fresh token from Claude Code (prefix=\(String(resynced.accessToken.prefix(15)), privacy: .public)), retrying API call...")
+                    do {
+                        let entities = try await fetchUsageUseCase.execute()
+                        let displayData = entities.map { UsageDisplayData(from: $0) }
+                        state = .loaded(displayData)
+                        lastUpdated = Date()
+                        consecutiveFailures = 0
+                        lastRateLimitedAt = nil
+                        logger.info("loadUsage: retry after resync SUCCESS (\(entities.count) items)")
+
+                        let extraUsageEntity = await getExtraUsageUseCase?.execute()
+                        extraUsage = extraUsageEntity.map { ExtraUsageDisplayData(from: $0) }
+                        await saveUsageHistoryUseCase?.execute(usages: entities)
+                        if let history = await fetchUsageHistoryUseCase?.execute(days: 7) {
+                            usageHistory = history
+                        }
+                        widgetDataService?.update(from: entities, extraUsage: extraUsageEntity)
+                        await checkNotificationUseCase.execute(usages: entities)
+                        return
+                    } catch {
+                        logger.warning("loadUsage: retry after resync also failed: \(error.localizedDescription, privacy: .public)")
+                    }
+                }
+
+                consecutiveFailures += 1
+                lastRateLimitedAt = Date()
+                logger.warning("loadUsage: backing off (failures=\(self.consecutiveFailures), next in \(self.currentRefreshInterval)s)")
+                return
+            }
             consecutiveFailures += 1
+            logger.error("loadUsage: domain error: \(error.localizedDescription, privacy: .public) (failures=\(self.consecutiveFailures))")
             if error == .sessionKeyNotFound {
                 state = .needsSetup
             } else if isFirstLoad {
@@ -193,6 +265,7 @@ public final class UsageViewModel {
             }
         } catch {
             consecutiveFailures += 1
+            logger.error("loadUsage: error: \(error.localizedDescription, privacy: .public) (failures=\(self.consecutiveFailures))")
             if isFirstLoad {
                 state = .error(error.localizedDescription)
             }
