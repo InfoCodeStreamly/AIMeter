@@ -67,6 +67,13 @@ struct SettingsViewModelTests {
         }
 
         func updateClaudeCodeKeychain(_ credentials: OAuthCredentials) async throws {}
+
+        func resyncFromClaudeCode() async throws -> OAuthCredentials {
+            guard let storedCredentials else {
+                throw TokenRefreshError.noCredentials
+            }
+            return storedCredentials
+        }
     }
 
     actor MockClaudeCodeSync: ClaudeCodeSyncServiceProtocol {

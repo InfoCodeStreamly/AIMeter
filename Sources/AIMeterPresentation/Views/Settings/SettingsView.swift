@@ -217,4 +217,7 @@ private actor PreviewOAuthCredentialsRepository: OAuthCredentialsRepository {
     func getOAuthCredentials() async -> OAuthCredentials? { nil }
     func saveOAuthCredentials(_ credentials: OAuthCredentials) async throws {}
     func updateClaudeCodeKeychain(_ credentials: OAuthCredentials) async throws {}
+    func resyncFromClaudeCode() async throws -> OAuthCredentials {
+        throw TokenRefreshError.noCredentials
+    }
 }

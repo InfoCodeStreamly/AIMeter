@@ -90,4 +90,10 @@ public actor KeychainSessionRepository: SessionKeyRepository, OAuthCredentialsRe
     public func updateClaudeCodeKeychain(_ credentials: OAuthCredentials) async throws {
         try await claudeCodeSyncService.updateCredentials(credentials)
     }
+
+    public func resyncFromClaudeCode() async throws -> OAuthCredentials {
+        let credentials = try await claudeCodeSyncService.extractOAuthCredentials()
+        try await saveOAuthCredentials(credentials)
+        return credentials
+    }
 }

@@ -71,13 +71,11 @@ public final class SettingsViewModel {
         state = .syncing
 
         do {
-            // Extract full OAuth credentials from Claude Code
+            // Extract full OAuth credentials from Claude Code keychain
             let oauthCredentials = try await claudeCodeSync.extractOAuthCredentials()
 
-            // Validate the token
-            _ = try await validateUseCase.execute(rawKey: oauthCredentials.accessToken)
-
-            // Save full OAuth credentials for token refresh
+            // Save credentials directly (includes session key)
+            // No API validation needed — token comes from Claude Code's own keychain
             try await credentialsRepository.saveOAuthCredentials(oauthCredentials)
 
             state = .success(message: "Successfully connected!")
