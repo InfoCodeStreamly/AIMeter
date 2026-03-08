@@ -306,9 +306,25 @@ public final class UsageViewModel {
     private func startAutoRefresh() {
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
-                let interval = self?.currentRefreshInterval ?? 60
+                let interval: TimeInterval
+                if let self, self.consecutiveFailures > 0 {
+                    // In backoff: check for new token every 60s max
+                    interval = min(self.currentRefreshInterval, 60)
+                } else {
+                    interval = self?.baseRefreshInterval ?? 300
+                }
                 try? await Task.sleep(for: .seconds(interval))
                 guard !Task.isCancelled else { break }
+
+                // In backoff: check if Claude Code token changed (e.g. user did /login)
+                if let self, self.consecutiveFailures > 0,
+                   let refreshTokenUseCase = self.refreshTokenUseCase,
+                   let _ = await refreshTokenUseCase.forceResync() {
+                    self.logger.info("autoRefresh: new token from Claude Code, resetting backoff")
+                    self.consecutiveFailures = 0
+                    self.lastRateLimitedAt = nil
+                }
+
                 await self?.loadUsage()
             }
         }
