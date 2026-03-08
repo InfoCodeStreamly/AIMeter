@@ -62,6 +62,32 @@ public final class RefreshTokenUseCase: Sendable {
         }
     }
 
+    /// Force-refresh token via refresh_token endpoint (e.g. when access_token is perma-429'd)
+    /// - Returns: New credentials with fresh access_token, or nil if refresh failed
+    public func forceRefresh() async -> OAuthCredentials? {
+        logger.info("forceRefresh: forcing token refresh via refresh_token endpoint")
+        guard let credentials = await credentialsRepository.getOAuthCredentials(),
+              !credentials.refreshToken.isEmpty else {
+            logger.warning("forceRefresh: no credentials or refresh token")
+            return nil
+        }
+        do {
+            let response = try await tokenRefreshService.refresh(using: credentials.refreshToken)
+            let newCredentials = credentials.withRefreshedTokens(
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
+                expiresIn: response.expiresIn
+            )
+            try await credentialsRepository.saveOAuthCredentials(newCredentials)
+            try? await credentialsRepository.updateClaudeCodeKeychain(newCredentials)
+            logger.info("forceRefresh: got fresh access_token (prefix=\(String(newCredentials.accessToken.prefix(15)), privacy: .public))")
+            return newCredentials
+        } catch {
+            logger.warning("forceRefresh: failed (\(error.localizedDescription, privacy: .public))")
+            return nil
+        }
+    }
+
     /// Force resync credentials from Claude Code keychain (e.g. after 429 — user may have /login'd)
     /// - Returns: Resynced credentials if different from current, nil if same or failed
     public func forceResync() async -> OAuthCredentials? {

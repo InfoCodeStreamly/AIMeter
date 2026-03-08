@@ -241,12 +241,12 @@ public final class UsageViewModel {
             }
         } catch let error as DomainError {
             if error == .rateLimited {
-                logger.warning("loadUsage: API rate limited (429), trying resync from Claude Code keychain...")
+                logger.warning("loadUsage: API rate limited (429), trying token refresh...")
 
-                // Try to get fresh tokens from Claude Code (user may have /login'd)
+                // 1) Try to get a FRESH access_token via refresh_token endpoint
                 if let refreshTokenUseCase,
-                   let resynced = await refreshTokenUseCase.forceResync() {
-                    logger.info("loadUsage: got fresh token from Claude Code (prefix=\(String(resynced.accessToken.prefix(15)), privacy: .public)), retrying API call...")
+                   let refreshed = await refreshTokenUseCase.forceRefresh() {
+                    logger.info("loadUsage: got fresh token via refresh (prefix=\(String(refreshed.accessToken.prefix(15)), privacy: .public)), retrying API call...")
                     do {
                         let entities = try await fetchUsageUseCase.execute()
                         let displayData = entities.map { UsageDisplayData(from: $0) }
@@ -266,7 +266,22 @@ public final class UsageViewModel {
                         await checkNotificationUseCase.execute(usages: entities)
                         return
                     } catch {
-                        logger.warning("loadUsage: retry after resync also failed: \(error.localizedDescription, privacy: .public)")
+                        logger.warning("loadUsage: retry after refresh also failed: \(error.localizedDescription, privacy: .public)")
+                    }
+                }
+
+                // 2) Fallback: check if user did /login (different token in Claude Code keychain)
+                if let refreshTokenUseCase,
+                   let resynced = await refreshTokenUseCase.forceResync() {
+                    logger.info("loadUsage: got different token from Claude Code keychain (prefix=\(String(resynced.accessToken.prefix(15)), privacy: .public)), retrying...")
+                    if let entities = try? await fetchUsageUseCase.execute() {
+                        let displayData = entities.map { UsageDisplayData(from: $0) }
+                        state = .loaded(displayData)
+                        lastUpdated = Date()
+                        consecutiveFailures = 0
+                        lastRateLimitedAt = nil
+                        logger.info("loadUsage: retry after keychain resync SUCCESS (\(entities.count) items)")
+                        return
                     }
                 }
 
