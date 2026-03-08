@@ -2,12 +2,16 @@ import Foundation
 import OSLog
 import AIMeterDomain
 import AIMeterApplication
-import Security
 
 /// Reads Claude Code CLI credentials from system Keychain (Infrastructure implementation)
 public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     private nonisolated let logger = Logger(subsystem: "com.codestreamly.AIMeter", category: "claude-sync")
     private let keychainService = "Claude Code-credentials"
+
+    // Throttle: cache keychain reads for lightweight checks
+    private var lastKeychainReadAt: Date?
+    private var cachedJSON: String?
+    private let keychainReadMinInterval: TimeInterval = 60
 
     public init() {}
 
@@ -16,7 +20,7 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     /// Checks if Claude Code credentials exist in system Keychain
     public func hasCredentials() async -> Bool {
         do {
-            let result = try await readCredentialsJSON() != nil
+            let result = try await readCredentialsJSONCached() != nil
             logger.debug("hasCredentials: \(result)")
             return result
         } catch {
@@ -28,7 +32,7 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
     /// Extracts session key from Claude Code credentials
     public func extractSessionKey() async throws -> String {
 
-        guard let json = try await readCredentialsJSON() else {
+        guard let json = try await readCredentialsJSONCached() else {
             throw SyncError.noCredentialsFound
         }
 
@@ -60,7 +64,7 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
 
     /// Gets subscription info from Claude Code credentials
     public func getSubscriptionInfo() async -> (type: String, email: String?)? {
-        guard let json = try? await readCredentialsJSON(),
+        guard let json = try? await readCredentialsJSONCached(),
               let data = json.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let oauth = parsed["claudeAiOauth"] as? [String: Any] else {
@@ -109,11 +113,61 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
         }
 
         try await writeCredentialsJSON(jsonString)
+        invalidateCache()
     }
 
     // MARK: - Private
 
-    /// Reads raw JSON from system Keychain
+    /// Waits for process to exit with timeout, kills if hung
+    /// - Returns: true if process exited normally, false if timed out (process killed)
+    internal nonisolated func waitForProcess(_ process: Process, timeout: TimeInterval = 1.5) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+
+        // Poll every 20ms until timeout
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+
+        guard process.isRunning else { return true }
+
+        // Timeout — SIGTERM
+        process.terminate()
+
+        // Wait up to 400ms for graceful shutdown (poll every 50ms)
+        let killDeadline = Date().addingTimeInterval(0.4)
+        while process.isRunning && Date() < killDeadline {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+
+        // Still running — SIGKILL
+        if process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+        }
+
+        return false
+    }
+
+    /// Reads raw JSON with throttle (returns cache if < 60s since last read)
+    private func readCredentialsJSONCached() async throws -> String? {
+        if let lastRead = lastKeychainReadAt,
+           Date().timeIntervalSince(lastRead) < keychainReadMinInterval,
+           let cached = cachedJSON {
+            logger.debug("readCredentialsJSONCached: returning cached (\(Int(Date().timeIntervalSince(lastRead)))s ago)")
+            return cached
+        }
+        let json = try await readCredentialsJSON()
+        lastKeychainReadAt = Date()
+        cachedJSON = json
+        return json
+    }
+
+    /// Invalidates the keychain read cache (call after writes)
+    private func invalidateCache() {
+        cachedJSON = nil
+        lastKeychainReadAt = nil
+    }
+
+    /// Reads raw JSON from system Keychain (always fresh, no cache)
     private func readCredentialsJSON() async throws -> String? {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
@@ -141,117 +195,170 @@ public actor ClaudeCodeSyncService: ClaudeCodeSyncServiceProtocol {
         }
     }
 
-    /// Reads credentials from Keychain using native Security framework
+    /// Reads credentials from Keychain using /usr/bin/security CLI
+    /// (CLI tool is in ACL — reads silently without password dialog, unlike SecItemCopyMatching)
     private nonisolated func readFromKeychain() throws -> String? {
         let username = NSUserName()
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: username,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
-        ]
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        process.arguments = ["find-generic-password", "-s", keychainService, "-a", username, "-w"]
 
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = errPipe
 
+        try process.run()
 
-        switch status {
-        case errSecSuccess:
-            guard let data = result as? Data else {
-                logger.error("readFromKeychain: result is not Data")
-                throw SyncError.invalidCredentialsFormat
-            }
-            logger.debug("readFromKeychain: got \(data.count) bytes")
-
-
-            // Data format: first byte is 0x07, then JSON content without outer braces
-            // e.g., \x07"claudeAiOauth":{...}
-            guard data.count > 1 else {
-                throw SyncError.invalidCredentialsFormat
-            }
-
-            let firstByte = data[0]
-
-            // Detect format based on first byte
-            let jsonData: Data
-            if firstByte == 0x7b { // '{' - already valid JSON
-                jsonData = data
-            } else if firstByte == 0x07 { // Old format with prefix byte
-                jsonData = Data(data.dropFirst())
-            } else {
-                throw SyncError.invalidCredentialsFormat
-            }
-
-            guard let content = String(data: jsonData, encoding: .utf8) else {
-                if let latin1 = String(data: jsonData, encoding: .isoLatin1) {
-                }
-                throw SyncError.invalidCredentialsFormat
-            }
-
-
-            // For old format, wrap in braces; for new format, use as-is
-            let json: String
-            if firstByte == 0x7b {
-                json = content
-            } else {
-                json = "{" + content + "}"
-            }
-
-            return json
-
-        case errSecItemNotFound:
-            logger.info("readFromKeychain: item not found")
-            return nil
-
-        case errSecInteractionNotAllowed:
-            logger.warning("readFromKeychain: interaction not allowed (keychain locked?)")
-            throw SyncError.keychainAccessFailed(status: status)
-
-        default:
-            logger.error("readFromKeychain: failed with OSStatus=\(status)")
-            throw SyncError.keychainAccessFailed(status: status)
+        // Read pipe data concurrently to avoid deadlock (pipe buffer = 64KB)
+        let readGroup = DispatchGroup()
+        var capturedOut = Data()
+        var capturedErr = Data()
+        readGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            capturedOut = outPipe.fileHandleForReading.readDataToEndOfFile()
+            readGroup.leave()
         }
-    }
+        readGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            capturedErr = errPipe.fileHandleForReading.readDataToEndOfFile()
+            readGroup.leave()
+        }
 
-    /// Writes credentials to Keychain using native Security framework
-    private nonisolated func writeToKeychain(_ json: String) throws {
-        guard let data = json.data(using: .utf8) else {
+        guard waitForProcess(process) else {
+            readGroup.wait()
+            logger.error("readFromKeychain: security CLI timed out")
+            throw SyncError.keychainAccessFailed(status: -1)
+        }
+        readGroup.wait()
+
+        guard process.terminationStatus == 0 else {
+            let errStr = String(data: capturedErr, encoding: .utf8) ?? ""
+            if errStr.contains("could not be found") || errStr.contains("SecKeychainSearchCopyNext") {
+                logger.info("readFromKeychain: item not found")
+                return nil
+            }
+            logger.error("readFromKeychain: security CLI failed (exit=\(process.terminationStatus)): \(errStr)")
+            throw SyncError.keychainAccessFailed(status: OSStatus(process.terminationStatus))
+        }
+
+        let data = capturedOut
+
+        guard data.count > 1 else {
+            logger.error("readFromKeychain: empty output from security CLI")
             throw SyncError.invalidCredentialsFormat
         }
 
+        // Strip trailing newline from CLI output
+        let trimmedData: Data
+        if let last = data.last, last == 0x0a { // '\n'
+            trimmedData = data.dropLast()
+        } else {
+            trimmedData = data
+        }
+
+        guard trimmedData.count > 0 else {
+            throw SyncError.invalidCredentialsFormat
+        }
+
+        let firstByte = trimmedData[trimmedData.startIndex]
+
+        // Detect format based on first byte
+        let jsonData: Data
+        if firstByte == 0x7b { // '{' - already valid JSON
+            jsonData = trimmedData
+        } else if firstByte == 0x07 { // Old format with prefix byte
+            jsonData = Data(trimmedData.dropFirst())
+        } else {
+            throw SyncError.invalidCredentialsFormat
+        }
+
+        guard let content = String(data: jsonData, encoding: .utf8) else {
+            throw SyncError.invalidCredentialsFormat
+        }
+
+        // For old format, wrap in braces; for new format, use as-is
+        let json: String
+        if firstByte == 0x7b {
+            json = content
+        } else {
+            json = "{" + content + "}"
+        }
+
+        logger.debug("readFromKeychain: got \(json.count) chars via security CLI")
+        return json
+    }
+
+    /// Writes credentials to Keychain using /usr/bin/security CLI
+    /// (CLI tool is in ACL — writes silently without password dialog)
+    private nonisolated func writeToKeychain(_ json: String) throws {
         let username = NSUserName()
 
-        // First, try to update existing item
-        // Use kSecUseAuthenticationUISkip to avoid password dialog
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: username,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
-        ]
+        // Delete existing item first (ignore errors if not found)
+        let deleteProcess = Process()
+        deleteProcess.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        deleteProcess.arguments = ["delete-generic-password", "-s", keychainService, "-a", username]
+        let delOutPipe = Pipe()
+        let delErrPipe = Pipe()
+        deleteProcess.standardOutput = delOutPipe
+        deleteProcess.standardError = delErrPipe
+        try? deleteProcess.run()
 
-        let attributes: [String: Any] = [
-            kSecValueData as String: data
-        ]
+        // Read pipes concurrently for delete process
+        let delGroup = DispatchGroup()
+        delGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = delOutPipe.fileHandleForReading.readDataToEndOfFile()
+            delGroup.leave()
+        }
+        delGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = delErrPipe.fileHandleForReading.readDataToEndOfFile()
+            delGroup.leave()
+        }
+        _ = waitForProcess(deleteProcess, timeout: 3)
+        delGroup.wait()
 
-        var status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        // Add new item
+        let addProcess = Process()
+        addProcess.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        addProcess.arguments = ["add-generic-password", "-s", keychainService, "-a", username, "-w", json]
+        let addOutPipe = Pipe()
+        let addErrPipe = Pipe()
+        addProcess.standardOutput = addOutPipe
+        addProcess.standardError = addErrPipe
 
-        if status == errSecItemNotFound {
-            // Item doesn't exist, create it
-            var newItem = query
-            newItem[kSecValueData as String] = data
+        try addProcess.run()
 
-            status = SecItemAdd(newItem as CFDictionary, nil)
+        // Read pipes concurrently for add process
+        let addGroup = DispatchGroup()
+        var addErrData = Data()
+        addGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = addOutPipe.fileHandleForReading.readDataToEndOfFile()
+            addGroup.leave()
+        }
+        addGroup.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+            addErrData = addErrPipe.fileHandleForReading.readDataToEndOfFile()
+            addGroup.leave()
         }
 
-        // Accept both success and interaction-not-allowed (skip dialog case)
-        guard status == errSecSuccess || status == errSecInteractionNotAllowed else {
-            throw SyncError.keychainWriteFailed(status: status)
+        guard waitForProcess(addProcess) else {
+            addGroup.wait()
+            logger.error("writeToKeychain: security CLI timed out")
+            throw SyncError.keychainWriteFailed(status: -1)
+        }
+        addGroup.wait()
+
+        guard addProcess.terminationStatus == 0 else {
+            let errStr = String(data: addErrData, encoding: .utf8) ?? ""
+            logger.error("writeToKeychain: security CLI failed (exit=\(addProcess.terminationStatus)): \(errStr)")
+            throw SyncError.keychainWriteFailed(status: OSStatus(addProcess.terminationStatus))
         }
 
+        logger.debug("writeToKeychain: written via security CLI")
     }
 }
 

@@ -57,6 +57,10 @@ final class DependencyContainer {
         WidgetDataService()
     }()
 
+    private lazy var networkMonitorService: NetworkMonitorService = {
+        NetworkMonitorService()
+    }()
+
     private lazy var tokenRefreshService: TokenRefreshService = {
         TokenRefreshService()
     }()
@@ -203,7 +207,8 @@ final class DependencyContainer {
             widgetDataService: widgetDataService,
             fetchDeepgramUsageUseCase: makeFetchDeepgramUsageUseCase(),
             voiceInputPreferences: voiceInputPreferencesService,
-            keychainService: keychainService
+            keychainService: keychainService,
+            networkMonitor: networkMonitorService
         )
     }
 
