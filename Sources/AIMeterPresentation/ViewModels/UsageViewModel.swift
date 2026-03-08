@@ -28,11 +28,11 @@ public final class UsageViewModel {
     private let fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase?
     private let voiceInputPreferences: (any VoiceInputPreferencesProtocol)?
     private let keychainService: (any KeychainServiceProtocol)?
+    private let networkMonitor: (any NetworkMonitorProtocol)?
 
     private var refreshTask: Task<Void, Never>?
     private let baseRefreshInterval: TimeInterval = 300  // 5 minutes
     private var consecutiveFailures: Int = 0
-    private let maxBackoffInterval: TimeInterval = 900  // 15 minutes
     private var isLoadingUsage = false
     private var lastRateLimitedAt: Date?
 
@@ -47,7 +47,8 @@ public final class UsageViewModel {
         widgetDataService: (any WidgetDataServiceProtocol)? = nil,
         fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase? = nil,
         voiceInputPreferences: (any VoiceInputPreferencesProtocol)? = nil,
-        keychainService: (any KeychainServiceProtocol)? = nil
+        keychainService: (any KeychainServiceProtocol)? = nil,
+        networkMonitor: (any NetworkMonitorProtocol)? = nil
     ) {
         self.fetchUsageUseCase = fetchUsageUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
@@ -60,6 +61,7 @@ public final class UsageViewModel {
         self.fetchDeepgramUsageUseCase = fetchDeepgramUsageUseCase
         self.voiceInputPreferences = voiceInputPreferences
         self.keychainService = keychainService
+        self.networkMonitor = networkMonitor
     }
 
     /// Start background refresh (called once at app launch)
@@ -73,6 +75,20 @@ public final class UsageViewModel {
         logger.info("startBackgroundRefresh: starting initial load")
         await checkSetupAndLoad()
         startAutoRefresh()
+
+        // Subscribe to network changes — refresh immediately when network restores
+        Task { [weak self] in
+            await self?.networkMonitor?.startMonitoring { [weak self] isConnected in
+                guard isConnected else { return }
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.logger.info("networkMonitor: network restored, refreshing immediately")
+                    self.consecutiveFailures = 0
+                    self.lastRateLimitedAt = nil
+                    await self.loadUsage()
+                }
+            }
+        }
     }
 
     /// Initial load (when popup appears)
@@ -175,6 +191,9 @@ public final class UsageViewModel {
                             consecutiveFailures += 1
                             lastRateLimitedAt = Date()
                             logger.warning("loadUsage: token refresh 429, no fresh token available, backing off (failures=\(self.consecutiveFailures))")
+                            if isFirstLoad {
+                                state = .error("Rate limited. Will retry shortly.")
+                            }
                             return
                         }
                     }
@@ -254,6 +273,9 @@ public final class UsageViewModel {
                 consecutiveFailures += 1
                 lastRateLimitedAt = Date()
                 logger.warning("loadUsage: backing off (failures=\(self.consecutiveFailures), next in \(self.currentRefreshInterval)s)")
+                if isFirstLoad {
+                    state = .error("Rate limited. Will retry shortly.")
+                }
                 return
             }
             consecutiveFailures += 1
@@ -273,11 +295,12 @@ public final class UsageViewModel {
     }
 
     /// Current refresh interval with exponential backoff
+    /// On failure: 30s → 60s → 120s → 240s → 300s (cap at normal interval)
     private var currentRefreshInterval: TimeInterval {
         guard consecutiveFailures > 0 else { return baseRefreshInterval }
-        // 60s → 120s → 240s → 300s (max)
-        let backoff = baseRefreshInterval * pow(2.0, Double(min(consecutiveFailures, 3)))
-        return min(backoff, maxBackoffInterval)
+        let backoffBase: TimeInterval = 30
+        let backoff = backoffBase * pow(2.0, Double(min(consecutiveFailures - 1, 4)))
+        return min(backoff, baseRefreshInterval)
     }
 
     private func startAutoRefresh() {
