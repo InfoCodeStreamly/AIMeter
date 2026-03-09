@@ -28,6 +28,14 @@ public enum APIConstants {
         public static let repoURL = "https://github.com/\(repoOwner)/\(repoName)"
     }
 
+    public enum AdminAPI {
+        public static let baseURL = "https://api.anthropic.com"
+        public static let versionHeader = "2023-06-01"
+        public static let usagePollingInterval: TimeInterval = 60
+        public static let costPollingInterval: TimeInterval = 3600
+        public static let analyticsPollingInterval: TimeInterval = 3600
+    }
+
     public enum OAuth {
         public static let tokenURL = "https://console.anthropic.com/v1/oauth/token"
         public static let clientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"

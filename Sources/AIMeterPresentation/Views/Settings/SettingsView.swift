@@ -7,6 +7,7 @@ import SwiftUI
 enum SettingsTab: CaseIterable {
     case general
     case connection
+    case organization
     case voiceInput
     case about
 
@@ -14,6 +15,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "General"
         case .connection: return "Connection"
+        case .organization: return "Organization"
         case .voiceInput: return "Voice Input"
         case .about: return "About"
         }
@@ -23,6 +25,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "SettingsGeneral"
         case .connection: return "SettingsConnection"
+        case .organization: return "SettingsOrganization"
         case .voiceInput: return "SettingsVoiceInput"
         case .about: return "SettingsAbout"
         }
@@ -32,6 +35,7 @@ enum SettingsTab: CaseIterable {
         switch self {
         case .general: return "gearshape"
         case .connection: return "link"
+        case .organization: return "building.2"
         case .voiceInput: return "mic"
         case .about: return "info.circle"
         }
@@ -145,6 +149,11 @@ public struct SettingsView: View {
             ConnectionSettingsTab(
                 viewModel: viewModel,
                 notificationPreferences: notificationPreferences
+            )
+
+        case .organization:
+            OrganizationSettingsTab(
+                viewModel: viewModel
             )
 
         case .voiceInput:

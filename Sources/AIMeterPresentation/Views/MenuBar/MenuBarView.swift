@@ -6,15 +6,17 @@ import SwiftUI
 /// Main menu bar popover view
 public struct MenuBarView: View {
     @Bindable var viewModel: UsageViewModel
+    var orgUsageViewModel: OrgUsageViewModel?
     let updater: SPUUpdater
     @Environment(UpdateAvailabilityDelegate.self) private var updateDelegate:
         UpdateAvailabilityDelegate?
     @Environment(\.openWindow) private var openWindow
     @State private var isRefreshing = false
 
-    public init(viewModel: UsageViewModel, updater: SPUUpdater) {
+    public init(viewModel: UsageViewModel, updater: SPUUpdater, orgUsageViewModel: OrgUsageViewModel? = nil) {
         self.viewModel = viewModel
         self.updater = updater
+        self.orgUsageViewModel = orgUsageViewModel
     }
 
     public var body: some View {
@@ -75,7 +77,10 @@ public struct MenuBarView: View {
             FooterView(onQuit: { NSApplication.shared.terminate(nil) })
         }
         .frame(width: UIConstants.MenuBar.width)
-        .onAppear { viewModel.onAppear() }
+        .onAppear {
+            viewModel.onAppear()
+            orgUsageViewModel?.onAppear()
+        }
         .onDisappear { viewModel.onDisappear() }
     }
 
@@ -122,6 +127,20 @@ public struct MenuBarView: View {
                 Divider()
                     .padding(.vertical, UIConstants.Spacing.xs)
                 DeepgramUsageCardView(data: deepgramUsage)
+            }
+
+            // Organization API usage
+            if let orgVM = orgUsageViewModel, orgVM.state != .noKey {
+                Divider()
+                    .padding(.vertical, UIConstants.Spacing.xs)
+
+                if let orgSummary = orgVM.orgSummary {
+                    OrgUsageSummaryCardView(data: orgSummary)
+                }
+
+                if let analytics = orgVM.analytics {
+                    OrgAnalyticsCardView(data: analytics)
+                }
             }
         }
         .padding(UIConstants.Spacing.md)

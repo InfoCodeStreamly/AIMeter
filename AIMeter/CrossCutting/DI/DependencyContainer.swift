@@ -73,6 +73,10 @@ final class DependencyContainer {
         DeepgramAPIService()
     }()
 
+    private lazy var adminAPIClient: AdminAPIClient = {
+        AdminAPIClient()
+    }()
+
     lazy var accessibilityService: AccessibilityService = {
         AccessibilityService()
     }()
@@ -121,6 +125,14 @@ final class DependencyContainer {
     private var deepgramAPIRepository: any DeepgramAPIRepository {
         deepgramAPIService
     }
+
+    private lazy var adminKeyRepository: any AdminKeyRepository = {
+        AdminKeyKeychainRepository(keychainService: keychainService)
+    }()
+
+    private lazy var orgUsageRepository: any OrgUsageRepository = {
+        AdminOrgUsageRepository(adminAPIClient: adminAPIClient, adminKeyRepository: adminKeyRepository)
+    }()
 
     // MARK: - Use Cases
 
@@ -193,6 +205,28 @@ final class DependencyContainer {
         FetchDeepgramUsageUseCase(deepgramAPIRepository: deepgramAPIRepository)
     }
 
+    func makeFetchOrgUsageSummaryUseCase() -> FetchOrgUsageSummaryUseCase {
+        FetchOrgUsageSummaryUseCase(
+            adminKeyRepository: adminKeyRepository,
+            orgUsageRepository: orgUsageRepository
+        )
+    }
+
+    func makeFetchClaudeCodeAnalyticsUseCase() -> FetchClaudeCodeAnalyticsUseCase {
+        FetchClaudeCodeAnalyticsUseCase(
+            adminKeyRepository: adminKeyRepository,
+            orgUsageRepository: orgUsageRepository
+        )
+    }
+
+    func makeSaveAdminKeyUseCase() -> SaveAdminKeyUseCase {
+        SaveAdminKeyUseCase(adminKeyRepository: adminKeyRepository)
+    }
+
+    func makeGetAdminKeyUseCase() -> GetAdminKeyUseCase {
+        GetAdminKeyUseCase(adminKeyRepository: adminKeyRepository)
+    }
+
     // MARK: - ViewModels
 
     func makeUsageViewModel() -> UsageViewModel {
@@ -217,7 +251,18 @@ final class DependencyContainer {
             claudeCodeSync: claudeCodeSyncService,
             validateUseCase: makeValidateSessionKeyUseCase(),
             getSessionKeyUseCase: makeGetSessionKeyUseCase(),
-            credentialsRepository: credentialsRepository
+            credentialsRepository: credentialsRepository,
+            saveAdminKeyUseCase: makeSaveAdminKeyUseCase(),
+            getAdminKeyUseCase: makeGetAdminKeyUseCase()
+        )
+    }
+
+    func makeOrgUsageViewModel() -> OrgUsageViewModel {
+        OrgUsageViewModel(
+            fetchOrgUsageSummaryUseCase: makeFetchOrgUsageSummaryUseCase(),
+            fetchClaudeCodeAnalyticsUseCase: makeFetchClaudeCodeAnalyticsUseCase(),
+            getAdminKeyUseCase: makeGetAdminKeyUseCase(),
+            networkMonitor: networkMonitorService
         )
     }
 
