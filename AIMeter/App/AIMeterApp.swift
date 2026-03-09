@@ -9,6 +9,7 @@ import SwiftUI
 @main
 struct AIMeterApp: App {
     @State private var viewModel = DependencyContainer.shared.makeUsageViewModel()
+    @State private var orgUsageViewModel = DependencyContainer.shared.makeOrgUsageViewModel()
     @State private var voiceInputViewModel = DependencyContainer.shared.makeVoiceInputViewModel()
 
     /// Language service for localization (SSOT)
@@ -46,7 +47,8 @@ struct AIMeterApp: App {
         MenuBarExtra {
             MenuBarView(
                 viewModel: viewModel,
-                updater: updaterController.updater
+                updater: updaterController.updater,
+                orgUsageViewModel: orgUsageViewModel
             )
             .environment(updateAvailabilityDelegate)
             .environment(\.languageService, languageService)
@@ -61,7 +63,8 @@ struct AIMeterApp: App {
         // Settings Window
         Window("AIMeter Settings", id: UIConstants.WindowID.settings) {
             SettingsWindowView(
-                checkForUpdatesViewModel: checkForUpdatesViewModel
+                checkForUpdatesViewModel: checkForUpdatesViewModel,
+                orgUsageViewModel: orgUsageViewModel
             )
             .environment(\.languageService, languageService)
             .environment(\.themeService, themeService)
@@ -109,6 +112,9 @@ struct AIMeterApp: App {
         }
         .task {
             await viewModel.startBackgroundRefresh()
+        }
+        .task {
+            await orgUsageViewModel.startBackgroundRefresh()
         }
         .task {
             await voiceInputViewModel.onAppear()

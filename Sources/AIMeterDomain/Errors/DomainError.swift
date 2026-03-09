@@ -12,6 +12,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
     case sessionKeyExpired
     case rateLimited
 
+    // Admin API errors
+    case adminKeyNotFound
+    case invalidAdminKeyFormat
+
     public var errorDescription: String? {
         switch self {
         case .invalidPercentage(let value):
@@ -26,6 +30,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
             return "Session key has expired"
         case .rateLimited:
             return "Rate limited by API"
+        case .adminKeyNotFound:
+            return "Admin API key not configured"
+        case .invalidAdminKeyFormat:
+            return "Invalid Admin API key format. Must start with sk-ant-admin"
         }
     }
 
@@ -35,6 +43,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
             return "Please sync from Claude Code in Settings"
         case .rateLimited:
             return "Too many requests. Will retry with backoff"
+        case .adminKeyNotFound:
+            return "Enter Admin API key in Settings → Organization"
+        case .invalidAdminKeyFormat:
+            return "Get your Admin API key from console.anthropic.com → Settings → Admin Keys"
         default:
             return nil
         }

@@ -12,6 +12,7 @@ public final class SettingsViewModel {
     // MARK: - State
 
     public private(set) var state: SettingsState = .checking
+    public private(set) var adminKeyState: AdminKeyState = .noKey
 
     // MARK: - Dependencies
 
@@ -19,10 +20,13 @@ public final class SettingsViewModel {
     private let validateUseCase: ValidateSessionKeyUseCase
     private let getSessionKeyUseCase: GetSessionKeyUseCase
     private let credentialsRepository: OAuthCredentialsRepository
+    private let saveAdminKeyUseCase: SaveAdminKeyUseCase?
+    private let getAdminKeyUseCase: GetAdminKeyUseCase?
 
     // MARK: - Callbacks
 
     public var onSaveSuccess: (() -> Void)?
+    public var onAdminKeyChanged: (() -> Void)?
 
     // MARK: - Init
 
@@ -30,12 +34,16 @@ public final class SettingsViewModel {
         claudeCodeSync: any ClaudeCodeSyncServiceProtocol,
         validateUseCase: ValidateSessionKeyUseCase,
         getSessionKeyUseCase: GetSessionKeyUseCase,
-        credentialsRepository: OAuthCredentialsRepository
+        credentialsRepository: OAuthCredentialsRepository,
+        saveAdminKeyUseCase: SaveAdminKeyUseCase? = nil,
+        getAdminKeyUseCase: GetAdminKeyUseCase? = nil
     ) {
         self.claudeCodeSync = claudeCodeSync
         self.validateUseCase = validateUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
         self.credentialsRepository = credentialsRepository
+        self.saveAdminKeyUseCase = saveAdminKeyUseCase
+        self.getAdminKeyUseCase = getAdminKeyUseCase
     }
 
     // MARK: - Lifecycle
@@ -50,6 +58,7 @@ public final class SettingsViewModel {
         }
 
         await checkClaudeCode()
+        await checkAdminKey()
     }
 
     // MARK: - Actions
@@ -116,6 +125,42 @@ public final class SettingsViewModel {
     /// Clears error and retries
     public func retry() async {
         await checkClaudeCode()
+    }
+
+    // MARK: - Admin Key Actions
+
+    /// Checks if admin key exists
+    public func checkAdminKey() async {
+        guard let getAdminKeyUseCase else { return }
+        if let key = await getAdminKeyUseCase.execute() {
+            adminKeyState = .hasKey(masked: key.masked)
+        } else {
+            adminKeyState = .noKey
+        }
+    }
+
+    /// Saves admin API key
+    public func saveAdminKey(_ rawKey: String) async {
+        guard let saveAdminKeyUseCase else { return }
+        adminKeyState = .testing
+        do {
+            let key = try await saveAdminKeyUseCase.execute(rawKey: rawKey)
+            logger.info("saveAdminKey: saved successfully")
+            adminKeyState = .hasKey(masked: key.masked)
+            onAdminKeyChanged?()
+        } catch {
+            logger.error("saveAdminKey: error: \(error.localizedDescription)")
+            adminKeyState = .error(error.localizedDescription)
+        }
+    }
+
+    /// Deletes admin API key
+    public func deleteAdminKey() async {
+        guard let getAdminKeyUseCase else { return }
+        await getAdminKeyUseCase.delete()
+        logger.info("deleteAdminKey: deleted")
+        adminKeyState = .noKey
+        onAdminKeyChanged?()
     }
 }
 

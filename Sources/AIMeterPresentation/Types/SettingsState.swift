@@ -1,5 +1,39 @@
 import Foundation
 
+/// Admin API key state
+public enum AdminKeyState: Equatable, Sendable {
+    /// No admin key configured
+    case noKey
+
+    /// Key exists, showing masked value
+    case hasKey(masked: String)
+
+    /// Testing the key
+    case testing
+
+    /// Key validated successfully
+    case valid
+
+    /// Error occurred
+    case error(String)
+
+    // MARK: - Computed Properties
+
+    public var isLoading: Bool {
+        if case .testing = self { return true }
+        return false
+    }
+
+    public var canSave: Bool {
+        switch self {
+        case .noKey, .error:
+            return true
+        default:
+            return false
+        }
+    }
+}
+
 /// Settings screen state
 public enum SettingsState: Equatable {
     /// Checking for Claude Code credentials
