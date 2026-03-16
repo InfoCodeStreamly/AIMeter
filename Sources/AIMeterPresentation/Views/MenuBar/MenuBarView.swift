@@ -142,6 +142,14 @@ public struct MenuBarView: View {
                     OrgAnalyticsCardView(data: analytics)
                 }
             }
+
+            // Personal API key rate limits
+            if let rateLimits = orgUsageViewModel?.rateLimits {
+                Divider()
+                    .padding(.vertical, UIConstants.Spacing.xs)
+
+                APIKeyRateLimitCardView(data: rateLimits)
+            }
         }
         .padding(UIConstants.Spacing.md)
     }

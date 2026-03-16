@@ -14,6 +14,7 @@ public final class OrgUsageViewModel {
     public private(set) var state: OrgUsageViewState = .noKey
     public private(set) var orgSummary: OrgUsageSummaryDisplayData?
     public private(set) var analytics: ClaudeCodeAnalyticsDisplayData?
+    public private(set) var rateLimits: APIKeyRateLimitDisplayData?
     public private(set) var lastUpdated: Date?
 
     // MARK: - Dependencies
@@ -21,12 +22,15 @@ public final class OrgUsageViewModel {
     private let fetchOrgUsageSummaryUseCase: FetchOrgUsageSummaryUseCase
     private let fetchClaudeCodeAnalyticsUseCase: FetchClaudeCodeAnalyticsUseCase
     private let getAdminKeyUseCase: GetAdminKeyUseCase
+    private let fetchAPIKeyRateLimitsUseCase: FetchAPIKeyRateLimitsUseCase?
+    private let getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase?
     private let networkMonitor: (any NetworkMonitorProtocol)?
 
     // MARK: - Private
 
     private var usageRefreshTask: Task<Void, Never>?
     private var analyticsRefreshTask: Task<Void, Never>?
+    private var rateLimitRefreshTask: Task<Void, Never>?
     private let baseUsageInterval: TimeInterval = 60
     private let baseAnalyticsInterval: TimeInterval = 3600
     private var consecutiveFailures: Int = 0
@@ -37,11 +41,15 @@ public final class OrgUsageViewModel {
         fetchOrgUsageSummaryUseCase: FetchOrgUsageSummaryUseCase,
         fetchClaudeCodeAnalyticsUseCase: FetchClaudeCodeAnalyticsUseCase,
         getAdminKeyUseCase: GetAdminKeyUseCase,
+        fetchAPIKeyRateLimitsUseCase: FetchAPIKeyRateLimitsUseCase? = nil,
+        getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase? = nil,
         networkMonitor: (any NetworkMonitorProtocol)? = nil
     ) {
         self.fetchOrgUsageSummaryUseCase = fetchOrgUsageSummaryUseCase
         self.fetchClaudeCodeAnalyticsUseCase = fetchClaudeCodeAnalyticsUseCase
         self.getAdminKeyUseCase = getAdminKeyUseCase
+        self.fetchAPIKeyRateLimitsUseCase = fetchAPIKeyRateLimitsUseCase
+        self.getAnthropicAPIKeyUseCase = getAnthropicAPIKeyUseCase
         self.networkMonitor = networkMonitor
     }
 
@@ -62,6 +70,9 @@ public final class OrgUsageViewModel {
         await loadUsage()
         await loadAnalytics()
         startAutoRefresh()
+
+        // Also start rate limit polling if API key exists
+        await startRateLimitRefreshIfNeeded()
     }
 
     /// Called when menu bar popover appears
@@ -72,20 +83,24 @@ public final class OrgUsageViewModel {
         }
     }
 
-    /// Re-check admin key and restart if newly configured
+    /// Re-check admin key and API key, restart if newly configured
     public func recheckAndRestart() async {
-        let isConfigured = await getAdminKeyUseCase.isConfigured()
-        if isConfigured && state == .noKey {
+        // Admin key
+        let adminConfigured = await getAdminKeyUseCase.isConfigured()
+        if adminConfigured && state == .noKey {
             state = .loading
             await loadUsage()
             await loadAnalytics()
             startAutoRefresh()
-        } else if !isConfigured {
-            stopAutoRefresh()
+        } else if !adminConfigured {
+            stopAdminAutoRefresh()
             state = .noKey
             orgSummary = nil
             analytics = nil
         }
+
+        // API key rate limits
+        await recheckRateLimits()
     }
 
     /// Manual refresh
@@ -93,6 +108,7 @@ public final class OrgUsageViewModel {
         Task {
             await loadUsage()
             await loadAnalytics()
+            await loadRateLimits()
         }
     }
 
@@ -148,10 +164,62 @@ public final class OrgUsageViewModel {
         }
     }
 
-    private func stopAutoRefresh() {
+    private func stopAdminAutoRefresh() {
         usageRefreshTask?.cancel()
         usageRefreshTask = nil
         analyticsRefreshTask?.cancel()
         analyticsRefreshTask = nil
+    }
+
+    // MARK: - Rate Limits
+
+    private func loadRateLimits() async {
+        guard let fetchAPIKeyRateLimitsUseCase else { return }
+        do {
+            let entity = try await fetchAPIKeyRateLimitsUseCase.execute()
+            rateLimits = APIKeyRateLimitDisplayData(from: entity)
+            logger.info("loadRateLimits: \(entity.requestsRemaining)/\(entity.requestsLimit) RPM")
+        } catch let error as DomainError where error == .apiKeyNotFound {
+            rateLimits = nil
+        } catch {
+            logger.error("loadRateLimits: error: \(error.localizedDescription)")
+        }
+    }
+
+    private func startRateLimitRefreshIfNeeded() async {
+        guard let getAnthropicAPIKeyUseCase else { return }
+        let isConfigured = await getAnthropicAPIKeyUseCase.isConfigured()
+        guard isConfigured else { return }
+
+        await loadRateLimits()
+        startRateLimitAutoRefresh()
+    }
+
+    private func startRateLimitAutoRefresh() {
+        rateLimitRefreshTask?.cancel()
+        rateLimitRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                guard !Task.isCancelled else { break }
+                await self?.loadRateLimits()
+            }
+        }
+    }
+
+    private func stopRateLimitAutoRefresh() {
+        rateLimitRefreshTask?.cancel()
+        rateLimitRefreshTask = nil
+    }
+
+    private func recheckRateLimits() async {
+        guard let getAnthropicAPIKeyUseCase else { return }
+        let isConfigured = await getAnthropicAPIKeyUseCase.isConfigured()
+        if isConfigured && rateLimitRefreshTask == nil {
+            await loadRateLimits()
+            startRateLimitAutoRefresh()
+        } else if !isConfigured {
+            stopRateLimitAutoRefresh()
+            rateLimits = nil
+        }
     }
 }

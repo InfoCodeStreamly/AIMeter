@@ -6,14 +6,15 @@ struct OrganizationSettingsTab: View {
     @Bindable var viewModel: SettingsViewModel
 
     @State private var adminKeyInput: String = ""
+    @State private var apiKeyInput: String = ""
     private let tableName = "SettingsOrganization"
 
     var body: some View {
         VStack(spacing: UIConstants.Spacing.lg) {
             // State-based content
             switch viewModel.adminKeyState {
-            case .noKey:
-                noKeyView
+            case .noKey, .error:
+                inputView
 
             case .hasKey(let masked):
                 hasKeyView(masked: masked)
@@ -23,10 +24,10 @@ struct OrganizationSettingsTab: View {
 
             case .valid:
                 validView
-
-            case .error(let message):
-                errorView(message: message)
             }
+
+            // API Key section
+            apiKeySection
 
             // Instructions
             instructionsSection
@@ -36,9 +37,24 @@ struct OrganizationSettingsTab: View {
 
     // MARK: - State Views
 
-    private var noKeyView: some View {
+    private var inputView: some View {
         SettingsCard(title: "Admin API Key", tableName: tableName) {
             VStack(spacing: UIConstants.Spacing.md) {
+                // Error message (inline)
+                if case .error(let message) = viewModel.adminKeyState {
+                    HStack(spacing: UIConstants.Spacing.sm) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                            .font(.caption)
+
+                        Text(message)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+
+                        Spacer()
+                    }
+                }
+
                 SecureField(
                     text: $adminKeyInput,
                     prompt: Text("sk-ant-admin-...", tableName: tableName, bundle: .main)
@@ -124,36 +140,101 @@ struct OrganizationSettingsTab: View {
         }
     }
 
-    private func errorView(message: String) -> some View {
-        SettingsCard {
-            VStack(spacing: UIConstants.Spacing.md) {
-                HStack(spacing: UIConstants.Spacing.md) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red)
-                        .font(.title2)
+    // MARK: - API Key Section
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Error", tableName: tableName, bundle: .main)
-                            .font(.headline)
+    private var apiKeySection: some View {
+        Group {
+            switch viewModel.apiKeyState {
+            case .noKey, .error:
+                apiKeyInputView
+
+            case .hasKey(let masked):
+                apiKeyHasKeyView(masked: masked)
+
+            case .testing:
+                SettingsCard {
+                    HStack {
+                        Spacer()
+                        VStack(spacing: UIConstants.Spacing.md) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Validating API key...", tableName: tableName, bundle: .main)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, UIConstants.Spacing.xl)
+                        Spacer()
+                    }
+                }
+            }
+        }
+    }
+
+    private var apiKeyInputView: some View {
+        SettingsCard(title: "API Key", tableName: tableName) {
+            VStack(spacing: UIConstants.Spacing.md) {
+                if case .error(let message) = viewModel.apiKeyState {
+                    HStack(spacing: UIConstants.Spacing.sm) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                            .font(.caption)
 
                         Text(message)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.red)
+
+                        Spacer()
                     }
+                }
+
+                SecureField(
+                    text: $apiKeyInput,
+                    prompt: Text("sk-ant-api03-...", tableName: tableName, bundle: .main)
+                ) {
+                    Text("API Key", tableName: tableName, bundle: .main)
+                }
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
+
+                SettingsButton(
+                    "Connect",
+                    icon: "link",
+                    style: .primary,
+                    tableName: tableName
+                ) {
+                    Task { await viewModel.saveAPIKey(apiKeyInput) }
+                }
+            }
+        }
+    }
+
+    private func apiKeyHasKeyView(masked: String) -> some View {
+        SettingsCard {
+            VStack(spacing: UIConstants.Spacing.md) {
+                HStack(spacing: UIConstants.Spacing.sm) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AccessibleColors.success)
+                        .font(.title3)
+
+                    Text("API Key Connected", tableName: tableName, bundle: .main)
+                        .font(.headline)
 
                     Spacer()
+
+                    Text(masked)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Divider()
 
                 SettingsButton(
-                    "Try Again",
-                    icon: "arrow.clockwise",
-                    style: .primary,
+                    "Disconnect",
+                    icon: "xmark.circle",
+                    style: .destructive,
                     tableName: tableName
                 ) {
-                    adminKeyInput = ""
-                    Task { await viewModel.checkAdminKey() }
+                    Task { await viewModel.deleteAPIKey() }
                 }
             }
         }
