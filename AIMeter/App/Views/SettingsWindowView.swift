@@ -26,6 +26,11 @@ struct SettingsWindowView: View {
                     await orgUsageViewModel?.recheckAndRestart()
                 }
             }
+            viewModel.onAPIKeyChanged = { [orgUsageViewModel] in
+                Task { @MainActor in
+                    await orgUsageViewModel?.recheckAndRestart()
+                }
+            }
         }
     }
 }

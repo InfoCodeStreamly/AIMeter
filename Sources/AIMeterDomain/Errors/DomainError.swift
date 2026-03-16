@@ -16,6 +16,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
     case adminKeyNotFound
     case invalidAdminKeyFormat
 
+    // API key errors
+    case apiKeyNotFound
+    case invalidAPIKeyFormat
+
     public var errorDescription: String? {
         switch self {
         case .invalidPercentage(let value):
@@ -34,6 +38,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
             return "Admin API key not configured"
         case .invalidAdminKeyFormat:
             return "Invalid Admin API key format. Must start with sk-ant-admin"
+        case .apiKeyNotFound:
+            return "API key not configured"
+        case .invalidAPIKeyFormat:
+            return "Invalid API key format. Must start with sk-ant-api03"
         }
     }
 
@@ -47,6 +55,10 @@ public enum DomainError: LocalizedError, Sendable, Equatable {
             return "Enter Admin API key in Settings → Organization"
         case .invalidAdminKeyFormat:
             return "Get your Admin API key from console.anthropic.com → Settings → Admin Keys"
+        case .apiKeyNotFound:
+            return "Enter API key in Settings → Organization"
+        case .invalidAPIKeyFormat:
+            return "Get your API key from your organization admin"
         default:
             return nil
         }

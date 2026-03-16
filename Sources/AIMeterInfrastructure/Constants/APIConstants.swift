@@ -36,6 +36,10 @@ public enum APIConstants {
         public static let analyticsPollingInterval: TimeInterval = 3600
     }
 
+    public enum RateLimit {
+        public static let pollingInterval: TimeInterval = 60
+    }
+
     public enum OAuth {
         public static let tokenURL = "https://console.anthropic.com/v1/oauth/token"
         public static let clientId = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"

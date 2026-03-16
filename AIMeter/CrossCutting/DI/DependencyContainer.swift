@@ -77,6 +77,10 @@ final class DependencyContainer {
         AdminAPIClient()
     }()
 
+    private lazy var rateLimitClient: AnthropicRateLimitClient = {
+        AnthropicRateLimitClient()
+    }()
+
     lazy var accessibilityService: AccessibilityService = {
         AccessibilityService()
     }()
@@ -132,6 +136,14 @@ final class DependencyContainer {
 
     private lazy var orgUsageRepository: any OrgUsageRepository = {
         AdminOrgUsageRepository(adminAPIClient: adminAPIClient, adminKeyRepository: adminKeyRepository)
+    }()
+
+    private lazy var apiKeyRepository: any APIKeyRepository = {
+        AnthropicAPIKeyKeychainRepository(keychainService: keychainService)
+    }()
+
+    private lazy var rateLimitRepository: any RateLimitRepository = {
+        AnthropicRateLimitRepository(rateLimitClient: rateLimitClient)
     }()
 
     // MARK: - Use Cases
@@ -227,6 +239,21 @@ final class DependencyContainer {
         GetAdminKeyUseCase(adminKeyRepository: adminKeyRepository)
     }
 
+    func makeSaveAnthropicAPIKeyUseCase() -> SaveAnthropicAPIKeyUseCase {
+        SaveAnthropicAPIKeyUseCase(apiKeyRepository: apiKeyRepository)
+    }
+
+    func makeGetAnthropicAPIKeyUseCase() -> GetAnthropicAPIKeyUseCase {
+        GetAnthropicAPIKeyUseCase(apiKeyRepository: apiKeyRepository)
+    }
+
+    func makeFetchAPIKeyRateLimitsUseCase() -> FetchAPIKeyRateLimitsUseCase {
+        FetchAPIKeyRateLimitsUseCase(
+            apiKeyRepository: apiKeyRepository,
+            rateLimitRepository: rateLimitRepository
+        )
+    }
+
     // MARK: - ViewModels
 
     func makeUsageViewModel() -> UsageViewModel {
@@ -253,7 +280,9 @@ final class DependencyContainer {
             getSessionKeyUseCase: makeGetSessionKeyUseCase(),
             credentialsRepository: credentialsRepository,
             saveAdminKeyUseCase: makeSaveAdminKeyUseCase(),
-            getAdminKeyUseCase: makeGetAdminKeyUseCase()
+            getAdminKeyUseCase: makeGetAdminKeyUseCase(),
+            saveAnthropicAPIKeyUseCase: makeSaveAnthropicAPIKeyUseCase(),
+            getAnthropicAPIKeyUseCase: makeGetAnthropicAPIKeyUseCase()
         )
     }
 
@@ -262,6 +291,8 @@ final class DependencyContainer {
             fetchOrgUsageSummaryUseCase: makeFetchOrgUsageSummaryUseCase(),
             fetchClaudeCodeAnalyticsUseCase: makeFetchClaudeCodeAnalyticsUseCase(),
             getAdminKeyUseCase: makeGetAdminKeyUseCase(),
+            fetchAPIKeyRateLimitsUseCase: makeFetchAPIKeyRateLimitsUseCase(),
+            getAnthropicAPIKeyUseCase: makeGetAnthropicAPIKeyUseCase(),
             networkMonitor: networkMonitorService
         )
     }

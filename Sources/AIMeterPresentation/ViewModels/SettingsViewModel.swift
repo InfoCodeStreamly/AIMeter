@@ -13,6 +13,7 @@ public final class SettingsViewModel {
 
     public private(set) var state: SettingsState = .checking
     public private(set) var adminKeyState: AdminKeyState = .noKey
+    public private(set) var apiKeyState: APIKeyState = .noKey
 
     // MARK: - Dependencies
 
@@ -22,11 +23,14 @@ public final class SettingsViewModel {
     private let credentialsRepository: OAuthCredentialsRepository
     private let saveAdminKeyUseCase: SaveAdminKeyUseCase?
     private let getAdminKeyUseCase: GetAdminKeyUseCase?
+    private let saveAnthropicAPIKeyUseCase: SaveAnthropicAPIKeyUseCase?
+    private let getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase?
 
     // MARK: - Callbacks
 
     public var onSaveSuccess: (() -> Void)?
     public var onAdminKeyChanged: (() -> Void)?
+    public var onAPIKeyChanged: (() -> Void)?
 
     // MARK: - Init
 
@@ -36,7 +40,9 @@ public final class SettingsViewModel {
         getSessionKeyUseCase: GetSessionKeyUseCase,
         credentialsRepository: OAuthCredentialsRepository,
         saveAdminKeyUseCase: SaveAdminKeyUseCase? = nil,
-        getAdminKeyUseCase: GetAdminKeyUseCase? = nil
+        getAdminKeyUseCase: GetAdminKeyUseCase? = nil,
+        saveAnthropicAPIKeyUseCase: SaveAnthropicAPIKeyUseCase? = nil,
+        getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase? = nil
     ) {
         self.claudeCodeSync = claudeCodeSync
         self.validateUseCase = validateUseCase
@@ -44,6 +50,8 @@ public final class SettingsViewModel {
         self.credentialsRepository = credentialsRepository
         self.saveAdminKeyUseCase = saveAdminKeyUseCase
         self.getAdminKeyUseCase = getAdminKeyUseCase
+        self.saveAnthropicAPIKeyUseCase = saveAnthropicAPIKeyUseCase
+        self.getAnthropicAPIKeyUseCase = getAnthropicAPIKeyUseCase
     }
 
     // MARK: - Lifecycle
@@ -59,6 +67,7 @@ public final class SettingsViewModel {
 
         await checkClaudeCode()
         await checkAdminKey()
+        await checkAPIKey()
     }
 
     // MARK: - Actions
@@ -161,6 +170,42 @@ public final class SettingsViewModel {
         logger.info("deleteAdminKey: deleted")
         adminKeyState = .noKey
         onAdminKeyChanged?()
+    }
+
+    // MARK: - API Key Actions
+
+    /// Checks if API key exists
+    public func checkAPIKey() async {
+        guard let getAnthropicAPIKeyUseCase else { return }
+        if let key = await getAnthropicAPIKeyUseCase.execute() {
+            apiKeyState = .hasKey(masked: key.masked)
+        } else {
+            apiKeyState = .noKey
+        }
+    }
+
+    /// Saves Anthropic API key
+    public func saveAPIKey(_ rawKey: String) async {
+        guard let saveAnthropicAPIKeyUseCase else { return }
+        apiKeyState = .testing
+        do {
+            let key = try await saveAnthropicAPIKeyUseCase.execute(rawKey: rawKey)
+            logger.info("saveAPIKey: saved successfully")
+            apiKeyState = .hasKey(masked: key.masked)
+            onAPIKeyChanged?()
+        } catch {
+            logger.error("saveAPIKey: error: \(error.localizedDescription)")
+            apiKeyState = .error(error.localizedDescription)
+        }
+    }
+
+    /// Deletes Anthropic API key
+    public func deleteAPIKey() async {
+        guard let getAnthropicAPIKeyUseCase else { return }
+        await getAnthropicAPIKeyUseCase.delete()
+        logger.info("deleteAPIKey: deleted")
+        apiKeyState = .noKey
+        onAPIKeyChanged?()
     }
 }
 
