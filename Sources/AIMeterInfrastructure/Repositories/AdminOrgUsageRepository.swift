@@ -47,7 +47,8 @@ public actor AdminOrgUsageRepository: OrgUsageRepository {
 
     public func fetchCostReport(
         from: Date,
-        to: Date
+        to: Date,
+        groupBy: [String]?
     ) async throws -> [OrgCostBucketEntity] {
         let apiKey = try await getApiKey()
 
@@ -59,6 +60,7 @@ public actor AdminOrgUsageRepository: OrgUsageRepository {
                 apiKey: apiKey,
                 from: from,
                 to: to,
+                groupBy: groupBy,
                 page: nextPage
             )
             allBuckets.append(contentsOf: AdminAPIMapper.toCostBuckets(response))

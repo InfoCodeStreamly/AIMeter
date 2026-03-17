@@ -21,47 +21,58 @@ enum AdminAPIMapper {
 
     // MARK: - Usage Buckets
 
-    /// Maps usage API response to domain entities
+    /// Maps usage API response (nested format) to domain entities
     nonisolated static func toUsageBuckets(_ response: OrgUsageAPIResponse) -> [OrgUsageBucketEntity] {
-        response.data.compactMap { bucket in
-            guard let startTime = parseDate(bucket.snapshotStartTime),
-                  let endTime = parseDate(bucket.snapshotEndTime) else {
-                return nil
+        response.data.flatMap { bucket in
+            guard let startTime = parseDate(bucket.startingAt),
+                  let endTime = parseDate(bucket.endingAt) else {
+                return [OrgUsageBucketEntity]()
             }
-            return OrgUsageBucketEntity(
-                startTime: startTime,
-                endTime: endTime,
-                model: bucket.model,
-                workspaceId: bucket.workspaceId,
-                inputTokens: bucket.inputTokens ?? 0,
-                outputTokens: bucket.outputTokens ?? 0,
-                cacheReadTokens: bucket.cacheReadInputTokens ?? 0,
-                cacheCreationTokens: bucket.cacheCreationInputTokens ?? 0
-            )
+
+            return bucket.results.map { result in
+                let cacheCreationTokens = (result.cacheCreation?.ephemeral1hInputTokens ?? 0)
+                    + (result.cacheCreation?.ephemeral5mInputTokens ?? 0)
+
+                return OrgUsageBucketEntity(
+                    startTime: startTime,
+                    endTime: endTime,
+                    model: result.model,
+                    apiKeyId: result.apiKeyId,
+                    workspaceId: result.workspaceId,
+                    inputTokens: result.uncachedInputTokens ?? 0,
+                    outputTokens: result.outputTokens ?? 0,
+                    cacheReadTokens: result.cacheReadInputTokens ?? 0,
+                    cacheCreationTokens: cacheCreationTokens
+                )
+            }
         }
     }
 
     // MARK: - Cost Buckets
 
-    /// Maps cost API response to domain entities
+    /// Maps cost API response (nested format) to domain entities
     /// Note: API returns amount as decimal string in cents
     nonisolated static func toCostBuckets(_ response: OrgCostAPIResponse) -> [OrgCostBucketEntity] {
-        response.data.compactMap { bucket in
-            guard let startTime = parseDate(bucket.snapshotStartTime),
-                  let endTime = parseDate(bucket.snapshotEndTime) else {
-                return nil
+        response.data.flatMap { bucket in
+            guard let startTime = parseDate(bucket.startingAt),
+                  let endTime = parseDate(bucket.endingAt) else {
+                return [OrgCostBucketEntity]()
             }
-            // Amount comes as decimal string in cents (e.g., "1250.00" or "1250")
-            let amountCents = Int(Double(bucket.amount) ?? 0)
 
-            return OrgCostBucketEntity(
-                startTime: startTime,
-                endTime: endTime,
-                workspaceId: bucket.workspaceId,
-                costDescription: bucket.description,
-                amountCents: amountCents,
-                currency: "USD"
-            )
+            return bucket.results.map { result in
+                let amountCents = Int(Double(result.amount) ?? 0)
+
+                return OrgCostBucketEntity(
+                    startTime: startTime,
+                    endTime: endTime,
+                    workspaceId: result.workspaceId,
+                    costDescription: result.description,
+                    model: result.model,
+                    costType: result.costType,
+                    amountCents: amountCents,
+                    currency: result.currency ?? "USD"
+                )
+            }
         }
     }
 

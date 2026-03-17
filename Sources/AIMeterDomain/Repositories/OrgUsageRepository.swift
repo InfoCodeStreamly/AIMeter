@@ -13,7 +13,8 @@ public protocol OrgUsageRepository: Sendable {
     /// Fetches cost report for the given time range
     func fetchCostReport(
         from: Date,
-        to: Date
+        to: Date,
+        groupBy: [String]?
     ) async throws -> [OrgCostBucketEntity]
 
     /// Fetches Claude Code per-user analytics for a specific date

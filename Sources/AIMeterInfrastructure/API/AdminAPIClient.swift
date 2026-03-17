@@ -38,9 +38,10 @@ public actor AdminAPIClient: AdminAPIClientProtocol {
         apiKey: String,
         from: Date,
         to: Date,
+        groupBy: [String]?,
         page: String?
     ) async throws -> OrgCostAPIResponse {
-        let url = AdminAPIEndpoints.costReport(from: from, to: to, page: page)
+        let url = AdminAPIEndpoints.costReport(from: from, to: to, groupBy: groupBy, page: page)
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         applyHeaders(&request, apiKey: apiKey)

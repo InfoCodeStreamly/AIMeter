@@ -80,7 +80,7 @@ struct OrgUsageViewModelTests {
             return usageBuckets
         }
 
-        func fetchCostReport(from: Date, to: Date) async throws -> [OrgCostBucketEntity] {
+        func fetchCostReport(from: Date, to: Date, groupBy: [String]?) async throws -> [OrgCostBucketEntity] {
             if shouldThrow { throw DomainError.rateLimited }
             return costBuckets
         }

@@ -224,6 +224,13 @@ final class DependencyContainer {
         )
     }
 
+    func makeFetchMonthlyUsageUseCase() -> FetchMonthlyUsageUseCase {
+        FetchMonthlyUsageUseCase(
+            adminKeyRepository: adminKeyRepository,
+            orgUsageRepository: orgUsageRepository
+        )
+    }
+
     func makeFetchClaudeCodeAnalyticsUseCase() -> FetchClaudeCodeAnalyticsUseCase {
         FetchClaudeCodeAnalyticsUseCase(
             adminKeyRepository: adminKeyRepository,
@@ -292,6 +299,7 @@ final class DependencyContainer {
         OrgUsageViewModel(
             fetchOrgUsageSummaryUseCase: makeFetchOrgUsageSummaryUseCase(),
             fetchClaudeCodeAnalyticsUseCase: makeFetchClaudeCodeAnalyticsUseCase(),
+            fetchMonthlyUsageUseCase: makeFetchMonthlyUsageUseCase(),
             getAdminKeyUseCase: makeGetAdminKeyUseCase(),
             fetchAPIKeyRateLimitsUseCase: makeFetchAPIKeyRateLimitsUseCase(),
             getAnthropicAPIKeyUseCase: makeGetAnthropicAPIKeyUseCase(),

@@ -19,6 +19,7 @@ public protocol AdminAPIClientProtocol: Sendable {
         apiKey: String,
         from: Date,
         to: Date,
+        groupBy: [String]?,
         page: String?
     ) async throws -> OrgCostAPIResponse
 

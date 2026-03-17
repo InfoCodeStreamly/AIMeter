@@ -15,12 +15,14 @@ public final class OrgUsageViewModel {
     public private(set) var orgSummary: OrgUsageSummaryDisplayData?
     public private(set) var analytics: ClaudeCodeAnalyticsDisplayData?
     public private(set) var rateLimits: APIKeyRateLimitDisplayData?
+    public private(set) var monthlyUsage: MonthlyUsageDisplayData?
     public private(set) var lastUpdated: Date?
 
     // MARK: - Dependencies
 
     private let fetchOrgUsageSummaryUseCase: FetchOrgUsageSummaryUseCase
     private let fetchClaudeCodeAnalyticsUseCase: FetchClaudeCodeAnalyticsUseCase
+    private let fetchMonthlyUsageUseCase: FetchMonthlyUsageUseCase?
     private let getAdminKeyUseCase: GetAdminKeyUseCase
     private let fetchAPIKeyRateLimitsUseCase: FetchAPIKeyRateLimitsUseCase?
     private let getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase?
@@ -30,9 +32,11 @@ public final class OrgUsageViewModel {
 
     private var usageRefreshTask: Task<Void, Never>?
     private var analyticsRefreshTask: Task<Void, Never>?
+    private var monthlyRefreshTask: Task<Void, Never>?
     private var rateLimitRefreshTask: Task<Void, Never>?
     private let baseUsageInterval: TimeInterval = 60
     private let baseAnalyticsInterval: TimeInterval = 3600
+    private let baseMonthlyInterval: TimeInterval = 300
     private var consecutiveFailures: Int = 0
 
     // MARK: - Init
@@ -40,6 +44,7 @@ public final class OrgUsageViewModel {
     public init(
         fetchOrgUsageSummaryUseCase: FetchOrgUsageSummaryUseCase,
         fetchClaudeCodeAnalyticsUseCase: FetchClaudeCodeAnalyticsUseCase,
+        fetchMonthlyUsageUseCase: FetchMonthlyUsageUseCase? = nil,
         getAdminKeyUseCase: GetAdminKeyUseCase,
         fetchAPIKeyRateLimitsUseCase: FetchAPIKeyRateLimitsUseCase? = nil,
         getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase? = nil,
@@ -47,6 +52,7 @@ public final class OrgUsageViewModel {
     ) {
         self.fetchOrgUsageSummaryUseCase = fetchOrgUsageSummaryUseCase
         self.fetchClaudeCodeAnalyticsUseCase = fetchClaudeCodeAnalyticsUseCase
+        self.fetchMonthlyUsageUseCase = fetchMonthlyUsageUseCase
         self.getAdminKeyUseCase = getAdminKeyUseCase
         self.fetchAPIKeyRateLimitsUseCase = fetchAPIKeyRateLimitsUseCase
         self.getAnthropicAPIKeyUseCase = getAnthropicAPIKeyUseCase
@@ -72,6 +78,7 @@ public final class OrgUsageViewModel {
         state = .loading
         await loadUsage()
         await loadAnalytics()
+        await loadMonthlyUsage()
         startAutoRefresh()
     }
 
@@ -91,12 +98,14 @@ public final class OrgUsageViewModel {
             state = .loading
             await loadUsage()
             await loadAnalytics()
+            await loadMonthlyUsage()
             startAutoRefresh()
         } else if !adminConfigured {
             stopAdminAutoRefresh()
             state = .noKey
             orgSummary = nil
             analytics = nil
+            monthlyUsage = nil
         }
 
         // API key rate limits
@@ -108,6 +117,7 @@ public final class OrgUsageViewModel {
         Task {
             await loadUsage()
             await loadAnalytics()
+            await loadMonthlyUsage()
             await loadRateLimits()
         }
     }
@@ -144,6 +154,17 @@ public final class OrgUsageViewModel {
         }
     }
 
+    private func loadMonthlyUsage() async {
+        guard let fetchMonthlyUsageUseCase else { return }
+        do {
+            let entity = try await fetchMonthlyUsageUseCase.execute()
+            monthlyUsage = MonthlyUsageDisplayData(from: entity)
+            logger.info("loadMonthlyUsage: success (cost=\(entity.totalCostCents)¢, keys=\(entity.byApiKey.count))")
+        } catch {
+            logger.error("loadMonthlyUsage: error: \(error.localizedDescription)")
+        }
+    }
+
     private func startAutoRefresh() {
         // Usage: every 60s
         usageRefreshTask = Task { [weak self] in
@@ -162,6 +183,15 @@ public final class OrgUsageViewModel {
                 await self?.loadAnalytics()
             }
         }
+
+        // Monthly: every 5 min
+        monthlyRefreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(self?.baseMonthlyInterval ?? 300))
+                guard !Task.isCancelled else { break }
+                await self?.loadMonthlyUsage()
+            }
+        }
     }
 
     private func stopAdminAutoRefresh() {
@@ -169,6 +199,8 @@ public final class OrgUsageViewModel {
         usageRefreshTask = nil
         analyticsRefreshTask?.cancel()
         analyticsRefreshTask = nil
+        monthlyRefreshTask?.cancel()
+        monthlyRefreshTask = nil
     }
 
     // MARK: - Rate Limits

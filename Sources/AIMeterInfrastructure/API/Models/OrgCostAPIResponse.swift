@@ -3,9 +3,10 @@ import AIMeterDomain
 import AIMeterApplication
 
 /// Raw API response for organization cost report
-/// Endpoint: /v1/organizations/cost_report
+/// Endpoint: GET /v1/organizations/cost_report
+/// Docs: https://platform.claude.com/docs/en/api/admin-api/usage-cost/get-cost-report
 public struct OrgCostAPIResponse: Sendable, Codable {
-    public let data: [OrgCostBucketData]
+    public let data: [OrgCostTimeBucket]
     public let hasMore: Bool
     public let nextPage: String?
 
@@ -16,20 +17,45 @@ public struct OrgCostAPIResponse: Sendable, Codable {
     }
 }
 
-/// Single cost bucket from the API
-/// Note: `amount` is a decimal string in cents (e.g., "1250" = $12.50)
-public struct OrgCostBucketData: Sendable, Codable {
-    public let snapshotStartTime: String
-    public let snapshotEndTime: String
-    public let workspaceId: String?
-    public let description: String?
-    public let amount: String
+/// A single time bucket containing cost results
+public struct OrgCostTimeBucket: Sendable, Codable {
+    public let startingAt: String
+    public let endingAt: String
+    public let results: [OrgCostResultData]
 
     enum CodingKeys: String, CodingKey {
-        case snapshotStartTime = "snapshot_start_time"
-        case snapshotEndTime = "snapshot_end_time"
-        case workspaceId = "workspace_id"
-        case description
+        case startingAt = "starting_at"
+        case endingAt = "ending_at"
+        case results
+    }
+}
+
+/// Single cost result within a time bucket
+/// Multiple results per bucket when group_by[] is specified
+/// Note: `amount` is a decimal string in lowest currency units (cents)
+/// e.g., "123.45" in USD = $1.2345
+public struct OrgCostResultData: Sendable, Codable {
+    public let amount: String
+    public let currency: String?
+    public let model: String?
+    public let costType: String?
+    public let tokenType: String?
+    public let description: String?
+    public let workspaceId: String?
+    public let serviceTier: String?
+    public let contextWindow: String?
+    public let inferenceGeo: String?
+
+    enum CodingKeys: String, CodingKey {
         case amount
+        case currency
+        case model
+        case costType = "cost_type"
+        case tokenType = "token_type"
+        case description
+        case workspaceId = "workspace_id"
+        case serviceTier = "service_tier"
+        case contextWindow = "context_window"
+        case inferenceGeo = "inference_geo"
     }
 }

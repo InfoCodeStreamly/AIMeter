@@ -7,6 +7,8 @@ public struct OrgCostBucketEntity: Sendable, Equatable, Identifiable {
     public let endTime: Date
     public let workspaceId: String?
     public let costDescription: String?
+    public let model: String?
+    public let costType: String?
     public let amountCents: Int
     public let currency: String
 
@@ -16,6 +18,8 @@ public struct OrgCostBucketEntity: Sendable, Equatable, Identifiable {
         endTime: Date,
         workspaceId: String? = nil,
         costDescription: String? = nil,
+        model: String? = nil,
+        costType: String? = nil,
         amountCents: Int,
         currency: String = "USD"
     ) {
@@ -24,6 +28,8 @@ public struct OrgCostBucketEntity: Sendable, Equatable, Identifiable {
         self.endTime = endTime
         self.workspaceId = workspaceId
         self.costDescription = costDescription
+        self.model = model
+        self.costType = costType
         self.amountCents = amountCents
         self.currency = currency
     }

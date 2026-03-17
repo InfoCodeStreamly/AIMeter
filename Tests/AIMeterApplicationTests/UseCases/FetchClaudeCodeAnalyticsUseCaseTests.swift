@@ -204,7 +204,7 @@ private actor MockOrgUsageRepository: OrgUsageRepository {
         return []
     }
 
-    func fetchCostReport(from: Date, to: Date) async throws -> [OrgCostBucketEntity] {
+    func fetchCostReport(from: Date, to: Date, groupBy: [String]?) async throws -> [OrgCostBucketEntity] {
         fetchCostReportCallCount += 1
         return []
     }
