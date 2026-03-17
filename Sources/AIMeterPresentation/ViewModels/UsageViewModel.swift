@@ -29,6 +29,8 @@ public final class UsageViewModel {
     private let voiceInputPreferences: (any VoiceInputPreferencesProtocol)?
     private let keychainService: (any KeychainServiceProtocol)?
     private let networkMonitor: (any NetworkMonitorProtocol)?
+    private let getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase?
+    private let getAdminKeyUseCase: GetAdminKeyUseCase?
 
     private var refreshTask: Task<Void, Never>?
     private let baseRefreshInterval: TimeInterval = 300  // 5 minutes
@@ -48,7 +50,9 @@ public final class UsageViewModel {
         fetchDeepgramUsageUseCase: FetchDeepgramUsageUseCase? = nil,
         voiceInputPreferences: (any VoiceInputPreferencesProtocol)? = nil,
         keychainService: (any KeychainServiceProtocol)? = nil,
-        networkMonitor: (any NetworkMonitorProtocol)? = nil
+        networkMonitor: (any NetworkMonitorProtocol)? = nil,
+        getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase? = nil,
+        getAdminKeyUseCase: GetAdminKeyUseCase? = nil
     ) {
         self.fetchUsageUseCase = fetchUsageUseCase
         self.getSessionKeyUseCase = getSessionKeyUseCase
@@ -62,6 +66,8 @@ public final class UsageViewModel {
         self.voiceInputPreferences = voiceInputPreferences
         self.keychainService = keychainService
         self.networkMonitor = networkMonitor
+        self.getAnthropicAPIKeyUseCase = getAnthropicAPIKeyUseCase
+        self.getAdminKeyUseCase = getAdminKeyUseCase
     }
 
     /// Start background refresh (called once at app launch)
@@ -74,6 +80,13 @@ public final class UsageViewModel {
 
         logger.info("startBackgroundRefresh: starting initial load")
         await checkSetupAndLoad()
+
+        // Only auto-refresh OAuth usage if not in API-key-only mode
+        guard !state.isApiKeyOnly else {
+            logger.info("startBackgroundRefresh: API key only mode, skipping OAuth auto-refresh")
+            return
+        }
+
         startAutoRefresh()
 
         // Subscribe to network changes — refresh immediately when network restores
@@ -82,6 +95,7 @@ public final class UsageViewModel {
                 guard isConnected else { return }
                 Task { @MainActor [weak self] in
                     guard let self else { return }
+                    guard !self.state.isApiKeyOnly else { return }
                     self.logger.info("networkMonitor: network restored, refreshing immediately")
                     self.consecutiveFailures = 0
                     self.lastRateLimitedAt = nil
@@ -95,14 +109,50 @@ public final class UsageViewModel {
     public func onAppear() {
         // Background refresh already handles loading — only load if not yet started
         guard refreshTask == nil else { return }
+        guard !state.isApiKeyOnly else { return }
         Task {
             await checkSetupAndLoad()
         }
         startAutoRefresh()
     }
 
+    /// Re-check setup state (called when API/Admin key changes in Settings)
+    public func recheckSetup() {
+        Task {
+            // Only check API/Admin keys — avoid Keychain prompt for OAuth session key
+            let hasApiKey = await getAnthropicAPIKeyUseCase?.isConfigured() ?? false
+            let hasAdminKey = await getAdminKeyUseCase?.isConfigured() ?? false
+            if hasApiKey || hasAdminKey {
+                if !state.hasData {
+                    // Only switch to apiKeyOnly if we don't already have OAuth data
+                    state = .apiKeyOnly
+                }
+            } else if state.isApiKeyOnly {
+                // Keys were removed, fall back to full check
+                state = .needsSetup
+            }
+        }
+    }
+
+    /// Full reload after OAuth sync (called when user connects/reconnects Claude subscription)
+    public func reloadAfterSync() {
+        Task {
+            stopAutoRefresh()
+            state = .loading
+            await checkSetupAndLoad()
+            if !state.isApiKeyOnly {
+                startAutoRefresh()
+            }
+        }
+    }
+
     /// Manual refresh
     public func refresh() {
+        if state.isApiKeyOnly {
+            // In API-key-only mode, just re-check if OAuth became available
+            recheckSetup()
+            return
+        }
         Task {
             await loadUsage()
         }
@@ -127,24 +177,33 @@ public final class UsageViewModel {
     // MARK: - Private
 
     private func checkSetupAndLoad() async {
-        let isConfigured = await getSessionKeyUseCase.isConfigured()
+        // Check OAuth session key first (primary mode — shows full usage stats)
+        let hasOAuth = await getSessionKeyUseCase.isConfigured()
 
-        if !isConfigured {
-            state = .needsSetup
+        if hasOAuth {
+            // Full mode — OAuth usage + rate limits (if API key also set)
+            if let refreshTokenUseCase {
+                let result = await refreshTokenUseCase.forceResync()
+                if result != nil {
+                    logger.info("checkSetupAndLoad: picked up fresh token from Claude Code")
+                } else {
+                    logger.debug("checkSetupAndLoad: no new token from Claude Code (same or unavailable)")
+                }
+            }
+            await loadUsage()
             return
         }
 
-        // Always try to pick up fresh tokens from Claude Code on startup
-        if let refreshTokenUseCase {
-            let result = await refreshTokenUseCase.forceResync()
-            if result != nil {
-                logger.info("checkSetupAndLoad: picked up fresh token from Claude Code")
-            } else {
-                logger.debug("checkSetupAndLoad: no new token from Claude Code (same or unavailable)")
-            }
-        }
+        // No OAuth — check API/Admin keys as fallback (standalone mode)
+        let hasApiKey = await getAnthropicAPIKeyUseCase?.isConfigured() ?? false
+        let hasAdminKey = await getAdminKeyUseCase?.isConfigured() ?? false
 
-        await loadUsage()
+        if hasApiKey || hasAdminKey {
+            logger.info("checkSetupAndLoad: API key only mode (apiKey=\(hasApiKey), adminKey=\(hasAdminKey))")
+            state = .apiKeyOnly
+        } else {
+            state = .needsSetup
+        }
     }
 
     private func loadUsage() async {
@@ -177,8 +236,8 @@ public final class UsageViewModel {
                 do {
                     _ = try await refreshTokenUseCase.execute()
                 } catch let error as TokenRefreshError where error.requiresReauth {
-                    logger.warning("loadUsage: token requires re-auth, switching to needsSetup")
-                    state = .needsSetup
+                    logger.warning("loadUsage: token requires re-auth")
+                    if !state.isApiKeyOnly { state = .needsSetup }
                     consecutiveFailures = 0
                     return
                 } catch let error as TokenRefreshError {
@@ -295,9 +354,9 @@ public final class UsageViewModel {
             }
             consecutiveFailures += 1
             logger.error("loadUsage: domain error: \(error.localizedDescription, privacy: .public) (failures=\(self.consecutiveFailures))")
-            if error == .sessionKeyNotFound {
+            if error == .sessionKeyNotFound && !state.isApiKeyOnly {
                 state = .needsSetup
-            } else if isFirstLoad {
+            } else if isFirstLoad && !state.isApiKeyOnly {
                 state = .error(error.localizedDescription)
             }
         } catch {
@@ -386,6 +445,8 @@ extension UsageViewModel {
 
     /// Menu bar text: "session/weekly" when both exist, or single value with suffix
     public var menuBarText: String {
+        if state.isApiKeyOnly { return "API" }
+
         let session = primaryUsage
         let weekly = weeklyUsage
 
@@ -403,6 +464,8 @@ extension UsageViewModel {
 
     /// Menu bar status based on max of available usages
     public var menuBarStatus: UsageStatus {
+        if state.isApiKeyOnly { return .safe }
+
         let session = primaryUsage
         let weekly = weeklyUsage
 

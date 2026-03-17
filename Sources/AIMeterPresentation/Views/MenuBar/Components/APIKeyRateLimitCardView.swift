@@ -29,6 +29,7 @@ struct APIKeyRateLimitCardView: View {
             rateLimitRow(
                 icon: "arrow.up.arrow.down",
                 label: "RPM",
+                subtitle: "Requests / min",
                 value: data.requestsRemaining,
                 percent: data.requestsPercent
             )
@@ -36,6 +37,7 @@ struct APIKeyRateLimitCardView: View {
             rateLimitRow(
                 icon: "arrow.down",
                 label: "Input TPM",
+                subtitle: "Input tokens / min",
                 value: data.inputTokensRemaining,
                 percent: data.inputTokensPercent
             )
@@ -43,6 +45,7 @@ struct APIKeyRateLimitCardView: View {
             rateLimitRow(
                 icon: "arrow.up",
                 label: "Output TPM",
+                subtitle: "Output tokens / min",
                 value: data.outputTokensRemaining,
                 percent: data.outputTokensPercent
             )
@@ -53,7 +56,7 @@ struct APIKeyRateLimitCardView: View {
 
     // MARK: - Row
 
-    private func rateLimitRow(icon: String, label: String, value: String, percent: Int) -> some View {
+    private func rateLimitRow(icon: String, label: String, subtitle: String, value: String, percent: Int) -> some View {
         VStack(spacing: 2) {
             HStack(spacing: UIConstants.Spacing.sm) {
                 Image(systemName: icon)
@@ -61,9 +64,14 @@ struct APIKeyRateLimitCardView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 12)
 
-                Text(label)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(label)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.tertiary)
+                }
 
                 Spacer()
 

@@ -471,6 +471,74 @@ struct UsageViewStateTests {
         #expect(state.hasData == false)
     }
 
+    // MARK: - API Key Only State
+
+    @Test("apiKeyOnly state returns correct properties")
+    func apiKeyOnlyStateReturnsCorrectProperties() {
+        let state = UsageViewState.apiKeyOnly
+
+        #expect(state.isLoading == false)
+        #expect(state.data.isEmpty)
+        #expect(state.errorMessage == nil)
+        #expect(state.hasData == false)
+        #expect(state.isApiKeyOnly == true)
+    }
+
+    @Test("isApiKeyOnly returns true only for apiKeyOnly state")
+    func isApiKeyOnlyReturnsTrueOnlyForApiKeyOnlyState() {
+        let states: [(UsageViewState, Bool)] = [
+            (.loading, false),
+            (.loaded([]), false),
+            (.error("err"), false),
+            (.needsSetup, false),
+            (.apiKeyOnly, true),
+        ]
+        for (state, expected) in states {
+            #expect(state.isApiKeyOnly == expected, "Expected isApiKeyOnly=\(expected) for \(state)")
+        }
+    }
+
+    @Test("apiKeyOnly does not equal other states")
+    func apiKeyOnlyDoesNotEqualOtherStates() {
+        let apiKeyOnly = UsageViewState.apiKeyOnly
+        #expect(apiKeyOnly != UsageViewState.loading)
+        #expect(apiKeyOnly != UsageViewState.loaded([]))
+        #expect(apiKeyOnly != UsageViewState.error("err"))
+        #expect(apiKeyOnly != UsageViewState.needsSetup)
+    }
+
+    @Test("apiKeyOnly equals apiKeyOnly")
+    func apiKeyOnlyEqualsApiKeyOnly() {
+        #expect(UsageViewState.apiKeyOnly == UsageViewState.apiKeyOnly)
+    }
+
+    @Test("all states including apiKeyOnly have mutually exclusive primary properties")
+    func allStatesHaveMutuallyExclusivePrimaryProperties() {
+        let states: [UsageViewState] = [
+            .loading,
+            .loaded([]),
+            .error("test"),
+            .needsSetup,
+            .apiKeyOnly,
+        ]
+
+        // Exactly one state should be isLoading
+        let loadingCount = states.filter { $0.isLoading }.count
+        #expect(loadingCount == 1)
+
+        // Exactly one state should be isApiKeyOnly
+        let apiKeyOnlyCount = states.filter { $0.isApiKeyOnly }.count
+        #expect(apiKeyOnlyCount == 1)
+
+        // Exactly one state should have a non-nil errorMessage
+        let errorCount = states.filter { $0.errorMessage != nil }.count
+        #expect(errorCount == 1)
+
+        // None of loading/error/needsSetup/apiKeyOnly should return hasData (loaded([]) also false)
+        let hasDataCount = states.filter { $0.hasData }.count
+        #expect(hasDataCount == 0)
+    }
+
     // MARK: - Equatable
 
     @Test("equatable compares loading states correctly")
