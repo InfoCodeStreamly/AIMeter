@@ -8,6 +8,7 @@ struct SettingsWindowView: View {
     @State private var voiceInputViewModel = DependencyContainer.shared.makeVoiceInputViewModel()
     let checkForUpdatesViewModel: CheckForUpdatesViewModel
     var orgUsageViewModel: OrgUsageViewModel?
+    var usageViewModel: UsageViewModel?
 
     var body: some View {
         SettingsView(
@@ -21,14 +22,22 @@ struct SettingsWindowView: View {
         )
         .windowLevel(UIConstants.WindowLevel.settings)
         .onAppear {
-            viewModel.onAdminKeyChanged = { [orgUsageViewModel] in
+            viewModel.onSaveSuccess = { [orgUsageViewModel, usageViewModel] in
                 Task { @MainActor in
                     await orgUsageViewModel?.recheckAndRestart()
+                    usageViewModel?.reloadAfterSync()
                 }
             }
-            viewModel.onAPIKeyChanged = { [orgUsageViewModel] in
+            viewModel.onAdminKeyChanged = { [orgUsageViewModel, usageViewModel] in
                 Task { @MainActor in
                     await orgUsageViewModel?.recheckAndRestart()
+                    usageViewModel?.recheckSetup()
+                }
+            }
+            viewModel.onAPIKeyChanged = { [orgUsageViewModel, usageViewModel] in
+                Task { @MainActor in
+                    await orgUsageViewModel?.recheckAndRestart()
+                    usageViewModel?.recheckSetup()
                 }
             }
         }

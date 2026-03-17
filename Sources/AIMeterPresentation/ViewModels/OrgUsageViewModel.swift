@@ -59,6 +59,9 @@ public final class OrgUsageViewModel {
     public func startBackgroundRefresh() async {
         guard usageRefreshTask == nil else { return }
 
+        // Rate limit polling starts independently of Admin key
+        await startRateLimitRefreshIfNeeded()
+
         let isConfigured = await getAdminKeyUseCase.isConfigured()
         guard isConfigured else {
             state = .noKey
@@ -70,9 +73,6 @@ public final class OrgUsageViewModel {
         await loadUsage()
         await loadAnalytics()
         startAutoRefresh()
-
-        // Also start rate limit polling if API key exists
-        await startRateLimitRefreshIfNeeded()
     }
 
     /// Called when menu bar popover appears

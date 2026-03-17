@@ -269,7 +269,9 @@ final class DependencyContainer {
             fetchDeepgramUsageUseCase: makeFetchDeepgramUsageUseCase(),
             voiceInputPreferences: voiceInputPreferencesService,
             keychainService: keychainService,
-            networkMonitor: networkMonitorService
+            networkMonitor: networkMonitorService,
+            getAnthropicAPIKeyUseCase: makeGetAnthropicAPIKeyUseCase(),
+            getAdminKeyUseCase: makeGetAdminKeyUseCase()
         )
     }
 

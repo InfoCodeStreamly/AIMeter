@@ -30,6 +30,7 @@ public struct MenuBarView: View {
                         isRefreshing = true
                     }
                     viewModel.refresh()
+                    orgUsageViewModel?.refresh()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         withAnimation(.easeInOut(duration: UIConstants.Animation.fast)) {
                             isRefreshing = false
@@ -63,6 +64,9 @@ public struct MenuBarView: View {
 
                 case .error(let message):
                     errorView(message: message)
+
+                case .apiKeyOnly:
+                    apiKeyOnlyView
 
                 case .needsSetup:
                     setupView
@@ -177,15 +181,49 @@ public struct MenuBarView: View {
         .frame(height: 120)
     }
 
+    private var apiKeyOnlyView: some View {
+        VStack(spacing: UIConstants.Spacing.sm) {
+            // Organization usage (admin key)
+            if let orgVM = orgUsageViewModel, orgVM.state != .noKey {
+                if let orgSummary = orgVM.orgSummary {
+                    OrgUsageSummaryCardView(data: orgSummary)
+                }
+                if let analytics = orgVM.analytics {
+                    OrgAnalyticsCardView(data: analytics)
+                }
+            }
+
+            // Rate limits (API key)
+            if let rateLimits = orgUsageViewModel?.rateLimits {
+                APIKeyRateLimitCardView(data: rateLimits)
+            }
+
+            // Loading state when no data yet
+            if orgUsageViewModel?.rateLimits == nil
+                && orgUsageViewModel?.orgSummary == nil {
+                VStack(spacing: UIConstants.Spacing.md) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("Loading rate limits...", tableName: "MenuBar", bundle: .main)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(height: 120)
+            }
+        }
+        .padding(UIConstants.Spacing.md)
+    }
+
     private var setupView: some View {
         VStack(spacing: UIConstants.Spacing.md) {
             Image(systemName: "key")
                 .font(.title2)
                 .foregroundStyle(.blue)
 
-            Text("Session key required", tableName: "MenuBar", bundle: .main)
+            Text("Configure API key or sync Claude Code", tableName: "MenuBar", bundle: .main)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
 
             Button {
                 openWindow(id: UIConstants.WindowID.settings)

@@ -71,6 +71,30 @@ struct UsageViewModelTests {
         func validateToken(_ token: String) async throws {}
     }
 
+    actor MockAPIKeyRepository: APIKeyRepository {
+        var storedKey: AnthropicAPIKey?
+
+        func configure(storedKey: AnthropicAPIKey? = nil) {
+            self.storedKey = storedKey
+        }
+
+        func save(_ key: AnthropicAPIKey) async throws {
+            storedKey = key
+        }
+
+        func get() async -> AnthropicAPIKey? {
+            return storedKey
+        }
+
+        func delete() async {
+            storedKey = nil
+        }
+
+        func exists() async -> Bool {
+            return storedKey != nil
+        }
+    }
+
     actor MockNotificationService: NotificationServiceProtocol {
         var permissionGranted = true
 
@@ -113,7 +137,8 @@ struct UsageViewModelTests {
         mockUsageRepo: MockUsageRepository,
         mockSessionRepo: MockSessionKeyRepository,
         mockNotificationService: MockNotificationService,
-        mockNotificationPrefs: MockNotificationPreferences
+        mockNotificationPrefs: MockNotificationPreferences,
+        mockAPIKeyRepo: MockAPIKeyRepository? = nil
     ) -> UsageViewModel {
         let fetchUsageUseCase = FetchUsageUseCase(
             usageRepository: mockUsageRepo,
@@ -124,11 +149,15 @@ struct UsageViewModelTests {
             notificationService: mockNotificationService,
             preferencesService: mockNotificationPrefs
         )
+        let getAnthropicAPIKeyUseCase: GetAnthropicAPIKeyUseCase? = mockAPIKeyRepo.map {
+            GetAnthropicAPIKeyUseCase(apiKeyRepository: $0)
+        }
 
         return UsageViewModel(
             fetchUsageUseCase: fetchUsageUseCase,
             getSessionKeyUseCase: getSessionKeyUseCase,
-            checkNotificationUseCase: checkNotificationUseCase
+            checkNotificationUseCase: checkNotificationUseCase,
+            getAnthropicAPIKeyUseCase: getAnthropicAPIKeyUseCase
         )
     }
 
@@ -497,5 +526,136 @@ struct UsageViewModelTests {
         } else {
             Issue.record("Expected weeklyUsage to be non-nil")
         }
+    }
+
+    // MARK: - API Key Only Mode Tests
+
+    @Test("State transitions to apiKeyOnly when no OAuth key but API key is configured")
+    func stateTransitionsToApiKeyOnlyWhenNoOAuthButHasAPIKey() async throws {
+        let mockUsageRepo = MockUsageRepository()
+        let mockSessionRepo = MockSessionKeyRepository()
+        // No OAuth session key configured — storedKey remains nil
+
+        let mockAPIKeyRepo = MockAPIKeyRepository()
+        let apiKey = try AnthropicAPIKey.create("sk-ant-api03-testkey1234567890abcdef")
+        await mockAPIKeyRepo.configure(storedKey: apiKey)
+
+        let mockNotificationService = MockNotificationService()
+        let mockNotificationPrefs = MockNotificationPreferences()
+
+        let viewModel = makeViewModel(
+            mockUsageRepo: mockUsageRepo,
+            mockSessionRepo: mockSessionRepo,
+            mockNotificationService: mockNotificationService,
+            mockNotificationPrefs: mockNotificationPrefs,
+            mockAPIKeyRepo: mockAPIKeyRepo
+        )
+
+        await viewModel.startBackgroundRefresh()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(viewModel.state == .apiKeyOnly)
+    }
+
+    @Test("State transitions to needsSetup when neither OAuth nor API key is configured")
+    func stateTransitionsToNeedsSetupWhenNeitherOAuthNorAPIKey() async throws {
+        let mockUsageRepo = MockUsageRepository()
+        let mockSessionRepo = MockSessionKeyRepository()
+        // No OAuth key
+        let mockAPIKeyRepo = MockAPIKeyRepository()
+        // No API key either — storedKey remains nil
+
+        let mockNotificationService = MockNotificationService()
+        let mockNotificationPrefs = MockNotificationPreferences()
+
+        let viewModel = makeViewModel(
+            mockUsageRepo: mockUsageRepo,
+            mockSessionRepo: mockSessionRepo,
+            mockNotificationService: mockNotificationService,
+            mockNotificationPrefs: mockNotificationPrefs,
+            mockAPIKeyRepo: mockAPIKeyRepo
+        )
+
+        await viewModel.startBackgroundRefresh()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(viewModel.state == .needsSetup)
+    }
+
+    @Test("State transitions to needsSetup when no OAuth key and no API key use case provided")
+    func stateTransitionsToNeedsSetupWhenNoAPIKeyUseCaseProvided() async throws {
+        let mockUsageRepo = MockUsageRepository()
+        let mockSessionRepo = MockSessionKeyRepository()
+        // No API key use case (nil) — original behavior preserved
+
+        let mockNotificationService = MockNotificationService()
+        let mockNotificationPrefs = MockNotificationPreferences()
+
+        let viewModel = makeViewModel(
+            mockUsageRepo: mockUsageRepo,
+            mockSessionRepo: mockSessionRepo,
+            mockNotificationService: mockNotificationService,
+            mockNotificationPrefs: mockNotificationPrefs,
+            mockAPIKeyRepo: nil
+        )
+
+        await viewModel.startBackgroundRefresh()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(viewModel.state == .needsSetup)
+    }
+
+    @Test("menuBarText returns 'API' when state is apiKeyOnly")
+    func menuBarTextReturnsAPIWhenApiKeyOnly() async throws {
+        let mockUsageRepo = MockUsageRepository()
+        let mockSessionRepo = MockSessionKeyRepository()
+
+        let mockAPIKeyRepo = MockAPIKeyRepository()
+        let apiKey = try AnthropicAPIKey.create("sk-ant-api03-testkey1234567890abcdef")
+        await mockAPIKeyRepo.configure(storedKey: apiKey)
+
+        let mockNotificationService = MockNotificationService()
+        let mockNotificationPrefs = MockNotificationPreferences()
+
+        let viewModel = makeViewModel(
+            mockUsageRepo: mockUsageRepo,
+            mockSessionRepo: mockSessionRepo,
+            mockNotificationService: mockNotificationService,
+            mockNotificationPrefs: mockNotificationPrefs,
+            mockAPIKeyRepo: mockAPIKeyRepo
+        )
+
+        await viewModel.startBackgroundRefresh()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(viewModel.state == .apiKeyOnly)
+        #expect(viewModel.menuBarText == "API")
+    }
+
+    @Test("menuBarStatus returns safe when state is apiKeyOnly")
+    func menuBarStatusReturnsSafeWhenApiKeyOnly() async throws {
+        let mockUsageRepo = MockUsageRepository()
+        let mockSessionRepo = MockSessionKeyRepository()
+
+        let mockAPIKeyRepo = MockAPIKeyRepository()
+        let apiKey = try AnthropicAPIKey.create("sk-ant-api03-testkey1234567890abcdef")
+        await mockAPIKeyRepo.configure(storedKey: apiKey)
+
+        let mockNotificationService = MockNotificationService()
+        let mockNotificationPrefs = MockNotificationPreferences()
+
+        let viewModel = makeViewModel(
+            mockUsageRepo: mockUsageRepo,
+            mockSessionRepo: mockSessionRepo,
+            mockNotificationService: mockNotificationService,
+            mockNotificationPrefs: mockNotificationPrefs,
+            mockAPIKeyRepo: mockAPIKeyRepo
+        )
+
+        await viewModel.startBackgroundRefresh()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(viewModel.state == .apiKeyOnly)
+        #expect(viewModel.menuBarStatus == .safe)
     }
 }

@@ -64,7 +64,8 @@ struct AIMeterApp: App {
         Window("AIMeter Settings", id: UIConstants.WindowID.settings) {
             SettingsWindowView(
                 checkForUpdatesViewModel: checkForUpdatesViewModel,
-                orgUsageViewModel: orgUsageViewModel
+                orgUsageViewModel: orgUsageViewModel,
+                usageViewModel: viewModel
             )
             .environment(\.languageService, languageService)
             .environment(\.themeService, themeService)

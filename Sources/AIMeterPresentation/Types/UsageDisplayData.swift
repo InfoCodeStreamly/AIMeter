@@ -29,6 +29,12 @@ public enum UsageViewState: Equatable, Sendable {
     case loaded([UsageDisplayData])
     case error(String)
     case needsSetup
+    case apiKeyOnly
+
+    public var isApiKeyOnly: Bool {
+        if case .apiKeyOnly = self { return true }
+        return false
+    }
 
     public var isLoading: Bool {
         if case .loading = self { return true }
