@@ -2,7 +2,7 @@ import Testing
 @testable import AIMeterInfrastructure
 import Foundation
 
-/// Tests for OrgUsageAPIResponse JSON decoding.
+/// Tests for OrgUsageAPIResponse JSON decoding — nested format.
 @Suite("OrgUsageAPIResponse")
 struct OrgUsageAPIResponseTests {
 
@@ -14,14 +14,28 @@ struct OrgUsageAPIResponseTests {
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z",
-              "model": "claude-3-opus-20240229",
-              "workspace_id": "ws-abc123",
-              "input_tokens": 1000,
-              "output_tokens": 500,
-              "cache_read_input_tokens": 200,
-              "cache_creation_input_tokens": 100
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 1000,
+                  "output_tokens": 500,
+                  "cache_read_input_tokens": 200,
+                  "cache_creation": {
+                    "ephemeral_1h_input_tokens": 80,
+                    "ephemeral_5m_input_tokens": 20
+                  },
+                  "model": "claude-3-opus-20240229",
+                  "api_key_id": "apikey_01abc",
+                  "workspace_id": "ws-abc123",
+                  "service_tier": "standard",
+                  "context_window": "0-200k",
+                  "inference_geo": "us",
+                  "server_tool_use": {
+                    "web_search_requests": 3
+                  }
+                }
+              ]
             }
           ],
           "has_more": false,
@@ -36,14 +50,23 @@ struct OrgUsageAPIResponseTests {
         #expect(response.nextPage == nil)
 
         let bucket = response.data[0]
-        #expect(bucket.snapshotStartTime == "2026-01-01T00:00:00Z")
-        #expect(bucket.snapshotEndTime == "2026-01-01T01:00:00Z")
-        #expect(bucket.model == "claude-3-opus-20240229")
-        #expect(bucket.workspaceId == "ws-abc123")
-        #expect(bucket.inputTokens == 1000)
-        #expect(bucket.outputTokens == 500)
-        #expect(bucket.cacheReadInputTokens == 200)
-        #expect(bucket.cacheCreationInputTokens == 100)
+        #expect(bucket.startingAt == "2026-01-01T00:00:00Z")
+        #expect(bucket.endingAt == "2026-01-01T01:00:00Z")
+        #expect(bucket.results.count == 1)
+
+        let result = bucket.results[0]
+        #expect(result.uncachedInputTokens == 1000)
+        #expect(result.outputTokens == 500)
+        #expect(result.cacheReadInputTokens == 200)
+        #expect(result.cacheCreation?.ephemeral1hInputTokens == 80)
+        #expect(result.cacheCreation?.ephemeral5mInputTokens == 20)
+        #expect(result.model == "claude-3-opus-20240229")
+        #expect(result.apiKeyId == "apikey_01abc")
+        #expect(result.workspaceId == "ws-abc123")
+        #expect(result.serviceTier == "standard")
+        #expect(result.contextWindow == "0-200k")
+        #expect(result.inferenceGeo == "us")
+        #expect(result.serverToolUse?.webSearchRequests == 3)
     }
 
     @Test("decodes response with has_more true and next_page cursor")
@@ -77,26 +100,32 @@ struct OrgUsageAPIResponseTests {
         #expect(response.data.isEmpty)
     }
 
-    @Test("decodes response with multiple buckets")
+    @Test("decodes response with multiple buckets and results")
     func decodesMultipleBuckets() throws {
         let json = """
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z",
-              "model": "claude-3-opus-20240229",
-              "workspace_id": null,
-              "input_tokens": 1000,
-              "output_tokens": 500
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 1000,
+                  "output_tokens": 500,
+                  "model": "claude-3-opus-20240229"
+                }
+              ]
             },
             {
-              "snapshot_start_time": "2026-01-01T01:00:00Z",
-              "snapshot_end_time": "2026-01-01T02:00:00Z",
-              "model": "claude-3-sonnet-20240229",
-              "workspace_id": "ws-abc",
-              "input_tokens": 2000,
-              "output_tokens": 1000
+              "starting_at": "2026-01-01T01:00:00Z",
+              "ending_at": "2026-01-01T02:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 2000,
+                  "output_tokens": 1000,
+                  "model": "claude-3-sonnet-20240229"
+                }
+              ]
             }
           ],
           "has_more": false,
@@ -107,20 +136,23 @@ struct OrgUsageAPIResponseTests {
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
         #expect(response.data.count == 2)
-        #expect(response.data[0].model == "claude-3-opus-20240229")
-        #expect(response.data[1].model == "claude-3-sonnet-20240229")
+        #expect(response.data[0].results[0].model == "claude-3-opus-20240229")
+        #expect(response.data[1].results[0].model == "claude-3-sonnet-20240229")
     }
 
-    // MARK: - OrgUsageBucketData Optional Fields Tests
+    // MARK: - Optional Fields Tests
 
-    @Test("decodes bucket with optional fields as nil")
-    func decodesBucketWithNilOptionalFields() throws {
+    @Test("decodes result with all optional fields as nil")
+    func decodesResultWithNilOptionalFields() throws {
         let json = """
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z"
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {}
+              ]
             }
           ],
           "has_more": false,
@@ -130,27 +162,39 @@ struct OrgUsageAPIResponseTests {
 
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
-        let bucket = response.data[0]
-        #expect(bucket.model == nil)
-        #expect(bucket.workspaceId == nil)
-        #expect(bucket.inputTokens == nil)
-        #expect(bucket.outputTokens == nil)
-        #expect(bucket.cacheReadInputTokens == nil)
-        #expect(bucket.cacheCreationInputTokens == nil)
+        let result = response.data[0].results[0]
+        #expect(result.model == nil)
+        #expect(result.apiKeyId == nil)
+        #expect(result.workspaceId == nil)
+        #expect(result.uncachedInputTokens == nil)
+        #expect(result.outputTokens == nil)
+        #expect(result.cacheReadInputTokens == nil)
+        #expect(result.cacheCreation == nil)
+        #expect(result.serviceTier == nil)
+        #expect(result.contextWindow == nil)
+        #expect(result.inferenceGeo == nil)
+        #expect(result.serverToolUse == nil)
     }
 
-    @Test("decodes bucket with zero token counts")
-    func decodesBucketWithZeroTokens() throws {
+    @Test("decodes result with zero token counts")
+    func decodesResultWithZeroTokens() throws {
         let json = """
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z",
-              "input_tokens": 0,
-              "output_tokens": 0,
-              "cache_read_input_tokens": 0,
-              "cache_creation_input_tokens": 0
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 0,
+                  "output_tokens": 0,
+                  "cache_read_input_tokens": 0,
+                  "cache_creation": {
+                    "ephemeral_1h_input_tokens": 0,
+                    "ephemeral_5m_input_tokens": 0
+                  }
+                }
+              ]
             }
           ],
           "has_more": false,
@@ -160,23 +204,28 @@ struct OrgUsageAPIResponseTests {
 
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
-        let bucket = response.data[0]
-        #expect(bucket.inputTokens == 0)
-        #expect(bucket.outputTokens == 0)
-        #expect(bucket.cacheReadInputTokens == 0)
-        #expect(bucket.cacheCreationInputTokens == 0)
+        let result = response.data[0].results[0]
+        #expect(result.uncachedInputTokens == 0)
+        #expect(result.outputTokens == 0)
+        #expect(result.cacheReadInputTokens == 0)
+        #expect(result.cacheCreation?.ephemeral1hInputTokens == 0)
+        #expect(result.cacheCreation?.ephemeral5mInputTokens == 0)
     }
 
-    @Test("decodes bucket with large token counts")
-    func decodesBucketWithLargeTokenCounts() throws {
+    @Test("decodes result with large token counts")
+    func decodesResultWithLargeTokenCounts() throws {
         let json = """
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z",
-              "input_tokens": 10000000,
-              "output_tokens": 5000000
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 10000000,
+                  "output_tokens": 5000000
+                }
+              ]
             }
           ],
           "has_more": false,
@@ -186,8 +235,8 @@ struct OrgUsageAPIResponseTests {
 
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
-        #expect(response.data[0].inputTokens == 10_000_000)
-        #expect(response.data[0].outputTokens == 5_000_000)
+        #expect(response.data[0].results[0].uncachedInputTokens == 10_000_000)
+        #expect(response.data[0].results[0].outputTokens == 5_000_000)
     }
 
     @Test("decodes bucket timestamps with fractional seconds")
@@ -196,8 +245,9 @@ struct OrgUsageAPIResponseTests {
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00.123456Z",
-              "snapshot_end_time": "2026-01-01T01:00:00.789Z"
+              "starting_at": "2026-01-01T00:00:00.123456Z",
+              "ending_at": "2026-01-01T01:00:00.789Z",
+              "results": []
             }
           ],
           "has_more": false,
@@ -207,24 +257,80 @@ struct OrgUsageAPIResponseTests {
 
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
-        #expect(response.data[0].snapshotStartTime == "2026-01-01T00:00:00.123456Z")
-        #expect(response.data[0].snapshotEndTime == "2026-01-01T01:00:00.789Z")
+        #expect(response.data[0].startingAt == "2026-01-01T00:00:00.123456Z")
+        #expect(response.data[0].endingAt == "2026-01-01T01:00:00.789Z")
     }
 
-    @Test("snake_case field names decode correctly")
-    func snakeCaseFieldNamesDecode() throws {
-        // Verify that CodingKeys mapping works for all snake_case fields
+    @Test("decodes multiple results per bucket (group_by)")
+    func decodesMultipleResultsPerBucket() throws {
         let json = """
         {
           "data": [
             {
-              "snapshot_start_time": "2026-01-01T00:00:00Z",
-              "snapshot_end_time": "2026-01-01T01:00:00Z",
-              "workspace_id": "ws-test",
-              "input_tokens": 100,
-              "output_tokens": 50,
-              "cache_read_input_tokens": 10,
-              "cache_creation_input_tokens": 5
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-02T00:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 1000,
+                  "output_tokens": 500,
+                  "model": "claude-sonnet-4-6",
+                  "api_key_id": "apikey_01abc"
+                },
+                {
+                  "uncached_input_tokens": 2000,
+                  "output_tokens": 800,
+                  "model": "claude-haiku-4-5",
+                  "api_key_id": "apikey_01abc"
+                },
+                {
+                  "uncached_input_tokens": 500,
+                  "output_tokens": 200,
+                  "model": "claude-sonnet-4-6",
+                  "api_key_id": "apikey_02def"
+                }
+              ]
+            }
+          ],
+          "has_more": false,
+          "next_page": null
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
+
+        #expect(response.data.count == 1)
+        #expect(response.data[0].results.count == 3)
+        #expect(response.data[0].results[0].apiKeyId == "apikey_01abc")
+        #expect(response.data[0].results[2].apiKeyId == "apikey_02def")
+    }
+
+    @Test("snake_case field names decode correctly")
+    func snakeCaseFieldNamesDecode() throws {
+        let json = """
+        {
+          "data": [
+            {
+              "starting_at": "2026-01-01T00:00:00Z",
+              "ending_at": "2026-01-01T01:00:00Z",
+              "results": [
+                {
+                  "uncached_input_tokens": 100,
+                  "output_tokens": 50,
+                  "cache_read_input_tokens": 10,
+                  "cache_creation": {
+                    "ephemeral_1h_input_tokens": 3,
+                    "ephemeral_5m_input_tokens": 2
+                  },
+                  "api_key_id": "key1",
+                  "workspace_id": "ws-test",
+                  "service_tier": "standard",
+                  "context_window": "0-200k",
+                  "inference_geo": "global",
+                  "server_tool_use": {
+                    "web_search_requests": 1
+                  }
+                }
+              ]
             }
           ],
           "has_more": true,
@@ -234,12 +340,18 @@ struct OrgUsageAPIResponseTests {
 
         let response = try JSONDecoder().decode(OrgUsageAPIResponse.self, from: json)
 
-        let bucket = response.data[0]
-        #expect(bucket.workspaceId == "ws-test")
-        #expect(bucket.inputTokens == 100)
-        #expect(bucket.outputTokens == 50)
-        #expect(bucket.cacheReadInputTokens == 10)
-        #expect(bucket.cacheCreationInputTokens == 5)
+        let result = response.data[0].results[0]
+        #expect(result.uncachedInputTokens == 100)
+        #expect(result.outputTokens == 50)
+        #expect(result.cacheReadInputTokens == 10)
+        #expect(result.cacheCreation?.ephemeral1hInputTokens == 3)
+        #expect(result.cacheCreation?.ephemeral5mInputTokens == 2)
+        #expect(result.apiKeyId == "key1")
+        #expect(result.workspaceId == "ws-test")
+        #expect(result.serviceTier == "standard")
+        #expect(result.contextWindow == "0-200k")
+        #expect(result.inferenceGeo == "global")
+        #expect(result.serverToolUse?.webSearchRequests == 1)
         #expect(response.hasMore == true)
         #expect(response.nextPage == "next")
     }

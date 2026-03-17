@@ -42,6 +42,7 @@ enum AdminAPIEndpoints {
     static func costReport(
         from: Date,
         to: Date,
+        groupBy: [String]?,
         page: String?
     ) -> URL {
         var components = URLComponents(string: "\(baseURL)/v1/organizations/cost_report")!
@@ -49,6 +50,11 @@ enum AdminAPIEndpoints {
             URLQueryItem(name: "starting_at", value: iso8601String(from: from)),
             URLQueryItem(name: "ending_at", value: iso8601String(from: to))
         ]
+        if let groupBy {
+            for group in groupBy {
+                queryItems.append(URLQueryItem(name: "group_by[]", value: group))
+            }
+        }
         if let page {
             queryItems.append(URLQueryItem(name: "page", value: page))
         }

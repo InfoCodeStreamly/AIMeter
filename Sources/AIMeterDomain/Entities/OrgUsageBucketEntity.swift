@@ -6,6 +6,7 @@ public struct OrgUsageBucketEntity: Sendable, Equatable, Identifiable {
     public let startTime: Date
     public let endTime: Date
     public let model: String?
+    public let apiKeyId: String?
     public let workspaceId: String?
     public let inputTokens: Int
     public let outputTokens: Int
@@ -17,6 +18,7 @@ public struct OrgUsageBucketEntity: Sendable, Equatable, Identifiable {
         startTime: Date,
         endTime: Date,
         model: String? = nil,
+        apiKeyId: String? = nil,
         workspaceId: String? = nil,
         inputTokens: Int,
         outputTokens: Int,
@@ -27,6 +29,7 @@ public struct OrgUsageBucketEntity: Sendable, Equatable, Identifiable {
         self.startTime = startTime
         self.endTime = endTime
         self.model = model
+        self.apiKeyId = apiKeyId
         self.workspaceId = workspaceId
         self.inputTokens = inputTokens
         self.outputTokens = outputTokens

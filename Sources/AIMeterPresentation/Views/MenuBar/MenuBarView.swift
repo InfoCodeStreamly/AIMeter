@@ -142,6 +142,10 @@ public struct MenuBarView: View {
                     OrgUsageSummaryCardView(data: orgSummary)
                 }
 
+                if let monthly = orgVM.monthlyUsage {
+                    MonthlyUsageSummaryCardView(data: monthly)
+                }
+
                 if let analytics = orgVM.analytics {
                     OrgAnalyticsCardView(data: analytics)
                 }
@@ -187,6 +191,9 @@ public struct MenuBarView: View {
             if let orgVM = orgUsageViewModel, orgVM.state != .noKey {
                 if let orgSummary = orgVM.orgSummary {
                     OrgUsageSummaryCardView(data: orgSummary)
+                }
+                if let monthly = orgVM.monthlyUsage {
+                    MonthlyUsageSummaryCardView(data: monthly)
                 }
                 if let analytics = orgVM.analytics {
                     OrgAnalyticsCardView(data: analytics)

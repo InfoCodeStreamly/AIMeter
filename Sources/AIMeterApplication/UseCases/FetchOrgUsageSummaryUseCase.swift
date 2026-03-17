@@ -32,7 +32,8 @@ public final class FetchOrgUsageSummaryUseCase: Sendable {
         )
         async let costBuckets = orgUsageRepository.fetchCostReport(
             from: todayStart,
-            to: now
+            to: now,
+            groupBy: nil
         )
 
         let usage = try await usageBuckets

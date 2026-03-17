@@ -13,15 +13,27 @@ struct AdminAPIMapperTests {
     func toUsageBucketsMapsResponseData() {
         let response = OrgUsageAPIResponse(
             data: [
-                OrgUsageBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    model: "claude-3-opus-20240229",
-                    workspaceId: "ws-abc",
-                    inputTokens: 1000,
-                    outputTokens: 500,
-                    cacheReadInputTokens: 200,
-                    cacheCreationInputTokens: 100
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: 1000,
+                            outputTokens: 500,
+                            cacheReadInputTokens: 200,
+                            cacheCreation: CacheCreationData(
+                                ephemeral1hInputTokens: 80,
+                                ephemeral5mInputTokens: 20
+                            ),
+                            model: "claude-3-opus-20240229",
+                            apiKeyId: nil,
+                            workspaceId: "ws-abc",
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -36,7 +48,7 @@ struct AdminAPIMapperTests {
         #expect(entities[0].inputTokens == 1000)
         #expect(entities[0].outputTokens == 500)
         #expect(entities[0].cacheReadTokens == 200)
-        #expect(entities[0].cacheCreationTokens == 100)
+        #expect(entities[0].cacheCreationTokens == 100) // 80 + 20
     }
 
     @Test("toUsageBuckets returns empty array for empty data")
@@ -50,15 +62,24 @@ struct AdminAPIMapperTests {
     func toUsageBucketsSkipsInvalidStartTime() {
         let response = OrgUsageAPIResponse(
             data: [
-                OrgUsageBucketData(
-                    snapshotStartTime: "invalid-date",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    model: nil,
-                    workspaceId: nil,
-                    inputTokens: 100,
-                    outputTokens: 50,
-                    cacheReadInputTokens: nil,
-                    cacheCreationInputTokens: nil
+                OrgUsageTimeBucket(
+                    startingAt: "invalid-date",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: 100,
+                            outputTokens: 50,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: nil,
+                            apiKeyId: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -73,15 +94,24 @@ struct AdminAPIMapperTests {
     func toUsageBucketsSkipsInvalidEndTime() {
         let response = OrgUsageAPIResponse(
             data: [
-                OrgUsageBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "not-a-date",
-                    model: nil,
-                    workspaceId: nil,
-                    inputTokens: 100,
-                    outputTokens: 50,
-                    cacheReadInputTokens: nil,
-                    cacheCreationInputTokens: nil
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "not-a-date",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: 100,
+                            outputTokens: 50,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: nil,
+                            apiKeyId: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -96,15 +126,24 @@ struct AdminAPIMapperTests {
     func toUsageBucketsUsesZeroForNilTokens() {
         let response = OrgUsageAPIResponse(
             data: [
-                OrgUsageBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    model: nil,
-                    workspaceId: nil,
-                    inputTokens: nil,
-                    outputTokens: nil,
-                    cacheReadInputTokens: nil,
-                    cacheCreationInputTokens: nil
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: nil,
+                            outputTokens: nil,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: nil,
+                            apiKeyId: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -124,15 +163,24 @@ struct AdminAPIMapperTests {
     func toUsageBucketsParsesISO8601Dates() {
         let response = OrgUsageAPIResponse(
             data: [
-                OrgUsageBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    model: nil,
-                    workspaceId: nil,
-                    inputTokens: 100,
-                    outputTokens: 50,
-                    cacheReadInputTokens: nil,
-                    cacheCreationInputTokens: nil
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: 100,
+                            outputTokens: 50,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: nil,
+                            apiKeyId: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -146,18 +194,116 @@ struct AdminAPIMapperTests {
         #expect(entities[0].startTime < entities[0].endTime)
     }
 
+    @Test("toUsageBuckets maps multiple results per bucket to separate entities")
+    func toUsageBucketsMapsMultipleResultsPerBucket() {
+        let response = OrgUsageAPIResponse(
+            data: [
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: 1000,
+                            outputTokens: 500,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: "claude-sonnet-4-6",
+                            apiKeyId: "apikey_01abc",
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        ),
+                        OrgUsageResultData(
+                            uncachedInputTokens: 2000,
+                            outputTokens: 800,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: nil,
+                            model: "claude-haiku-4-5",
+                            apiKeyId: "apikey_02def",
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
+                )
+            ],
+            hasMore: false,
+            nextPage: nil
+        )
+
+        let entities = AdminAPIMapper.toUsageBuckets(response)
+
+        #expect(entities.count == 2)
+        #expect(entities[0].model == "claude-sonnet-4-6")
+        #expect(entities[0].inputTokens == 1000)
+        #expect(entities[1].model == "claude-haiku-4-5")
+        #expect(entities[1].inputTokens == 2000)
+    }
+
+    @Test("toUsageBuckets sums ephemeral cache creation tokens")
+    func toUsageBucketsSumsCacheCreationTokens() {
+        let response = OrgUsageAPIResponse(
+            data: [
+                OrgUsageTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgUsageResultData(
+                            uncachedInputTokens: nil,
+                            outputTokens: nil,
+                            cacheReadInputTokens: nil,
+                            cacheCreation: CacheCreationData(
+                                ephemeral1hInputTokens: 300,
+                                ephemeral5mInputTokens: 150
+                            ),
+                            model: nil,
+                            apiKeyId: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil,
+                            serverToolUse: nil
+                        )
+                    ]
+                )
+            ],
+            hasMore: false,
+            nextPage: nil
+        )
+
+        let entities = AdminAPIMapper.toUsageBuckets(response)
+
+        #expect(entities.count == 1)
+        #expect(entities[0].cacheCreationTokens == 450) // 300 + 150
+    }
+
     // MARK: - toCostBuckets Tests
 
     @Test("toCostBuckets maps response data to domain entities")
     func toCostBucketsMapsResponseData() {
         let response = OrgCostAPIResponse(
             data: [
-                OrgCostBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    workspaceId: "ws-abc",
-                    description: "Claude API usage",
-                    amount: "1250"
+                OrgCostTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgCostResultData(
+                            amount: "1250",
+                            currency: nil,
+                            model: nil,
+                            costType: nil,
+                            tokenType: nil,
+                            description: "Claude API usage",
+                            workspaceId: "ws-abc",
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -177,12 +323,23 @@ struct AdminAPIMapperTests {
     func toCostBucketsParseDecimalAmount() {
         let response = OrgCostAPIResponse(
             data: [
-                OrgCostBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    workspaceId: nil,
-                    description: nil,
-                    amount: "1250.75"
+                OrgCostTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgCostResultData(
+                            amount: "1250.75",
+                            currency: nil,
+                            model: nil,
+                            costType: nil,
+                            tokenType: nil,
+                            description: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -207,12 +364,23 @@ struct AdminAPIMapperTests {
     func toCostBucketsSkipsInvalidDates() {
         let response = OrgCostAPIResponse(
             data: [
-                OrgCostBucketData(
-                    snapshotStartTime: "bad-date",
-                    snapshotEndTime: "also-bad",
-                    workspaceId: nil,
-                    description: nil,
-                    amount: "100"
+                OrgCostTimeBucket(
+                    startingAt: "bad-date",
+                    endingAt: "also-bad",
+                    results: [
+                        OrgCostResultData(
+                            amount: "100",
+                            currency: nil,
+                            model: nil,
+                            costType: nil,
+                            tokenType: nil,
+                            description: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -227,12 +395,23 @@ struct AdminAPIMapperTests {
     func toCostBucketsUsesZeroForUnparseableAmount() {
         let response = OrgCostAPIResponse(
             data: [
-                OrgCostBucketData(
-                    snapshotStartTime: "2026-01-01T00:00:00Z",
-                    snapshotEndTime: "2026-01-01T01:00:00Z",
-                    workspaceId: nil,
-                    description: nil,
-                    amount: "not-a-number"
+                OrgCostTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-01T01:00:00Z",
+                    results: [
+                        OrgCostResultData(
+                            amount: "not-a-number",
+                            currency: nil,
+                            model: nil,
+                            costType: nil,
+                            tokenType: nil,
+                            description: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        )
+                    ]
                 )
             ],
             hasMore: false,
@@ -242,6 +421,52 @@ struct AdminAPIMapperTests {
         let entities = AdminAPIMapper.toCostBuckets(response)
         #expect(entities.count == 1)
         #expect(entities[0].amountCents == 0)
+    }
+
+    @Test("toCostBuckets maps multiple results per bucket to separate entities")
+    func toCostBucketsMapsMultipleResultsPerBucket() {
+        let response = OrgCostAPIResponse(
+            data: [
+                OrgCostTimeBucket(
+                    startingAt: "2026-01-01T00:00:00Z",
+                    endingAt: "2026-01-02T00:00:00Z",
+                    results: [
+                        OrgCostResultData(
+                            amount: "500",
+                            currency: "USD",
+                            model: "claude-sonnet-4-6",
+                            costType: "tokens",
+                            tokenType: "uncached_input_tokens",
+                            description: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        ),
+                        OrgCostResultData(
+                            amount: "200",
+                            currency: "USD",
+                            model: nil,
+                            costType: "web_search",
+                            tokenType: nil,
+                            description: nil,
+                            workspaceId: nil,
+                            serviceTier: nil,
+                            contextWindow: nil,
+                            inferenceGeo: nil
+                        )
+                    ]
+                )
+            ],
+            hasMore: false,
+            nextPage: nil
+        )
+
+        let entities = AdminAPIMapper.toCostBuckets(response)
+
+        #expect(entities.count == 2)
+        #expect(entities[0].amountCents == 500)
+        #expect(entities[1].amountCents == 200)
     }
 
     // MARK: - toUserActivities Tests

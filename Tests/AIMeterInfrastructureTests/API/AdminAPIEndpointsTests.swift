@@ -124,7 +124,7 @@ struct AdminAPIEndpointsTests {
     func costReportURLContainsCorrectPath() {
         let from = Date(timeIntervalSince1970: 1_700_000_000)
         let to   = Date(timeIntervalSince1970: 1_700_086_400)
-        let url  = AdminAPIEndpoints.costReport(from: from, to: to, page: nil)
+        let url  = AdminAPIEndpoints.costReport(from: from, to: to, groupBy: nil, page: nil)
 
         #expect(url.path == "/v1/organizations/cost_report")
     }
@@ -133,7 +133,7 @@ struct AdminAPIEndpointsTests {
     func costReportURLContainsDateParameters() {
         let from = Date(timeIntervalSince1970: 1_700_000_000)
         let to   = Date(timeIntervalSince1970: 1_700_086_400)
-        let url  = AdminAPIEndpoints.costReport(from: from, to: to, page: nil)
+        let url  = AdminAPIEndpoints.costReport(from: from, to: to, groupBy: nil, page: nil)
 
         #expect(url.query?.contains("starting_at") == true)
         #expect(url.query?.contains("ending_at") == true)
@@ -143,7 +143,7 @@ struct AdminAPIEndpointsTests {
     func costReportURLWithPageAddsParameter() {
         let from = Date(timeIntervalSince1970: 1_700_000_000)
         let to   = Date(timeIntervalSince1970: 1_700_086_400)
-        let url  = AdminAPIEndpoints.costReport(from: from, to: to, page: "nextPage")
+        let url  = AdminAPIEndpoints.costReport(from: from, to: to, groupBy: nil, page: "nextPage")
 
         #expect(url.query?.contains("page=nextPage") == true)
     }
